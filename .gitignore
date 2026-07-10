@@ -1,0 +1,8 @@
+node_modules/
+.DS_Store
+data/uploads/
+public/assets/*.jpg
+public/assets/*.jpeg
+public/assets/*.png
+public/assets/*.webp
+*.log
