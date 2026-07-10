@@ -103,7 +103,13 @@
         "subheading": "Start or continue your karate journey",
         "body": "Build confidence, technique, fitness, and focus with structured coaching.",
         "cta": "View courses and book",
-        "image": "/assets/instructors.svg"
+        "image": "/assets/instructors.svg",
+        "imageLeft": "/assets/instructors.svg",
+        "imageRight": "/assets/dojo-class.svg",
+        "logo": "/assets/eska-logo-exact.svg",
+        "background": "linear-gradient(135deg, #ffffff 0%, #fff7f3 100%)",
+        "accent": "#e61f2a",
+        "panelColor": "rgba(255, 255, 255, 0.96)"
       }
     },
     {
