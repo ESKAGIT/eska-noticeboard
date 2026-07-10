@@ -1,0 +1,124 @@
+{
+  "brand": {
+    "name": "ESKA Karate",
+    "logo": "/assets/eska-logo.svg",
+    "accent": "#e61f2a"
+  },
+  "settings": {
+    "screenTitle": "ESKA Dojo Noticeboard",
+    "defaultDuration": 10000,
+    "refreshSeconds": 12
+  },
+  "slides": [
+    {
+      "id": "welcome",
+      "template": "hero",
+      "animation": "split-reveal",
+      "duration": 11000,
+      "visible": true,
+      "fields": {
+        "eyebrow": "Welcome to the dojo",
+        "heading": "Eastern Shotokan Karate Association",
+        "subheading": "Discipline. Respect. Confidence.",
+        "body": "Check this screen for today's reminders, events, courses, and student achievements.",
+        "cta": "Train hard. Be kind. Keep improving.",
+        "image": "/assets/eska-logo.svg"
+      }
+    },
+    {
+      "id": "today",
+      "template": "cards",
+      "animation": "stagger",
+      "duration": 10000,
+      "visible": true,
+      "fields": {
+        "eyebrow": "Today at the dojo",
+        "heading": "Please arrive ready to train",
+        "subheading": "Quick reminders for students and parents",
+        "body": "Bring water, your licence book, and the correct uniform. Speak to reception if you need help.",
+        "date": "This week",
+        "time": "Before class",
+        "location": "Reception",
+        "cta": "Ask if you are unsure"
+      }
+    },
+    {
+      "id": "events",
+      "template": "image-right",
+      "animation": "slide-left",
+      "duration": 11000,
+      "visible": true,
+      "fields": {
+        "eyebrow": "Upcoming events",
+        "heading": "Seminars, gradings and special training",
+        "subheading": "Keep an eye on dates",
+        "body": "New event details can be added here as soon as they are confirmed.",
+        "date": "Next dates coming soon",
+        "time": "Check at reception",
+        "location": "All ESKA dojos",
+        "cta": "Book early",
+        "image": "/assets/students-group.svg"
+      }
+    },
+    {
+      "id": "booking",
+      "template": "notice",
+      "animation": "zoom-in",
+      "duration": 10000,
+      "visible": true,
+      "fields": {
+        "eyebrow": "Class reminder",
+        "heading": "Don't forget to book your classes",
+        "subheading": "Help us keep sessions smooth and well organised",
+        "body": "Please book before arriving so instructors can plan the class properly.",
+        "cta": "Book your next class"
+      }
+    },
+    {
+      "id": "course",
+      "template": "course",
+      "animation": "split-reveal",
+      "duration": 12000,
+      "visible": true,
+      "fields": {
+        "eyebrow": "Karate courses",
+        "heading": "ESKA Karate Courses",
+        "subheading": "Start or continue your karate journey",
+        "body": "Build confidence, technique, fitness, and focus with structured coaching.",
+        "cta": "View courses and book",
+        "image": "/assets/instructors.svg"
+      }
+    },
+    {
+      "id": "media-course",
+      "template": "media",
+      "animation": "fade-up",
+      "duration": 11000,
+      "visible": true,
+      "fields": {
+        "eyebrow": "Course preview",
+        "heading": "Photo and video space",
+        "subheading": "Use this for instructor clips or course highlights",
+        "body": "Upload a picture and add a video link or uploaded video file.",
+        "cta": "Add video",
+        "image": "/assets/dojo-class.svg",
+        "video": ""
+      }
+    },
+    {
+      "id": "competition",
+      "template": "gallery",
+      "animation": "pan-zoom",
+      "duration": 9000,
+      "visible": true,
+      "fields": {
+        "eyebrow": "Competition team",
+        "heading": "Well done to everyone who competed",
+        "subheading": "Proud of every student",
+        "body": "Great effort, attitude, and spirit from the ESKA team.",
+        "cta": "Keep training",
+        "image": "/assets/training.svg"
+      }
+    }
+  ]
+}
