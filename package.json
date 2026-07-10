@@ -1,0 +1,15 @@
+{
+  "name": "eska-railway-noticeboard",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ESKA dojo TV noticeboard for Railway, Apple TV signage apps, and browser display.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "check": "node --check server.js && node --check public/app.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
