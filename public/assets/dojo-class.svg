@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" role="img" aria-label="Karate class placeholder">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fffdf8"/><stop offset="0.55" stop-color="#f1e5dc"/><stop offset="1" stop-color="#ffffff"/></linearGradient>
+    <linearGradient id="red" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff6659"/><stop offset="1" stop-color="#e61f2a"/></linearGradient>
+  </defs>
+  <rect width="1600" height="1000" fill="url(#bg)"/>
+  <rect x="0" y="710" width="1600" height="290" fill="#272727"/>
+  <rect x="0" y="710" width="1600" height="48" fill="#e61f2a"/>
+  <circle cx="290" cy="470" r="120" fill="#fff"/><rect x="210" y="585" width="160" height="250" rx="42" fill="#fff"/>
+  <circle cx="650" cy="430" r="145" fill="#fff"/><rect x="550" y="590" width="205" height="285" rx="48" fill="#fff"/>
+  <circle cx="1060" cy="455" r="125" fill="#fff"/><rect x="972" y="590" width="176" height="255" rx="44" fill="#fff"/>
+  <path d="M485 640h345M910 640h300" stroke="url(#red)" stroke-width="36" stroke-linecap="round"/>
+  <text x="90" y="135" font-family="Arial, Helvetica, sans-serif" font-size="76" font-weight="900" fill="#171717">ESKA Dojo Training</text>
+  <text x="92" y="210" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="700" fill="#e61f2a">Replace this placeholder with your own class photo</text>
+</svg>
