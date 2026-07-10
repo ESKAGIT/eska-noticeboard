@@ -1,0 +1,50 @@
+.slide {
+  background:
+    var(--slide-bg-image, radial-gradient(circle at 95% 12%, rgba(230, 31, 42, 0.08), transparent 28%)),
+    var(--slide-bg, linear-gradient(135deg, #ffffff 0%, var(--paper) 100%));
+  background-size: cover;
+  background-position: center;
+  color: var(--slide-text, var(--ink));
+}
+
+.slide::after {
+  background: linear-gradient(90deg, var(--slide-accent, var(--red)), #ff887e, var(--gold));
+}
+
+.eyebrow { color: var(--slide-accent, var(--red)); }
+.cta { background: var(--slide-accent, var(--red)); }
+
+.split-course {
+  background:
+    var(--slide-bg-image, radial-gradient(circle at 50% 50%, rgba(230, 31, 42, 0.08), transparent 40%)),
+    var(--slide-bg, linear-gradient(135deg, #fff 0%, #fff7f3 100%));
+  background-size: cover;
+  background-position: center;
+}
+
+.split-copy {
+  background: var(--panel-bg, rgba(255, 255, 255, 0.96));
+}
+
+.split-copy-logo {
+  display: block;
+  width: clamp(58px, 6vw, 92px);
+  aspect-ratio: 1;
+  object-fit: contain;
+  margin: 0 auto 14px;
+}
+
+.split-half {
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+.split-left {
+  background-image: var(--course-left-image);
+  background-position: center;
+}
+
+.split-right {
+  background-image: var(--course-right-image);
+  background-position: center;
+}
