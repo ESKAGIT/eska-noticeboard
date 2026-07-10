@@ -5,6 +5,7 @@ const templates = [
   { id: "notice", name: "Clean Notice", category: "Announcements", description: "Simple white/red announcement slide." },
   { id: "image-right", name: "Image Right", category: "Events", description: "Copy on the left, photo on the right." },
   { id: "cards", name: "Info Cards", category: "Timetable changes", description: "Three easy-to-read detail cards." },
+  { id: "dates", name: "Important Dates", category: "Events", description: "Clear date list for gradings, courses, closures, and reminders." },
   { id: "course", name: "Karate Course Split", category: "Karate courses", description: "Premium split image reveal." },
   { id: "media", name: "Photo and Video", category: "Karate courses", description: "Picture plus video placeholder." },
   { id: "gallery", name: "Achievement Gallery", category: "Student achievements", description: "Photo-led congratulations slide." }
@@ -44,7 +45,15 @@ async function api(path, options = {}) {
   const headers = { ...(options.headers || {}) };
   if (options.body && !headers["content-type"]) headers["content-type"] = "application/json";
   if (adminPin()) headers["x-admin-pin"] = adminPin();
-  const response = await fetch(path, { ...options, headers });
+  let response = await fetch(path, { ...options, headers });
+  if (response.status === 401) {
+    const pin = window.prompt("Enter the ESKA admin PIN");
+    if (pin) {
+      localStorage.setItem("eskaAdminPin", pin);
+      headers["x-admin-pin"] = pin;
+      response = await fetch(path, { ...options, headers });
+    }
+  }
   if (!response.ok) {
     const detail = await response.json().catch(() => ({}));
     throw new Error(detail.error || `Request failed: ${response.status}`);
@@ -115,6 +124,22 @@ function renderSlide(slide, preview = false) {
         <article><strong>${escapeHtml(field(slide, "date", "Date"))}</strong><span>${escapeHtml(field(slide, "time", "Time"))}</span></article>
         <article><strong>Location</strong><span>${escapeHtml(field(slide, "location", "Add location"))}</span></article>
         <article><strong>Action</strong><span>${escapeHtml(field(slide, "cta", "Add action"))}</span></article>
+      </div>
+    `;
+  } else if (slide.template === "dates") {
+    const dateItems = [field(slide, "date"), field(slide, "time"), field(slide, "location")]
+      .filter(Boolean)
+      .map((item) => item.split("|").map((part) => part.trim()));
+    content = `
+      ${copyBlock(slide)}
+      <div class="date-board">
+        ${dateItems.map(([date, title = "Add title", detail = "Add details"]) => `
+          <article>
+            <strong>${escapeHtml(date)}</strong>
+            <span>${escapeHtml(title)}</span>
+            <small>${escapeHtml(detail)}</small>
+          </article>
+        `).join("")}
       </div>
     `;
   } else if (slide.template === "course") {
@@ -331,18 +356,18 @@ function createSlideFromTemplate(templateId) {
     id: uid(),
     template: template.id,
     animation: template.id === "course" ? "split-reveal" : "fade-up",
-    duration: 10000,
+    duration: 15000,
     visible: false,
     fields: {
       eyebrow: template.category,
       heading: template.name,
       subheading: "Edit this subtitle",
       body: template.description,
-      date: "",
-      time: "",
-      location: "",
+      date: template.id === "dates" ? "Sat 18 Jul | Summer Seminar | Main Dojo" : "",
+      time: template.id === "dates" ? "Mon 27 Jul | Grading Week | During normal classes" : "",
+      location: template.id === "dates" ? "Sun 2 Aug | Open Training | Ask reception" : "",
       cta: "Add action",
-      image: "/assets/eska-logo.svg",
+      image: "/assets/eska-logo-exact.svg",
       video: ""
     }
   };
