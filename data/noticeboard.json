@@ -1,12 +1,12 @@
 {
   "brand": {
     "name": "ESKA Karate",
-    "logo": "/assets/eska-logo.svg",
+    "logo": "/assets/eska-logo.png",
     "accent": "#e61f2a"
   },
   "settings": {
     "screenTitle": "ESKA Dojo Noticeboard",
-    "defaultDuration": 10000,
+    "defaultDuration": 15000,
     "refreshSeconds": 12
   },
   "slides": [
@@ -14,7 +14,7 @@
       "id": "welcome",
       "template": "hero",
       "animation": "split-reveal",
-      "duration": 11000,
+      "duration": 16000,
       "visible": true,
       "fields": {
         "eyebrow": "Welcome to the dojo",
@@ -22,14 +22,14 @@
         "subheading": "Discipline. Respect. Confidence.",
         "body": "Check this screen for today's reminders, events, courses, and student achievements.",
         "cta": "Train hard. Be kind. Keep improving.",
-        "image": "/assets/eska-logo.svg"
+        "image": "/assets/eska-logo.png"
       }
     },
     {
       "id": "today",
       "template": "cards",
       "animation": "stagger",
-      "duration": 10000,
+      "duration": 15000,
       "visible": true,
       "fields": {
         "eyebrow": "Today at the dojo",
@@ -46,7 +46,7 @@
       "id": "events",
       "template": "image-right",
       "animation": "slide-left",
-      "duration": 11000,
+      "duration": 16000,
       "visible": true,
       "fields": {
         "eyebrow": "Upcoming events",
@@ -61,10 +61,27 @@
       }
     },
     {
+      "id": "important-dates",
+      "template": "dates",
+      "animation": "stagger",
+      "duration": 18000,
+      "visible": true,
+      "fields": {
+        "eyebrow": "Important dates",
+        "heading": "Dates for your diary",
+        "subheading": "Add upcoming events, courses, gradings and closures here",
+        "body": "Keep checking this screen for confirmed dates and booking reminders.",
+        "date": "Sat 18 Jul | Summer Seminar | Main Dojo",
+        "time": "Mon 27 Jul | Grading Week | During normal classes",
+        "location": "Sun 2 Aug | Open Training | Ask reception",
+        "cta": "Speak to reception to book"
+      }
+    },
+    {
       "id": "booking",
       "template": "notice",
       "animation": "zoom-in",
-      "duration": 10000,
+      "duration": 15000,
       "visible": true,
       "fields": {
         "eyebrow": "Class reminder",
@@ -78,7 +95,7 @@
       "id": "course",
       "template": "course",
       "animation": "split-reveal",
-      "duration": 12000,
+      "duration": 20000,
       "visible": true,
       "fields": {
         "eyebrow": "Karate courses",
@@ -93,7 +110,7 @@
       "id": "media-course",
       "template": "media",
       "animation": "fade-up",
-      "duration": 11000,
+      "duration": 16000,
       "visible": true,
       "fields": {
         "eyebrow": "Course preview",
@@ -109,7 +126,7 @@
       "id": "competition",
       "template": "gallery",
       "animation": "pan-zoom",
-      "duration": 9000,
+      "duration": 12000,
       "visible": true,
       "fields": {
         "eyebrow": "Competition team",
