@@ -1,7 +1,7 @@
 {
   "brand": {
     "name": "ESKA Karate",
-    "logo": "/assets/eska-logo.png",
+    "logo": "/assets/eska-logo-exact.svg",
     "accent": "#e61f2a"
   },
   "settings": {
@@ -22,7 +22,7 @@
         "subheading": "Discipline. Respect. Confidence.",
         "body": "Check this screen for today's reminders, events, courses, and student achievements.",
         "cta": "Train hard. Be kind. Keep improving.",
-        "image": "/assets/eska-logo.png"
+        "image": "/assets/eska-logo-exact.svg"
       }
     },
     {
