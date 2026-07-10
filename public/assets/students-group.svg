@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" role="img" aria-label="Students group placeholder">
+  <rect width="1600" height="1000" fill="#fffdf8"/>
+  <rect y="730" width="1600" height="270" fill="#f0dfd4"/>
+  <g fill="#fff" stroke="#e8d8cf" stroke-width="10">
+    <circle cx="270" cy="455" r="78"/><rect x="205" y="540" width="130" height="250" rx="34"/>
+    <circle cx="500" cy="410" r="88"/><rect x="430" y="505" width="140" height="290" rx="36"/>
+    <circle cx="745" cy="445" r="80"/><rect x="678" y="532" width="134" height="260" rx="34"/>
+    <circle cx="985" cy="405" r="92"/><rect x="910" y="505" width="150" height="295" rx="38"/>
+    <circle cx="1240" cy="455" r="78"/><rect x="1175" y="540" width="130" height="250" rx="34"/>
+  </g>
+  <path d="M180 638h1180" stroke="#e61f2a" stroke-width="26" stroke-linecap="round"/>
+  <text x="800" y="140" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="78" font-weight="900" fill="#171717">Student Achievement</text>
+  <text x="800" y="212" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="700" fill="#e61f2a">Upload a team or grading photo here</text>
+</svg>
