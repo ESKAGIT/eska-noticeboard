@@ -8,6 +8,23 @@
 </head>
 <body>
   <div id="app"></div>
+  <script>
+    window.fetch = ((originalFetch) => async (url, options = {}) => {
+      const withPin = { ...options, headers: { ...(options.headers || {}) } };
+      const storedPin = localStorage.getItem("eskaAdminPin");
+      if (storedPin) withPin.headers["x-admin-pin"] = storedPin;
+      let response = await originalFetch(url, withPin);
+      if (response.status === 401) {
+        const pin = window.prompt("Enter the ESKA admin PIN");
+        if (pin) {
+          localStorage.setItem("eskaAdminPin", pin);
+          withPin.headers["x-admin-pin"] = pin;
+          response = await originalFetch(url, withPin);
+        }
+      }
+      return response;
+    })(window.fetch);
+  </script>
   <script src="/app.js"></script>
 </body>
 </html>
