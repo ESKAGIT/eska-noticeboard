@@ -244,10 +244,53 @@
     document.querySelector("#applyToVideo").addEventListener("click", () => uploadInto(slide, "video"));
   };
 
-  const originalUploadInto = window.uploadInto || uploadInto;
+  async function uploadFileDirect(file) {
+    const headers = {
+      "content-type": file.type || "application/octet-stream",
+      "x-file-name": file.name || "media"
+    };
+    if (adminPin()) headers["x-admin-pin"] = adminPin();
+
+    let response = await fetch("/api/upload", {
+      method: "POST",
+      headers,
+      body: file
+    });
+
+    if (response.status === 401) {
+      const pin = window.prompt("Enter the ESKA admin PIN");
+      if (pin) {
+        localStorage.setItem("eskaAdminPin", pin);
+        headers["x-admin-pin"] = pin;
+        response = await fetch("/api/upload", {
+          method: "POST",
+          headers,
+          body: file
+        });
+      }
+    }
+
+    if (!response.ok) {
+      const detail = await response.json().catch(() => ({}));
+      throw new Error(detail.error || `Upload failed: ${response.status}`);
+    }
+
+    return response.json();
+  }
+
   window.uploadInto = async function uploadInto(slide, target) {
-    await originalUploadInto(slide, target);
-    scheduleAutosave(100);
+    const file = document.querySelector("#mediaUpload").files[0];
+    if (!file) return showStatus("Choose a file first.", true);
+    setAutosaveStatus(`Uploading ${file.name}...`);
+    try {
+      const saved = await uploadFileDirect(file);
+      slide.fields[target] = saved.url;
+      showStatus(`Uploaded and set as ${target}.`);
+      scheduleAutosave(100);
+      renderAdmin();
+    } catch (error) {
+      showStatus(error.message || "Upload failed.", true);
+    }
   };
 
   window.renderAdmin = function renderAdmin() {
