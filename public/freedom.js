@@ -1,4 +1,49 @@
 (function () {
+  let autoSaveTimer = null;
+  let autoSaveBusy = false;
+  let autoSaveQueued = false;
+
+  function setAutosaveStatus(message, isError = false) {
+    const box = document.querySelector("#status");
+    if (!box) return;
+    box.textContent = message;
+    box.className = `status show${isError ? " error" : ""}`;
+  }
+
+  async function flushAutosave() {
+    if (!board || route() === "/screen" || route() === "/") return;
+    if (autoSaveBusy) {
+      autoSaveQueued = true;
+      return;
+    }
+    autoSaveBusy = true;
+    autoSaveQueued = false;
+    setAutosaveStatus("Saving changes...");
+    try {
+      await api("/api/noticeboard", { method: "PUT", body: JSON.stringify(board) });
+      setAutosaveStatus("Saved automatically.");
+      clearTimeout(statusTimer);
+      statusTimer = setTimeout(() => {
+        const box = document.querySelector("#status");
+        if (box) box.className = "status";
+      }, 2200);
+    } catch (error) {
+      setAutosaveStatus(error.message || "Autosave failed.", true);
+    } finally {
+      autoSaveBusy = false;
+      if (autoSaveQueued) scheduleAutosave(200);
+    }
+  }
+
+  function scheduleAutosave(delay = 700) {
+    clearTimeout(autoSaveTimer);
+    autoSaveTimer = setTimeout(flushAutosave, delay);
+  }
+
+  window.addEventListener("beforeunload", () => {
+    if (autoSaveTimer) flushAutosave();
+  });
+
   if (!templates.some((item) => item.id === "pt")) {
     templates.push({
       id: "pt",
@@ -172,6 +217,7 @@
         slide.fields[input.dataset.field] = input.value;
         const preview = document.querySelector(".preview-wrap");
         if (preview) preview.innerHTML = renderSlide(slide, true);
+        scheduleAutosave();
       });
     });
     document.querySelectorAll("[data-key]").forEach((input) => {
@@ -179,6 +225,7 @@
         if (input.dataset.key === "visible") slide.visible = input.checked;
         else if (input.dataset.key === "duration") slide.duration = Number(input.value);
         else slide[input.dataset.key] = input.value;
+        scheduleAutosave(250);
         renderAdmin();
       });
     });
@@ -186,6 +233,7 @@
       if (board.slides.length <= 1) return showStatus("Keep at least one slide.", true);
       board.slides = board.slides.filter((item) => item.id !== slide.id);
       draftSlideId = board.slides[0].id;
+      scheduleAutosave(250);
       renderAdmin();
     });
     document.querySelector("#applyToImage").addEventListener("click", () => uploadInto(slide, "image"));
@@ -194,6 +242,55 @@
     document.querySelector("#applyToLogo").addEventListener("click", () => uploadInto(slide, "logo"));
     document.querySelector("#applyToBackground").addEventListener("click", () => uploadInto(slide, "background"));
     document.querySelector("#applyToVideo").addEventListener("click", () => uploadInto(slide, "video"));
+  };
+
+  const originalUploadInto = window.uploadInto || uploadInto;
+  window.uploadInto = async function uploadInto(slide, target) {
+    await originalUploadInto(slide, target);
+    scheduleAutosave(100);
+  };
+
+  window.renderAdmin = function renderAdmin() {
+    const current = board.slides.find((slide) => slide.id === draftSlideId) || board.slides[0];
+    draftSlideId = current?.id;
+    app.innerHTML = `
+      ${shell("ESKA Noticeboard Admin", `<button class="primary" id="saveBoard">Save Live Screen</button>`)}
+      <main class="admin-layout">
+        <aside class="slide-list">
+          <button class="primary wide" id="addSlide">Add Slide</button>
+          ${board.slides.map((slide, index) => `
+            <button class="slide-list-item ${slide.id === draftSlideId ? "active" : ""}" data-id="${escapeHtml(slide.id)}">
+              <span>${index + 1}. ${escapeHtml(field(slide, "heading", slide.template))}</span>
+              <small>${escapeHtml(slide.template)} / ${escapeHtml(slide.animation || "fade-up")}</small>
+            </button>
+          `).join("")}
+        </aside>
+        <section class="editor">
+          <div class="preview-wrap">${current ? renderSlide(current, true) : ""}</div>
+          ${current ? editorForm(current) : ""}
+        </section>
+      </main>
+      <div class="status" id="status"></div>
+    `;
+
+    document.querySelector("#saveBoard").addEventListener("click", () => {
+      clearTimeout(autoSaveTimer);
+      flushAutosave().catch((error) => showStatus(error.message, true));
+    });
+    document.querySelector("#addSlide").addEventListener("click", () => {
+      const slide = createSlideFromTemplate("notice");
+      board.slides.push(slide);
+      draftSlideId = slide.id;
+      scheduleAutosave(250);
+      renderAdmin();
+    });
+    document.querySelectorAll(".slide-list-item").forEach((button) => {
+      button.addEventListener("click", () => {
+        draftSlideId = button.dataset.id;
+        renderAdmin();
+      });
+    });
+    bindEditor(current);
   };
 
   const originalCreateSlideFromTemplate = window.createSlideFromTemplate || createSlideFromTemplate;
@@ -223,9 +320,11 @@
 
   brandHeader = window.brandHeader;
   renderSlide = window.renderSlide;
+  renderAdmin = window.renderAdmin;
   editorForm = window.editorForm;
   labelFor = window.labelFor;
   bindEditor = window.bindEditor;
+  uploadInto = window.uploadInto;
   createSlideFromTemplate = window.createSlideFromTemplate;
 
   if (route() === "/admin" || route() === "/templates") {
