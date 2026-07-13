@@ -92,6 +92,25 @@
       }
     },
     {
+      "id": "private-tuition",
+      "template": "pt",
+      "animation": "centre-side",
+      "duration": 17000,
+      "visible": true,
+      "fields": {
+        "eyebrow": "Private tuition",
+        "heading": "Book a 1-to-1 PT session",
+        "subheading": "Focused coaching for faster progress",
+        "body": "Work on grading prep, confidence, fitness, kata, kumite, or specific techniques with dedicated instructor time.",
+        "cta": "Ask reception to book",
+        "image": "/assets/dojo-class.svg",
+        "logo": "/assets/eska-logo-exact.svg",
+        "background": "linear-gradient(135deg, #ffffff 0%, #fff7f3 100%)",
+        "accent": "#e61f2a",
+        "panelColor": "rgba(255, 255, 255, 0.96)"
+      }
+    },
+    {
       "id": "course",
       "template": "course",
       "animation": "split-reveal",
