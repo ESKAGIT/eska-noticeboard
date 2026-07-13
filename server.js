@@ -10,6 +10,7 @@ const DATA_FILE = path.join(DATA_DIR, "noticeboard.json");
 const UPLOAD_DIR = path.join(DATA_DIR, "uploads");
 const ADMIN_PIN = process.env.ADMIN_PIN || "";
 const MAX_BODY = 60 * 1024 * 1024;
+const MAX_UPLOAD = Number(process.env.MAX_UPLOAD_BYTES || 500 * 1024 * 1024);
 
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -74,6 +75,53 @@ function safeName(name = "upload") {
   return name.toLowerCase().replace(/[^a-z0-9._-]+/g, "-").replace(/^-+|-+$/g, "") || "upload";
 }
 
+function extensionFromType(type = "") {
+  if (type.includes("png")) return ".png";
+  if (type.includes("webp")) return ".webp";
+  if (type.includes("gif")) return ".gif";
+  if (type.includes("svg")) return ".svg";
+  if (type.includes("quicktime")) return ".mov";
+  if (type.includes("webm")) return ".webm";
+  if (type.includes("video")) return ".mp4";
+  return ".jpg";
+}
+
+function streamUpload(req, filePath) {
+  return new Promise((resolve, reject) => {
+    let total = 0;
+    let rejected = false;
+    const output = fs.createWriteStream(filePath);
+
+    req.on("data", (chunk) => {
+      total += chunk.length;
+      if (total > MAX_UPLOAD && !rejected) {
+        rejected = true;
+        output.destroy();
+        req.destroy(new Error("Upload is too large."));
+      }
+    });
+
+    req.on("error", (error) => {
+      output.destroy();
+      fs.rm(filePath, { force: true }, () => reject(error));
+    });
+
+    output.on("error", (error) => {
+      fs.rm(filePath, { force: true }, () => reject(error));
+    });
+
+    output.on("finish", () => {
+      if (rejected) {
+        fs.rm(filePath, { force: true }, () => reject(new Error("Upload is too large.")));
+        return;
+      }
+      resolve(total);
+    });
+
+    req.pipe(output);
+  });
+}
+
 function serveFile(res, baseDir, requestPath) {
   const cleanPath = decodeURIComponent(requestPath.split("?")[0]).replace(/^\/+/, "");
   const filePath = path.normalize(path.join(baseDir, cleanPath));
@@ -135,6 +183,21 @@ const server = http.createServer(async (req, res) => {
       const stored = `${Date.now()}-${crypto.randomBytes(4).toString("hex")}-${safeName(path.basename(filename || "media", ext))}${ext}`;
       fs.writeFileSync(path.join(UPLOAD_DIR, stored), Buffer.from(match[2], "base64"));
       sendJson(res, 201, { url: `/uploads/${stored}` });
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/upload") {
+      if (!isAuthorized(req)) {
+        sendJson(res, 401, { error: "Admin PIN required." });
+        return;
+      }
+      const type = String(req.headers["content-type"] || "application/octet-stream");
+      const rawName = String(req.headers["x-file-name"] || "media").slice(0, 180);
+      const ext = path.extname(rawName) || extensionFromType(type);
+      const stored = `${Date.now()}-${crypto.randomBytes(4).toString("hex")}-${safeName(path.basename(rawName || "media", ext))}${ext}`;
+      const target = path.join(UPLOAD_DIR, stored);
+      const size = await streamUpload(req, target);
+      sendJson(res, 201, { url: `/uploads/${stored}`, size });
       return;
     }
 
