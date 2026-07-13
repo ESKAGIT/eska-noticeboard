@@ -65,6 +65,20 @@
     return String(value).replace(/[\\'"<>]/g, "").trim();
   }
 
+  function dateItems(slide) {
+    const list = field(slide, "dateList", "");
+    if (list) {
+      return list
+        .split(/\r?\n/)
+        .map((item) => item.trim())
+        .filter(Boolean)
+        .map((item) => item.split("|").map((part) => part.trim()));
+    }
+    return [field(slide, "date"), field(slide, "time"), field(slide, "location")]
+      .filter(Boolean)
+      .map((item) => item.split("|").map((part) => part.trim()));
+  }
+
   window.brandHeader = function brandHeader(slide) {
     const logo = field(slide, "logo", board.brand.logo);
     return `<img class="corner-logo" src="${escapeHtml(logo)}" alt="ESKA logo">`;
@@ -114,13 +128,11 @@
         </div>
       `;
     } else if (slide.template === "dates") {
-      const dateItems = [field(slide, "date"), field(slide, "time"), field(slide, "location")]
-        .filter(Boolean)
-        .map((item) => item.split("|").map((part) => part.trim()));
+      const items = dateItems(slide);
       content = `
         ${copyBlock(slide)}
         <div class="date-board">
-          ${dateItems.map(([date, title = "Add title", detail = "Add details"]) => `
+          ${items.map(([date, title = "Add title", detail = "Add details"]) => `
             <article>
               <strong>${escapeHtml(date)}</strong>
               <span>${escapeHtml(title)}</span>
@@ -167,7 +179,7 @@
   window.editorForm = function editorForm(slide) {
     const options = templates.map((item) => `<option value="${item.id}" ${slide.template === item.id ? "selected" : ""}>${item.name}</option>`).join("");
     const animOptions = animations.map(([id, label]) => `<option value="${id}" ${slide.animation === id ? "selected" : ""}>${label}</option>`).join("");
-    const fields = ["eyebrow", "heading", "subheading", "body", "date", "time", "location", "cta", "image", "imageLeft", "imageRight", "video", "logo", "background", "accent", "textColor", "panelColor"];
+    const fields = ["eyebrow", "heading", "subheading", "body", "dateList", "date", "time", "location", "cta", "image", "imageLeft", "imageRight", "video", "logo", "background", "accent", "textColor", "panelColor"];
     return `
       <form class="edit-form">
         <div class="form-grid">
@@ -179,7 +191,7 @@
         <div class="form-grid two">
           ${fields.map((key) => `
             <label class="${key === "body" ? "span-two" : ""}">${labelFor(key)}
-              ${key === "body" ? `<textarea data-field="${key}" rows="4">${escapeHtml(field(slide, key))}</textarea>` : `<input data-field="${key}" value="${escapeHtml(field(slide, key))}">`}
+              ${key === "body" || key === "dateList" ? `<textarea data-field="${key}" rows="${key === "dateList" ? "7" : "4"}">${escapeHtml(field(slide, key))}</textarea>` : `<input data-field="${key}" value="${escapeHtml(field(slide, key))}">`}
             </label>
           `).join("")}
         </div>
@@ -202,6 +214,7 @@
     return ({
       imageLeft: "Left split image",
       imageRight: "Right split image",
+      dateList: "Date list, one per line: date | title | details",
       logo: "Slide logo",
       background: "Background colour/image",
       accent: "Accent colour",
