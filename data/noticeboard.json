@@ -78,6 +78,24 @@
       }
     },
     {
+      "id": "grading-dates",
+      "template": "dates",
+      "animation": "stagger",
+      "duration": 22000,
+      "visible": true,
+      "fields": {
+        "eyebrow": "Grading calendar",
+        "heading": "Upcoming grading dates",
+        "subheading": "Please check eligibility before booking",
+        "body": "Speak to your instructor if you are unsure which grading you should attend.",
+        "dateList": "Add date | Junior kyu grading | Time TBC - book at reception\nAdd date | Senior kyu grading | Time TBC - book at reception\nAdd date | Brown belt preparation | Main dojo - licence book required\nAdd date | Dan grade preparation | Invitation only / instructor approval\nAdd date | Make-up grading | Limited spaces available\nAdd date | Certificate collection | Ask reception after class",
+        "date": "",
+        "time": "",
+        "location": "",
+        "cta": "Book early"
+      }
+    },
+    {
       "id": "booking",
       "template": "notice",
       "animation": "zoom-in",
