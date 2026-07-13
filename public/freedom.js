@@ -1,4 +1,17 @@
 (function () {
+  if (!templates.some((item) => item.id === "pt")) {
+    templates.push({
+      id: "pt",
+      name: "PT Feature",
+      category: "Private lessons",
+      description: "Photo starts centre, then slides aside to reveal PT text."
+    });
+  }
+
+  if (!animations.some(([id]) => id === "centre-side")) {
+    animations.push(["centre-side", "Centre image to side"]);
+  }
+
   function cssValue(value = "") {
     return String(value).replace(/[;"<>]/g, "").trim();
   }
@@ -80,6 +93,13 @@
           </div>
           <div class="split-half split-left"></div>
           <div class="split-half split-right"></div>
+        </div>
+      `;
+    } else if (slide.template === "pt") {
+      content = `
+        <div class="pt-reveal">
+          <div class="pt-photo">${mediaTag(image, field(slide, "heading"))}</div>
+          ${copyBlock(slide)}
         </div>
       `;
     } else if (slide.template === "media") {
@@ -179,6 +199,18 @@
   const originalCreateSlideFromTemplate = window.createSlideFromTemplate || createSlideFromTemplate;
   window.createSlideFromTemplate = function createSlideFromTemplate(templateId) {
     const slide = originalCreateSlideFromTemplate(templateId);
+    if (templateId === "pt") {
+      slide.animation = "centre-side";
+      slide.duration = 17000;
+      slide.fields.eyebrow = "Private tuition";
+      slide.fields.heading = "Book a 1-to-1 PT session";
+      slide.fields.subheading = "Focused coaching for faster progress";
+      slide.fields.body = "Work on grading prep, confidence, fitness, kata, kumite, or specific techniques with dedicated instructor time.";
+      slide.fields.cta = "Ask reception to book";
+      slide.fields.image = "/assets/dojo-class.svg";
+      slide.fields.accent = "#e61f2a";
+      slide.fields.panelColor = "rgba(255, 255, 255, 0.96)";
+    }
     slide.fields.imageLeft ||= "";
     slide.fields.imageRight ||= "";
     slide.fields.logo ||= "";
