@@ -1,0 +1,97 @@
+.screen-shell .photo-panel,
+.screen-shell .gallery-photo,
+.screen-shell .video-panel,
+.screen-shell .pt-photo,
+.screen-shell .split-copy,
+.screen-shell .split-half,
+.screen-shell .info-cards article,
+.screen-shell .date-board article {
+  box-shadow: 0 8px 22px rgba(23, 23, 23, 0.08) !important;
+}
+
+.screen-shell .photo-panel::after,
+.screen-shell .gallery-photo::after,
+.screen-shell .video-panel::after,
+.screen-shell .pt-photo::after,
+.screen-shell .split-half::after,
+.screen-shell .info-cards article::after,
+.screen-shell .date-board article::after {
+  display: none !important;
+}
+
+.screen-shell .slide,
+.screen-shell .copy-block,
+.screen-shell .photo-panel,
+.screen-shell .gallery-photo,
+.screen-shell .notice-orb,
+.screen-shell .hero-logo,
+.screen-shell .video-panel,
+.screen-shell .split-half,
+.screen-shell .split-copy,
+.screen-shell .pt-photo,
+.screen-shell .info-cards article,
+.screen-shell .date-board article,
+.screen-shell .cta {
+  backface-visibility: hidden;
+  transform: translateZ(0);
+  will-change: opacity, transform;
+}
+
+.screen-shell .anim-pan-zoom .gallery-photo img,
+.screen-shell .anim-pan-zoom .photo-panel img {
+  animation: none !important;
+}
+
+.screen-shell .anim-fade-up .copy-block,
+.screen-shell .anim-fade-up .photo-panel,
+.screen-shell .anim-fade-up .media-layout,
+.screen-shell .anim-slide-left .photo-panel,
+.screen-shell .anim-slide-left .copy-block,
+.screen-shell .anim-slide-right .copy-block,
+.screen-shell .anim-zoom-in .copy-block,
+.screen-shell .anim-zoom-in .notice-orb,
+.screen-shell .anim-stagger .copy-block > *,
+.screen-shell .anim-stagger .info-cards article,
+.screen-shell .anim-stagger .date-board article,
+.screen-shell .corner-logo,
+.screen-shell .split-copy-logo,
+.screen-shell .copy-block > *,
+.screen-shell .split-copy > *,
+.screen-shell .photo-panel,
+.screen-shell .gallery-photo,
+.screen-shell .video-panel,
+.screen-shell .pt-photo,
+.screen-shell .notice-orb,
+.screen-shell .hero-logo,
+.screen-shell .cta {
+  animation-duration: 520ms !important;
+  animation-iteration-count: 1 !important;
+}
+
+.screen-shell .notice-orb,
+.screen-shell .hero-logo,
+.screen-shell .cta {
+  animation-name: panelSettle !important;
+}
+
+.screen-shell .anim-centre-side .pt-photo {
+  animation-duration: 720ms !important;
+  animation-delay: 220ms !important;
+}
+
+.screen-shell .anim-centre-side .slide-pt .copy-block,
+.screen-shell .anim-centre-side .pt-reveal .copy-block {
+  animation-duration: 520ms !important;
+  animation-delay: 560ms !important;
+}
+
+.screen-shell .anim-split-reveal .split-left,
+.screen-shell .anim-split-reveal .split-right {
+  animation-duration: 780ms !important;
+  animation-delay: 260ms !important;
+}
+
+.screen-shell .anim-split-reveal .split-copy {
+  animation-duration: 520ms !important;
+  animation-delay: 520ms !important;
+}
