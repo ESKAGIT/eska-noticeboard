@@ -196,7 +196,7 @@
           `).join("")}
         </div>
         <div class="upload-row">
-          <label>Upload image/video<input id="mediaUpload" type="file" accept="image/*,video/mp4,video/quicktime"></label>
+          <label>Upload image/video<input id="mediaUpload" type="file" accept="image/*,video/mp4,video/quicktime"><small>For Apple TV, use MP4 video where possible.</small></label>
           <button class="secondary" id="applyToImage" type="button">Use upload as image</button>
           <button class="secondary" id="applyToLeftImage" type="button">Use as left split image</button>
           <button class="secondary" id="applyToRightImage" type="button">Use as right split image</button>
@@ -308,9 +308,9 @@
 
   window.renderAdmin = function renderAdmin() {
     const current = board.slides.find((slide) => slide.id === draftSlideId) || board.slides[0];
-    draftSlideId = current?.id;
+    draftSlideId = current && current.id;
     app.innerHTML = `
-      ${shell("ESKA Noticeboard Admin", `<button class="primary" id="saveBoard">Save Live Screen</button>`)}
+      ${shell("ESKA Noticeboard Admin", `<a class="secondary" href="/export">Export for USB</a><button class="primary" id="saveBoard">Save Live Screen</button>`)}
       <main class="admin-layout">
         <aside class="slide-list">
           <button class="primary wide" id="addSlide">Add Slide</button>
@@ -364,13 +364,13 @@
       slide.fields.accent = "#e61f2a";
       slide.fields.panelColor = "rgba(255, 255, 255, 0.96)";
     }
-    slide.fields.imageLeft ||= "";
-    slide.fields.imageRight ||= "";
-    slide.fields.logo ||= "";
-    slide.fields.background ||= "";
-    slide.fields.accent ||= "";
-    slide.fields.textColor ||= "";
-    slide.fields.panelColor ||= "";
+    slide.fields.imageLeft = slide.fields.imageLeft || "";
+    slide.fields.imageRight = slide.fields.imageRight || "";
+    slide.fields.logo = slide.fields.logo || "";
+    slide.fields.background = slide.fields.background || "";
+    slide.fields.accent = slide.fields.accent || "";
+    slide.fields.textColor = slide.fields.textColor || "";
+    slide.fields.panelColor = slide.fields.panelColor || "";
     return slide;
   };
 
