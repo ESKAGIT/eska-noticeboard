@@ -28,6 +28,45 @@ button { cursor: pointer; }
 
 .screen-shell * { cursor: none; }
 
+.usb-recording-mode {
+  background: #fff;
+}
+
+.usb-recording-mode .slide,
+.usb-recording-mode .copy-block,
+.usb-recording-mode .photo-panel,
+.usb-recording-mode .gallery-photo,
+.usb-recording-mode .notice-orb,
+.usb-recording-mode .hero-logo,
+.usb-recording-mode .video-panel,
+.usb-recording-mode .split-half,
+.usb-recording-mode .split-copy,
+.usb-recording-mode .info-cards article,
+.usb-recording-mode .date-board article,
+.usb-recording-mode .cta {
+  backface-visibility: hidden;
+  transform: translateZ(0);
+  will-change: opacity, transform;
+}
+
+.usb-recording-mode .photo-panel,
+.usb-recording-mode .gallery-photo,
+.usb-recording-mode .video-panel,
+.usb-recording-mode .split-copy,
+.usb-recording-mode .split-half,
+.usb-recording-mode .info-cards article,
+.usb-recording-mode .date-board article {
+  box-shadow: 0 8px 22px rgba(23, 23, 23, 0.08);
+}
+
+.usb-recording-mode .slide {
+  background:
+    var(--slide-bg-image, none),
+    var(--slide-bg, linear-gradient(135deg, #ffffff 0%, #fffaf6 100%));
+  background-size: cover;
+  background-position: center;
+}
+
 .slide {
   position: relative;
   isolation: isolate;
@@ -585,6 +624,30 @@ textarea { resize: vertical; }
   line-height: 1.45;
 }
 
+.export-record-button,
+.export-step-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 64px;
+  margin-top: 18px;
+  padding: 16px 26px;
+  border-radius: 8px;
+  color: #fff;
+  background: var(--red);
+  box-shadow: 0 18px 42px rgba(230, 31, 42, 0.28);
+  font-size: 18px;
+  font-weight: 900;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.export-step-button {
+  width: 100%;
+  margin-top: 12px;
+  text-align: center;
+}
+
 .export-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -673,6 +736,37 @@ textarea { resize: vertical; }
 .anim-split-reveal .split-left { animation: splitLeft 1.35s 500ms cubic-bezier(.2,.8,.2,1) both; }
 .anim-split-reveal .split-right { animation: splitRight 1.35s 500ms cubic-bezier(.2,.8,.2,1) both; }
 .anim-split-reveal .split-copy { animation: revealText 900ms 850ms both; }
+
+.usb-recording-mode .anim-pan-zoom .gallery-photo img,
+.usb-recording-mode .anim-pan-zoom .photo-panel img {
+  animation: none;
+}
+
+.usb-recording-mode .anim-fade-up .copy-block,
+.usb-recording-mode .anim-fade-up .photo-panel,
+.usb-recording-mode .anim-fade-up .media-layout,
+.usb-recording-mode .anim-slide-left .photo-panel,
+.usb-recording-mode .anim-slide-left .copy-block,
+.usb-recording-mode .anim-slide-right .copy-block,
+.usb-recording-mode .anim-zoom-in .copy-block,
+.usb-recording-mode .anim-zoom-in .notice-orb,
+.usb-recording-mode .anim-stagger .copy-block > *,
+.usb-recording-mode .anim-stagger .info-cards article,
+.usb-recording-mode .anim-stagger .date-board article {
+  animation-duration: 520ms;
+  animation-timing-function: ease-out;
+}
+
+.usb-recording-mode .anim-split-reveal .split-left,
+.usb-recording-mode .anim-split-reveal .split-right {
+  animation-duration: 780ms;
+  animation-delay: 260ms;
+}
+
+.usb-recording-mode .anim-split-reveal .split-copy {
+  animation-duration: 520ms;
+  animation-delay: 520ms;
+}
 
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(24px); }
