@@ -31,6 +31,7 @@ let statusTimer = null;
 const uid = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
 const route = () => window.location.pathname;
 const adminPin = () => localStorage.getItem("eskaAdminPin") || "";
+const isUsbExport = () => new URLSearchParams(window.location.search).get("usb-export") === "1";
 
 function escapeHtml(value = "") {
   return String(value)
@@ -221,7 +222,8 @@ function visibleSlides() {
 
 async function screenView() {
   await loadBoard();
-  app.innerHTML = `<main class="screen-shell"><div id="screenStage"></div></main>`;
+  const recordingMode = isUsbExport();
+  app.innerHTML = `<main class="screen-shell${recordingMode ? " usb-recording-mode" : ""}"><div id="screenStage"></div></main>`;
   const stage = document.querySelector("#screenStage");
   let refreshBusy = false;
 
@@ -514,12 +516,13 @@ async function exportView() {
   const { slides, total } = exportStats();
   const recordFor = total + 3000;
   app.innerHTML = `
-    ${shell("Export TV Video for USB", `<a class="primary" href="/screen" target="_blank">Open TV Screen</a>`)}
+    ${shell("Export TV Video for USB", `<a class="primary" href="/screen?usb-export=1" target="_blank">Start Smooth Recording</a>`)}
     <main class="export-page">
       <section class="export-hero">
         <p class="eyebrow">USB memory stick workflow</p>
         <h1>Make the MP4 for the TV</h1>
         <p>This page helps you turn the animated web noticeboard into one video file for the memory stick. The TV plays the video, not the website.</p>
+        <a class="export-record-button" href="/screen?usb-export=1" target="_blank">START SMOOTH USB RECORDING</a>
       </section>
 
       <section class="export-grid">
@@ -531,14 +534,14 @@ async function exportView() {
         </article>
         <article class="export-card">
           <span>2</span>
-          <h2>Open the TV screen</h2>
-          <p>Open the screen view, then press <strong>F11</strong> so it fills your computer screen.</p>
-          <a class="primary" href="/screen?usb-export=1" target="_blank">Open TV Screen</a>
+          <h2>Open recording mode</h2>
+          <p>Use this special mode for USB export. It removes heavy effects so the recording is much smoother.</p>
+          <a class="primary export-step-button" href="/screen?usb-export=1" target="_blank">START SMOOTH USB RECORDING</a>
         </article>
         <article class="export-card">
           <span>3</span>
           <h2>Record as MP4</h2>
-          <p>On Windows press <strong>Windows + Alt + R</strong> to start recording. Press it again after one full loop.</p>
+          <p>Press <strong>F11</strong>, wait 2 seconds, then press <strong>Windows + Alt + R</strong>. Press it again after one full loop.</p>
           <p>The file usually saves in <strong>Videos &gt; Captures</strong>.</p>
         </article>
         <article class="export-card">
