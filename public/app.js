@@ -34,11 +34,11 @@ const adminPin = () => localStorage.getItem("eskaAdminPin") || "";
 
 function escapeHtml(value = "") {
   return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
 async function api(path, options = {}) {
@@ -72,11 +72,39 @@ async function saveBoard() {
 }
 
 function field(slide, name, fallback = "") {
-  return slide?.fields?.[name] || fallback;
+  return slide && slide.fields && slide.fields[name] ? slide.fields[name] : fallback;
 }
 
-function brandHeader() {
-  return `<img class="corner-logo" src="${escapeHtml(board.brand.logo)}" alt="ESKA logo">`;
+function brandHeader(slide) {
+  const logo = field(slide, "logo", board.brand.logo);
+  return `<img class="corner-logo" src="${escapeHtml(logo)}" alt="ESKA logo">`;
+}
+
+function cssValue(value = "") {
+  return String(value).replace(/[;"<>]/g, "").trim();
+}
+
+function imageCss(value = "") {
+  return String(value).replace(/[\\'"<>]/g, "").trim();
+}
+
+function slideStyle(slide) {
+  const styles = [];
+  const background = field(slide, "background");
+  const accent = field(slide, "accent");
+  const textColor = field(slide, "textColor");
+  const panelColor = field(slide, "panelColor");
+
+  if (background) {
+    const clean = cssValue(background);
+    if (/^#|^rgb|^hsl|^linear-gradient|^radial-gradient/i.test(clean)) styles.push(`--slide-bg: ${clean}`);
+    else styles.push(`--slide-bg-image: url('${imageCss(clean)}')`);
+  }
+  if (accent) styles.push(`--slide-accent: ${cssValue(accent)}`);
+  if (textColor) styles.push(`--slide-text: ${cssValue(textColor)}`);
+  if (panelColor) styles.push(`--panel-bg: ${cssValue(panelColor)}`);
+
+  return styles.length ? ` style="${escapeHtml(styles.join("; "))}"` : "";
 }
 
 function meta(slide) {
@@ -99,15 +127,31 @@ function copyBlock(slide) {
 
 function mediaTag(src, alt = "") {
   if (!src) return `<div class="media-placeholder">Add image</div>`;
-  const isVideo = /\.(mp4|mov|webm)$/i.test(src);
-  if (isVideo) return `<video src="${escapeHtml(src)}" autoplay muted loop playsinline></video>`;
-  return `<img src="${escapeHtml(src)}" alt="${escapeHtml(alt)}">`;
+  const isVideo = /\.(mp4|mov)$/i.test(src);
+  if (isVideo) return `<video src="${escapeHtml(src)}" autoplay muted loop playsinline webkit-playsinline preload="metadata"></video>`;
+  return `<img src="${escapeHtml(src)}" alt="${escapeHtml(alt)}" loading="eager" decoding="async">`;
+}
+
+function dateItems(slide) {
+  const list = field(slide, "dateList", "");
+  if (list) {
+    return list
+      .split(/\r?\n/)
+      .map((item) => item.trim())
+      .filter(Boolean)
+      .map((item) => item.split("|").map((part) => part.trim()));
+  }
+  return [field(slide, "date"), field(slide, "time"), field(slide, "location")]
+    .filter(Boolean)
+    .map((item) => item.split("|").map((part) => part.trim()));
 }
 
 function renderSlide(slide, preview = false) {
   const animation = slide.animation || "fade-up";
   const shellClass = `slide slide-${slide.template} anim-${animation}${preview ? " preview-slide" : ""}`;
   const image = field(slide, "image", board.brand.logo);
+  const imageLeft = field(slide, "imageLeft", image);
+  const imageRight = field(slide, "imageRight", field(slide, "image2", image));
   const video = field(slide, "video", "");
 
   let content = "";
@@ -127,13 +171,11 @@ function renderSlide(slide, preview = false) {
       </div>
     `;
   } else if (slide.template === "dates") {
-    const dateItems = [field(slide, "date"), field(slide, "time"), field(slide, "location")]
-      .filter(Boolean)
-      .map((item) => item.split("|").map((part) => part.trim()));
+    const items = dateItems(slide);
     content = `
       ${copyBlock(slide)}
       <div class="date-board">
-        ${dateItems.map(([date, title = "Add title", detail = "Add details"]) => `
+        ${items.map(([date, title = "Add title", detail = "Add details"]) => `
           <article>
             <strong>${escapeHtml(date)}</strong>
             <span>${escapeHtml(title)}</span>
@@ -144,8 +186,11 @@ function renderSlide(slide, preview = false) {
     `;
   } else if (slide.template === "course") {
     content = `
-      <div class="split-course" style="--course-image: url('${escapeHtml(image)}')">
-        <div class="split-copy">${copyBlock(slide)}</div>
+      <div class="split-course" style="--course-left-image: url('${escapeHtml(imageLeft)}'); --course-right-image: url('${escapeHtml(imageRight)}')">
+        <div class="split-copy">
+          <img class="split-copy-logo" src="${escapeHtml(field(slide, "logo", board.brand.logo))}" alt="ESKA">
+          ${copyBlock(slide)}
+        </div>
         <div class="split-half split-left"></div>
         <div class="split-half split-right"></div>
       </div>
@@ -167,17 +212,29 @@ function renderSlide(slide, preview = false) {
     content = copyBlock(slide);
   }
 
-  return `<section class="${shellClass}" data-slide-id="${escapeHtml(slide.id)}">${brandHeader()}${content}</section>`;
+  return `<section class="${shellClass}" data-slide-id="${escapeHtml(slide.id)}"${slideStyle(slide)}>${brandHeader(slide)}${content}</section>`;
 }
 
 function visibleSlides() {
-  return (board?.slides || []).filter((slide) => slide.visible !== false);
+  return ((board && board.slides) || []).filter((slide) => slide.visible !== false);
 }
 
 async function screenView() {
   await loadBoard();
   app.innerHTML = `<main class="screen-shell"><div id="screenStage"></div></main>`;
   const stage = document.querySelector("#screenStage");
+  let refreshBusy = false;
+
+  function startSlideMedia() {
+    document.querySelectorAll("video").forEach((video) => {
+      video.muted = true;
+      video.playsInline = true;
+      video.setAttribute("playsinline", "");
+      video.setAttribute("webkit-playsinline", "");
+      const play = video.play && video.play();
+      if (play && play.catch) play.catch(() => video.setAttribute("data-playback", "blocked"));
+    });
+  }
 
   const draw = () => {
     const slides = visibleSlides();
@@ -188,6 +245,7 @@ async function screenView() {
     if (activeSlide >= slides.length) activeSlide = 0;
     const slide = slides[activeSlide];
     stage.innerHTML = renderSlide(slide);
+    startSlideMedia();
     clearTimeout(screenTimer);
     screenTimer = setTimeout(() => {
       activeSlide = (activeSlide + 1) % slides.length;
@@ -197,11 +255,28 @@ async function screenView() {
 
   draw();
   setInterval(async () => {
-    const previousId = visibleSlides()[activeSlide]?.id;
+    if (refreshBusy) return;
+    refreshBusy = true;
+    const currentSlides = visibleSlides();
+    const previousId = currentSlides[activeSlide] && currentSlides[activeSlide].id;
     await loadBoard().catch(() => null);
     const nextIndex = visibleSlides().findIndex((slide) => slide.id === previousId);
     activeSlide = Math.max(0, nextIndex);
+    refreshBusy = false;
   }, Number(board.settings.refreshSeconds || 12) * 1000);
+
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) {
+      loadBoard().then(draw).catch(() => draw());
+    }
+  });
+
+  window.addEventListener("error", () => {
+    clearTimeout(screenTimer);
+    screenTimer = setTimeout(() => window.location.reload(), 5000);
+  });
+
+  setTimeout(() => window.location.reload(), 6 * 60 * 60 * 1000);
 }
 
 function shell(title, action = "") {
@@ -211,6 +286,7 @@ function shell(title, action = "") {
       <nav>
         <a href="/admin">Admin</a>
         <a href="/templates">Templates</a>
+        <a href="/export">Export USB</a>
         <a href="/screen" target="_blank">TV Screen</a>
       </nav>
       ${action}
@@ -220,9 +296,9 @@ function shell(title, action = "") {
 
 function renderAdmin() {
   const current = board.slides.find((slide) => slide.id === draftSlideId) || board.slides[0];
-  draftSlideId = current?.id;
+  draftSlideId = current && current.id;
   app.innerHTML = `
-    ${shell("ESKA Noticeboard Admin", `<button class="primary" id="saveBoard">Save Live Screen</button>`)}
+    ${shell("ESKA Noticeboard Admin", `<a class="secondary" href="/export">Export for USB</a><button class="primary" id="saveBoard">Save Live Screen</button>`)}
     <main class="admin-layout">
       <aside class="slide-list">
         <button class="primary wide" id="addSlide">Add Slide</button>
@@ -260,7 +336,7 @@ function renderAdmin() {
 function editorForm(slide) {
   const options = templates.map((item) => `<option value="${item.id}" ${slide.template === item.id ? "selected" : ""}>${item.name}</option>`).join("");
   const animOptions = animations.map(([id, label]) => `<option value="${id}" ${slide.animation === id ? "selected" : ""}>${label}</option>`).join("");
-  const fields = ["eyebrow", "heading", "subheading", "body", "date", "time", "location", "cta", "image", "video"];
+  const fields = ["eyebrow", "heading", "subheading", "body", "date", "time", "location", "cta", "image", "imageLeft", "imageRight", "video", "logo", "background", "accent", "textColor", "panelColor"];
   return `
     <form class="edit-form">
       <div class="form-grid">
@@ -277,8 +353,12 @@ function editorForm(slide) {
         `).join("")}
       </div>
       <div class="upload-row">
-        <label>Upload image/video<input id="mediaUpload" type="file" accept="image/*,video/mp4,video/quicktime"></label>
+        <label>Upload image/video<input id="mediaUpload" type="file" accept="image/*,video/mp4,video/quicktime"><small>For Apple TV, use MP4 video where possible.</small></label>
         <button class="secondary" id="applyToImage" type="button">Use upload as image</button>
+        <button class="secondary" id="applyToLeftImage" type="button">Use as left split image</button>
+        <button class="secondary" id="applyToRightImage" type="button">Use as right split image</button>
+        <button class="secondary" id="applyToLogo" type="button">Use as slide logo</button>
+        <button class="secondary" id="applyToBackground" type="button">Use as background</button>
         <button class="secondary" id="applyToVideo" type="button">Use upload as video</button>
         <button class="danger" id="deleteSlide" type="button">Delete slide</button>
       </div>
@@ -297,7 +377,14 @@ function labelFor(key) {
     location: "Location",
     cta: "Call to action",
     image: "Image URL/path",
-    video: "Video URL/path"
+    imageLeft: "Left split image",
+    imageRight: "Right split image",
+    video: "Video URL/path",
+    logo: "Slide logo",
+    background: "Background colour/image",
+    accent: "Accent colour",
+    textColor: "Text colour",
+    panelColor: "Panel colour"
   })[key] || key;
 }
 
@@ -325,6 +412,10 @@ function bindEditor(slide) {
     renderAdmin();
   });
   document.querySelector("#applyToImage").addEventListener("click", () => uploadInto(slide, "image"));
+  document.querySelector("#applyToLeftImage").addEventListener("click", () => uploadInto(slide, "imageLeft"));
+  document.querySelector("#applyToRightImage").addEventListener("click", () => uploadInto(slide, "imageRight"));
+  document.querySelector("#applyToLogo").addEventListener("click", () => uploadInto(slide, "logo"));
+  document.querySelector("#applyToBackground").addEventListener("click", () => uploadInto(slide, "background"));
   document.querySelector("#applyToVideo").addEventListener("click", () => uploadInto(slide, "video"));
 }
 
@@ -368,6 +459,8 @@ function createSlideFromTemplate(templateId) {
       location: template.id === "dates" ? "Sun 2 Aug | Open Training | Ask reception" : "",
       cta: "Add action",
       image: "/assets/eska-logo-exact.svg",
+      imageLeft: "",
+      imageRight: "",
       video: ""
     }
   };
@@ -403,6 +496,73 @@ async function templatesView() {
   });
 }
 
+function formatDuration(ms) {
+  const totalSeconds = Math.max(1, Math.ceil(ms / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
+function exportStats() {
+  const slides = visibleSlides();
+  const total = slides.reduce((sum, slide) => sum + Number(slide.duration || board.settings.defaultDuration || 10000), 0);
+  return { slides, total };
+}
+
+async function exportView() {
+  await loadBoard();
+  const { slides, total } = exportStats();
+  const recordFor = total + 3000;
+  app.innerHTML = `
+    ${shell("Export TV Video for USB", `<a class="primary" href="/screen" target="_blank">Open TV Screen</a>`)}
+    <main class="export-page">
+      <section class="export-hero">
+        <p class="eyebrow">USB memory stick workflow</p>
+        <h1>Make the MP4 for the TV</h1>
+        <p>This page helps you turn the animated web noticeboard into one video file for the memory stick. The TV plays the video, not the website.</p>
+      </section>
+
+      <section class="export-grid">
+        <article class="export-card">
+          <span>1</span>
+          <h2>Check the loop length</h2>
+          <p>${slides.length} visible slides. One full loop is about <strong>${formatDuration(total)}</strong>.</p>
+          <p>Record for at least <strong>${formatDuration(recordFor)}</strong> so the final slide is not cut short.</p>
+        </article>
+        <article class="export-card">
+          <span>2</span>
+          <h2>Open the TV screen</h2>
+          <p>Open the screen view, then press <strong>F11</strong> so it fills your computer screen.</p>
+          <a class="primary" href="/screen?usb-export=1" target="_blank">Open TV Screen</a>
+        </article>
+        <article class="export-card">
+          <span>3</span>
+          <h2>Record as MP4</h2>
+          <p>On Windows press <strong>Windows + Alt + R</strong> to start recording. Press it again after one full loop.</p>
+          <p>The file usually saves in <strong>Videos &gt; Captures</strong>.</p>
+        </article>
+        <article class="export-card">
+          <span>4</span>
+          <h2>Put it on the stick</h2>
+          <p>Rename the recording to <strong>ESKA_NOTICEBOARD.mp4</strong>, copy it to the USB stick, then set the TV to loop/repeat it.</p>
+          <button class="secondary" id="copyFilename" type="button">Copy filename</button>
+        </article>
+      </section>
+
+      <section class="export-warning">
+        <h2>Why this does not save straight to USB</h2>
+        <p>Browsers cannot safely write a finished video directly to a memory stick without asking you where to save it. Also, browser recording normally creates WebM, while most TVs are happiest with MP4. Windows Game Bar gives you the MP4 you need.</p>
+      </section>
+    </main>
+    <div class="status" id="status"></div>
+  `;
+
+  document.querySelector("#copyFilename").addEventListener("click", async () => {
+    await navigator.clipboard.writeText("ESKA_NOTICEBOARD.mp4").catch(() => null);
+    showStatus("Copied filename: ESKA_NOTICEBOARD.mp4");
+  });
+}
+
 function showStatus(message, isError = false) {
   const box = document.querySelector("#status");
   if (!box) return;
@@ -414,7 +574,7 @@ function showStatus(message, isError = false) {
 
 async function adminView() {
   await loadBoard();
-  draftSlideId = board.slides[0]?.id;
+  draftSlideId = board.slides[0] && board.slides[0].id;
   renderAdmin();
 }
 
@@ -422,6 +582,7 @@ async function boot() {
   try {
     if (route() === "/screen" || route() === "/") await screenView();
     else if (route() === "/templates") await templatesView();
+    else if (route() === "/export") await exportView();
     else await adminView();
   } catch (error) {
     app.innerHTML = `<main class="error-page"><h1>Something needs attention</h1><p>${escapeHtml(error.message)}</p></main>`;
