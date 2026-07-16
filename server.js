@@ -81,7 +81,6 @@ function extensionFromType(type = "") {
   if (type.includes("gif")) return ".gif";
   if (type.includes("svg")) return ".svg";
   if (type.includes("quicktime")) return ".mov";
-  if (type.includes("webm")) return ".webm";
   if (type.includes("video")) return ".mp4";
   return ".jpg";
 }
@@ -194,6 +193,10 @@ const server = http.createServer(async (req, res) => {
       const type = String(req.headers["content-type"] || "application/octet-stream");
       const rawName = String(req.headers["x-file-name"] || "media").slice(0, 180);
       const ext = path.extname(rawName) || extensionFromType(type);
+      if (type.includes("webm") || ext.toLowerCase() === ".webm") {
+        sendJson(res, 415, { error: "WebM video is not supported for Apple TV signage. Please upload an MP4 video." });
+        return;
+      }
       const stored = `${Date.now()}-${crypto.randomBytes(4).toString("hex")}-${safeName(path.basename(rawName || "media", ext))}${ext}`;
       const target = path.join(UPLOAD_DIR, stored);
       const size = await streamUpload(req, target);
@@ -206,7 +209,7 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    if (req.method === "GET" && ["/", "/screen", "/admin", "/templates"].includes(url.pathname)) {
+    if (req.method === "GET" && ["/", "/screen", "/admin", "/templates", "/export"].includes(url.pathname)) {
       serveFile(res, PUBLIC_DIR, "index.html");
       return;
     }
