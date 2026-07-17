@@ -1,78 +1,44 @@
 .slide-menu {
   display: block;
-  padding: clamp(34px, 4.2vw, 64px);
+  padding: clamp(28px, 3.6vw, 54px);
 }
 
 .slide-menu .corner-logo {
-  width: clamp(70px, 6.4vw, 104px);
+  width: clamp(64px, 5.8vw, 96px);
 }
 
 .cafe-layout {
   position: relative;
   z-index: 3;
   display: grid;
-  grid-template-columns: minmax(0, 0.88fr) minmax(500px, 1.12fr);
-  grid-template-rows: auto minmax(0, 1fr);
-  gap: clamp(18px, 2.2vw, 34px);
+  grid-template-columns: minmax(760px, 1.38fr) minmax(360px, 0.62fr);
+  gap: clamp(18px, 2.1vw, 34px);
   width: 100%;
   height: 100%;
 }
 
-.cafe-intro,
-.menu-gallery,
-.menu-board {
-  border: 1px solid rgba(234, 223, 218, 0.9);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 16px 48px rgba(23, 23, 23, 0.09);
-}
-
-.cafe-intro {
-  grid-column: 1;
-  grid-row: 1;
-  padding: clamp(22px, 2.4vw, 36px);
-}
-
-.cafe-intro h1 {
-  max-width: 10ch;
-  font-size: clamp(50px, 5.8vw, 92px);
-}
-
-.cafe-intro h2 {
-  margin-top: 12px;
-  max-width: 14ch;
-  font-size: clamp(24px, 2.35vw, 38px);
-}
-
-.cafe-intro .body-copy {
-  margin-top: 14px;
-  max-width: 34ch;
-  font-size: clamp(17px, 1.35vw, 23px);
-}
-
-.cafe-intro .cta {
-  margin-top: 18px;
-  min-height: 46px;
-}
-
 .menu-gallery {
-  grid-column: 1;
-  grid-row: 2;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  padding: 12px;
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  gap: clamp(12px, 1.1vw, 18px);
   min-height: 0;
 }
 
+.menu-photo-card,
+.menu-board {
+  overflow: hidden;
+  border: 1px solid rgba(234, 223, 218, 0.9);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 18px 52px rgba(23, 23, 23, 0.1);
+}
+
 .menu-photo-card {
-  position: relative;
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
-  overflow: hidden;
   min-width: 0;
-  border-radius: 8px;
-  background: #fff7f3;
+  min-height: 0;
 }
 
 .menu-photo {
@@ -94,14 +60,14 @@
   display: grid;
   align-content: center;
   justify-items: center;
-  gap: 8px;
+  gap: 12px;
   width: 100%;
   height: 100%;
-  min-height: 170px;
+  min-height: 260px;
   color: #fff;
   background:
-    linear-gradient(135deg, rgba(230, 31, 42, 0.92), rgba(159, 16, 24, 0.94)),
-    repeating-linear-gradient(45deg, rgba(255,255,255,.15) 0 10px, transparent 10px 20px);
+    linear-gradient(135deg, rgba(230, 31, 42, 0.94), rgba(159, 16, 24, 0.96)),
+    repeating-linear-gradient(45deg, rgba(255,255,255,.14) 0 12px, transparent 12px 24px);
 }
 
 .cafe-photo-placeholder span {
@@ -117,15 +83,14 @@
 }
 
 .cafe-photo-placeholder strong {
-  max-width: 10ch;
+  max-width: 9ch;
   text-align: center;
-  font-size: clamp(24px, 2.3vw, 36px);
-  line-height: 0.95;
+  font-size: clamp(26px, 2.5vw, 42px);
+  line-height: 0.94;
 }
 
 .menu-photo-copy {
-  min-height: 116px;
-  padding: 14px;
+  padding: clamp(10px, 1vw, 15px);
   border-top: 6px solid var(--slide-accent, var(--red));
   background: #fff;
 }
@@ -133,43 +98,77 @@
 .menu-photo-copy strong {
   display: block;
   color: var(--ink);
-  font-size: clamp(22px, 2vw, 32px);
+  font-size: clamp(18px, 1.45vw, 27px);
   line-height: 1;
 }
 
 .menu-photo-copy span {
   display: block;
-  margin-top: 7px;
+  margin-top: 5px;
   color: var(--muted);
-  font-size: clamp(13px, 1vw, 17px);
+  font-size: clamp(11px, 0.84vw, 15px);
   font-weight: 800;
-  line-height: 1.2;
+  line-height: 1.12;
 }
 
 .menu-board {
-  grid-column: 2;
-  grid-row: 1 / span 2;
-  align-self: stretch;
   display: grid;
-  align-content: center;
-  padding: clamp(24px, 2.7vw, 42px);
+  grid-template-rows: auto minmax(0, 1fr);
+  align-content: stretch;
   min-height: 0;
+  padding: clamp(20px, 2vw, 30px);
+}
+
+.cafe-intro {
+  padding-right: clamp(54px, 6vw, 100px);
+}
+
+.cafe-intro .eyebrow {
+  margin-bottom: 10px;
+}
+
+.cafe-intro h1 {
+  max-width: 10ch;
+  font-size: clamp(40px, 4.2vw, 68px);
+}
+
+.cafe-intro h2 {
+  margin-top: 10px;
+  max-width: 14ch;
+  font-size: clamp(19px, 1.7vw, 28px);
+}
+
+.cafe-intro .body-copy {
+  margin-top: 12px;
+  max-width: 32ch;
+  font-size: clamp(14px, 1.04vw, 18px);
+}
+
+.cafe-intro .cta {
+  margin-top: 14px;
+  min-height: 42px;
+  padding: 9px 16px;
 }
 
 .menu-items {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: 1fr;
+  align-content: end;
+  gap: 8px;
+  margin-top: 14px;
+  min-height: 0;
 }
 
 .menu-items article {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
   align-content: center;
-  min-height: clamp(92px, 10vh, 118px);
-  padding: 16px;
+  min-height: clamp(62px, 6.7vh, 82px);
+  padding: 10px 12px;
   border: 1px solid #f0dfd8;
-  border-left: 8px solid var(--slide-accent, var(--red));
+  border-left: 7px solid var(--slide-accent, var(--red));
   border-radius: 8px;
   background: #fffaf7;
 }
@@ -177,67 +176,64 @@
 .menu-items strong {
   display: block;
   color: var(--ink);
-  font-size: clamp(24px, 2.2vw, 38px);
+  font-size: clamp(18px, 1.35vw, 25px);
   line-height: 1;
 }
 
 .menu-items small {
   display: block;
-  margin-top: 7px;
+  margin-top: 5px;
   color: var(--muted);
-  font-size: clamp(13px, 1vw, 17px);
+  font-size: clamp(11px, 0.78vw, 14px);
   font-weight: 800;
-  line-height: 1.15;
+  line-height: 1.12;
 }
 
 .menu-items span {
-  justify-self: start;
-  margin-top: 10px;
+  justify-self: end;
+  margin-top: 0;
   color: #fff;
   background: var(--slide-accent, var(--red));
   border-radius: 8px;
-  padding: 7px 11px;
-  font-size: clamp(20px, 1.65vw, 28px);
+  padding: 6px 10px;
+  font-size: clamp(15px, 1.08vw, 21px);
   font-weight: 900;
   line-height: 1;
 }
 
-.anim-stagger .cafe-intro,
 .anim-stagger .menu-photo-card,
+.anim-stagger .cafe-intro,
 .anim-stagger .menu-items article {
   animation: fadeUp 560ms both;
 }
 
-.anim-stagger .cafe-intro { animation-delay: 90ms; }
-.anim-stagger .menu-photo-card:nth-child(1) { animation-delay: 210ms; }
-.anim-stagger .menu-photo-card:nth-child(2) { animation-delay: 330ms; }
-.anim-stagger .menu-photo-card:nth-child(3) { animation-delay: 450ms; }
-.anim-stagger .menu-items article:nth-child(1) { animation-delay: 260ms; }
-.anim-stagger .menu-items article:nth-child(2) { animation-delay: 340ms; }
-.anim-stagger .menu-items article:nth-child(3) { animation-delay: 420ms; }
-.anim-stagger .menu-items article:nth-child(4) { animation-delay: 500ms; }
-.anim-stagger .menu-items article:nth-child(5) { animation-delay: 580ms; }
-.anim-stagger .menu-items article:nth-child(6) { animation-delay: 660ms; }
+.anim-stagger .menu-photo-card:nth-child(1) { animation-delay: 120ms; }
+.anim-stagger .menu-photo-card:nth-child(2) { animation-delay: 240ms; }
+.anim-stagger .menu-photo-card:nth-child(3) { animation-delay: 360ms; }
+.anim-stagger .menu-photo-card:nth-child(4) { animation-delay: 480ms; }
+.anim-stagger .menu-photo-card:nth-child(5) { animation-delay: 600ms; }
+.anim-stagger .menu-photo-card:nth-child(6) { animation-delay: 720ms; }
+.anim-stagger .cafe-intro { animation-delay: 180ms; }
+.anim-stagger .menu-items article:nth-child(1) { animation-delay: 320ms; }
+.anim-stagger .menu-items article:nth-child(2) { animation-delay: 390ms; }
+.anim-stagger .menu-items article:nth-child(3) { animation-delay: 460ms; }
+.anim-stagger .menu-items article:nth-child(4) { animation-delay: 530ms; }
+.anim-stagger .menu-items article:nth-child(5) { animation-delay: 600ms; }
+.anim-stagger .menu-items article:nth-child(6) { animation-delay: 670ms; }
 
 @media (max-width: 900px) {
   .slide-menu {
     overflow: auto;
   }
 
-  .cafe-layout {
+  .cafe-layout,
+  .menu-gallery,
+  .menu-items {
     grid-template-columns: 1fr;
     height: auto;
   }
 
-  .menu-board,
-  .menu-gallery,
-  .cafe-intro {
-    grid-column: auto;
+  .menu-photo-card:nth-child(1) {
     grid-row: auto;
-  }
-
-  .menu-gallery,
-  .menu-items {
-    grid-template-columns: 1fr;
   }
 }
