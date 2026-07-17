@@ -1,0 +1,42 @@
+.slide .copy-block {
+  max-width: var(--text-width, 780px);
+  left: var(--text-x, 0px);
+  top: var(--text-y, 0px);
+}
+
+.slide .copy-block h1 {
+  font-size: var(--heading-size, clamp(48px, 6.2vw, 104px));
+}
+
+.slide .copy-block h2 {
+  font-size: var(--subheading-size, clamp(28px, 3vw, 52px));
+}
+
+.slide .copy-block .body-copy {
+  font-size: var(--body-size, clamp(21px, 1.85vw, 32px));
+}
+
+.slide-menu .cafe-intro {
+  position: relative;
+  max-width: var(--text-width, none);
+  left: var(--text-x, 0px);
+  top: var(--text-y, 0px);
+}
+
+.slide-menu .cafe-intro h1 {
+  font-size: var(--heading-size, clamp(40px, 4.2vw, 68px));
+}
+
+.slide-menu .cafe-intro h2 {
+  font-size: var(--subheading-size, clamp(19px, 1.7vw, 28px));
+}
+
+.slide-menu .cafe-intro .body-copy {
+  font-size: var(--body-size, clamp(14px, 1.04vw, 18px));
+}
+
+.text-controls-grid {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
