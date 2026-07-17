@@ -20,48 +20,14 @@
         "eyebrow": "Welcome to the dojo",
         "heading": "Eastern Shotokan Karate Association",
         "subheading": "Discipline. Respect. Confidence.",
-        "body": "Check this screen for today's reminders, events, courses, and student achievements.",
+        "body": "Check this screen for reminders, events, courses, and student notices.",
         "cta": "Train hard. Be kind. Keep improving.",
-        "image": "/assets/eska-logo-exact.svg"
+        "image": "/assets/eska-logo-exact.svg",
+        "logo": "/assets/eska-logo-exact.svg"
       }
     },
     {
-      "id": "today",
-      "template": "cards",
-      "animation": "stagger",
-      "duration": 15000,
-      "visible": true,
-      "fields": {
-        "eyebrow": "Today at the dojo",
-        "heading": "Please arrive ready to train",
-        "subheading": "Quick reminders for students and parents",
-        "body": "Bring water, your licence book, and the correct uniform. Speak to reception if you need help.",
-        "date": "This week",
-        "time": "Before class",
-        "location": "Reception",
-        "cta": "Ask if you are unsure"
-      }
-    },
-    {
-      "id": "events",
-      "template": "image-right",
-      "animation": "slide-left",
-      "duration": 16000,
-      "visible": true,
-      "fields": {
-        "eyebrow": "Upcoming events",
-        "heading": "Seminars, gradings and special training",
-        "subheading": "Keep an eye on dates",
-        "body": "New event details can be added here as soon as they are confirmed.",
-        "date": "Next dates coming soon",
-        "time": "Check at reception",
-        "location": "All ESKA dojos",
-        "cta": "Book early",
-        "image": "/assets/students-group.svg"
-      }
-    },
-    {
-      "id": "important-dates",
+      "id": "diary-dates",
       "template": "dates",
       "animation": "stagger",
       "duration": 18000,
@@ -69,30 +35,33 @@
       "fields": {
         "eyebrow": "Important dates",
         "heading": "Dates for your diary",
-        "subheading": "Add upcoming events, courses, gradings and closures here",
-        "body": "Keep checking this screen for confirmed dates and booking reminders.",
-        "date": "Sat 18 Jul | Summer Seminar | Main Dojo",
-        "time": "Mon 27 Jul | Grading Week | During normal classes",
-        "location": "Sun 2 Aug | Open Training | Ask reception",
-        "cta": "Speak to reception to book"
+        "subheading": "Events, gradings, courses and closures",
+        "body": "Add confirmed dates here so students and families know what is coming up.",
+        "dateList": "Add date | Event name | Time and place\nAdd date | Course booking | Ask reception\nAdd date | Holiday closure | Classes resume after break\nAdd date | Special training | Details coming soon",
+        "date": "",
+        "time": "",
+        "location": "",
+        "cta": "Ask reception for details",
+        "logo": "/assets/eska-logo-exact.svg"
       }
     },
     {
-      "id": "grading-dates",
+      "id": "september-grading-dates",
       "template": "dates",
       "animation": "stagger",
       "duration": 22000,
       "visible": true,
       "fields": {
         "eyebrow": "Grading calendar",
-        "heading": "Upcoming grading dates",
+        "heading": "September Grading Dates",
         "subheading": "Please check eligibility before booking",
         "body": "Speak to your instructor if you are unsure which grading you should attend.",
-        "dateList": "Add date | Junior kyu grading | Time TBC - book at reception\nAdd date | Senior kyu grading | Time TBC - book at reception\nAdd date | Brown belt preparation | Main dojo - licence book required\nAdd date | Dan grade preparation | Invitation only / instructor approval\nAdd date | Make-up grading | Limited spaces available\nAdd date | Certificate collection | Ask reception after class",
+        "dateList": "Add date | Junior kyu grading | Time TBC - book at reception\nAdd date | Senior kyu grading | Time TBC - book at reception\nAdd date | Brown belt preparation | Main dojo - licence book required\nAdd date | Dan grade preparation | Invitation only / instructor approval\nAdd date | Make-up grading | Limited spaces available",
         "date": "",
         "time": "",
         "location": "",
-        "cta": "Book early"
+        "cta": "Book early",
+        "logo": "/assets/eska-logo-exact.svg"
       }
     },
     {
@@ -103,10 +72,11 @@
       "visible": true,
       "fields": {
         "eyebrow": "Class reminder",
-        "heading": "Don't forget to book your classes",
+        "heading": "Remember to book your classes",
         "subheading": "Help us keep sessions smooth and well organised",
         "body": "Please book before arriving so instructors can plan the class properly.",
-        "cta": "Book your next class"
+        "cta": "Book your next class",
+        "logo": "/assets/eska-logo-exact.svg"
       }
     },
     {
@@ -129,17 +99,17 @@
       }
     },
     {
-      "id": "course",
+      "id": "tskuk-presents",
       "template": "course",
       "animation": "split-reveal",
       "duration": 20000,
       "visible": true,
       "fields": {
         "eyebrow": "Karate courses",
-        "heading": "ESKA Karate Courses",
-        "subheading": "Start or continue your karate journey",
-        "body": "Build confidence, technique, fitness, and focus with structured coaching.",
-        "cta": "View courses and book",
+        "heading": "TSKUK Presents",
+        "subheading": "Special training course",
+        "body": "Add the course details, instructor information, booking deadline, and venue here.",
+        "cta": "Book your place",
         "image": "/assets/instructors.svg",
         "imageLeft": "/assets/instructors.svg",
         "imageRight": "/assets/dojo-class.svg",
@@ -150,35 +120,63 @@
       }
     },
     {
-      "id": "media-course",
-      "template": "media",
+      "id": "sensei-iain-abernathy",
+      "template": "image-right",
       "animation": "fade-up",
       "duration": 16000,
       "visible": true,
       "fields": {
-        "eyebrow": "Course preview",
-        "heading": "Photo and video space",
-        "subheading": "Use this for instructor clips or course highlights",
-        "body": "Upload a picture and add a video link or uploaded video file.",
-        "cta": "Add video",
-        "image": "/assets/dojo-class.svg",
-        "video": ""
+        "eyebrow": "Instructor feature",
+        "heading": "Sensei Iain Abernathy",
+        "subheading": "Course details coming soon",
+        "body": "Use this slide for instructor photos, seminar information, booking details, and key reminders.",
+        "date": "Add date",
+        "time": "Add time",
+        "location": "Add location",
+        "cta": "Ask reception",
+        "image": "/assets/training.svg",
+        "logo": "/assets/eska-logo-exact.svg"
       }
     },
     {
-      "id": "competition",
-      "template": "gallery",
-      "animation": "pan-zoom",
+      "id": "eska-beach-party",
+      "template": "pt",
+      "animation": "fade-up",
       "duration": 12000,
       "visible": true,
       "fields": {
-        "eyebrow": "Competition team",
-        "heading": "Well done to everyone who competed",
-        "subheading": "Proud of every student",
-        "body": "Great effort, attitude, and spirit from the ESKA team.",
-        "cta": "Keep training",
-        "image": "/assets/training.svg"
+        "eyebrow": "ESKA event",
+        "heading": "ESKA Beach Party",
+        "subheading": "16th August 2026",
+        "body": "Sea Palling Beach NR12 OUL",
+        "cta": "1:30PM",
+        "image": "/assets/students-group.svg",
+        "logo": "/assets/eska-logo-exact.svg",
+        "background": "linear-gradient(135deg, #ffffff 0%, #fff7f3 100%)",
+        "accent": "#e61f2a",
+        "panelColor": "rgba(255, 255, 255, 0.96)"
+      }
+    },
+    {
+      "id": "cafe-menu",
+      "template": "menu",
+      "animation": "stagger",
+      "duration": 17000,
+      "visible": true,
+      "fields": {
+        "eyebrow": "Dojo cafe",
+        "heading": "Cafe Menu",
+        "subheading": "Refreshments for students and families",
+        "body": "Grab a drink or snack before class, after training, or while you wait.",
+        "menuItems": "Tea | GBP 1.50 | Freshly brewed cup\nCoffee | GBP 2.00 | Americano or white coffee\nHot chocolate | GBP 2.20 | Warm and sweet\nWater | GBP 1.00 | Still bottled water\nSnack bar | GBP 1.20 | Quick pre-class snack",
+        "cta": "Ask at reception",
+        "image": "/assets/dojo-class.svg",
+        "logo": "/assets/eska-logo-exact.svg",
+        "background": "linear-gradient(135deg, #ffffff 0%, #fff7f3 100%)",
+        "accent": "#e61f2a",
+        "panelColor": "rgba(255, 255, 255, 0.96)"
       }
     }
-  ]
+  ],
+  "updatedAt": "2026-07-17T11:22:57.480Z"
 }
