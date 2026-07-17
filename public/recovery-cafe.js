@@ -73,33 +73,148 @@
       [imageLeft, (photoNotes[1] && photoNotes[1][0]) || "Quick snacks", (photoNotes[1] && photoNotes[1][1]) || "Easy grab-and-go choices before or after class."],
       [imageRight, (photoNotes[2] && photoNotes[2][0]) || "Family friendly", (photoNotes[2] && photoNotes[2][1]) || "Refreshments for students, parents, and visitors."]
     ];
+    const cafeMedia = (src, title, index) => {
+      const value = String(src || "");
+      const isDefaultArt = !value || /\/assets\/(dojo-class|students-group|training|instructors)\.svg$/i.test(value);
+      if (!isDefaultArt) return mediaTag(value, title);
+      return `
+        <div class="cafe-photo-placeholder">
+          <span>Photo ${index + 1}</span>
+          <strong>Add cafe image</strong>
+        </div>
+      `;
+    };
     const content = `
-      <div class="menu-gallery">
-        ${photos.map(([src, title, detail], index) => `
-          <article class="menu-photo-card">
-            <div class="menu-photo">${mediaTag(src, title)}</div>
-            <div class="menu-photo-copy">
-              <strong>${escapeHtml(title)}</strong>
-              <span>${escapeHtml(detail)}</span>
-            </div>
-          </article>
-        `).join("")}
-      </div>
-      <div class="menu-board">
-        ${copyBlock(slide)}
-        <div class="menu-items">
-          ${items.map(([name = "Menu item", price = "GBP 0.00", detail = "Description"]) => `
-            <article>
-              <div><strong>${escapeHtml(name)}</strong><small>${escapeHtml(detail)}</small></div>
-              <span>${escapeHtml(price)}</span>
+      <div class="cafe-layout">
+        <div class="cafe-intro">
+          <p class="eyebrow">${escapeHtml(field(slide, "eyebrow", "Dojo cafe"))}</p>
+          <h1>${escapeHtml(field(slide, "heading", "Cafe Menu"))}</h1>
+          <h2>${escapeHtml(field(slide, "subheading", "Refreshments for students and families"))}</h2>
+          <p class="body-copy">${escapeHtml(field(slide, "body", ""))}</p>
+          ${field(slide, "cta") ? `<div class="cta">${escapeHtml(field(slide, "cta"))}</div>` : ""}
+        </div>
+        <div class="menu-gallery">
+          ${photos.map(([src, title, detail], index) => `
+            <article class="menu-photo-card">
+              <div class="menu-photo">${cafeMedia(src, title, index)}</div>
+              <div class="menu-photo-copy">
+                <strong>${escapeHtml(title)}</strong>
+                <span>${escapeHtml(detail)}</span>
+              </div>
             </article>
           `).join("")}
+        </div>
+        <div class="menu-board">
+          <div class="menu-items">
+            ${items.map(([name = "Menu item", price = "GBP 0.00", detail = "Description"]) => `
+              <article>
+                <div><strong>${escapeHtml(name)}</strong><small>${escapeHtml(detail)}</small></div>
+                <span>${escapeHtml(price)}</span>
+              </article>
+            `).join("")}
+          </div>
         </div>
       </div>
     `;
     return `<section class="${shellClass}" data-slide-id="${escapeHtml(slide.id)}"${slideStyle(slide)}>${brandHeader(slide)}${content}</section>`;
   };
   renderSlide = window.renderSlide;
+
+  const baseScreenView = screenView;
+  window.screenView = async function screenViewWithCafeDefaults() {
+    await loadBoard();
+    const cafe = (board.slides || []).find((slide) => slide.template === "menu");
+    if (cafe && cafe.fields) {
+      cafe.fields.photoNotes = cafe.fields.photoNotes || "Fresh drinks | Tea, coffee and hot chocolate for the training break\nQuick snacks | Simple choices for before or after class\nFamily friendly | Refreshments for parents, students and visitors";
+      cafe.fields.imageLeft = cafe.fields.imageLeft || "/assets/students-group.svg";
+      cafe.fields.imageRight = cafe.fields.imageRight || "/assets/training.svg";
+    }
+    activeSlide = 0;
+    const recordingMode = isUsbExport();
+    app.innerHTML = `<main class="screen-shell${recordingMode ? " usb-recording-mode" : ""}"><div id="screenStage"></div></main>`;
+    const stage = document.querySelector("#screenStage");
+    let refreshBusy = false;
+
+    function startSlideMedia() {
+      document.querySelectorAll("video").forEach((video) => {
+        video.muted = true;
+        video.playsInline = true;
+        video.setAttribute("playsinline", "");
+        video.setAttribute("webkit-playsinline", "");
+        const play = video.play && video.play();
+        if (play && play.catch) play.catch(() => video.setAttribute("data-playback", "blocked"));
+      });
+    }
+
+    const draw = () => {
+      const slides = visibleSlides();
+      if (!slides.length) {
+        stage.innerHTML = `<section class="slide"><h1>No visible slides</h1></section>`;
+        return;
+      }
+      if (activeSlide >= slides.length) activeSlide = 0;
+      const slide = slides[activeSlide];
+      stage.innerHTML = renderSlide(slide);
+      startSlideMedia();
+      clearTimeout(screenTimer);
+      screenTimer = setTimeout(() => {
+        activeSlide = (activeSlide + 1) % slides.length;
+        draw();
+      }, Number(slide.duration || board.settings.defaultDuration || 10000));
+    };
+
+    draw();
+    setInterval(async () => {
+      if (refreshBusy) return;
+      refreshBusy = true;
+      const currentSlides = visibleSlides();
+      const previousId = currentSlides[activeSlide] && currentSlides[activeSlide].id;
+      await loadBoard().catch(() => null);
+      const nextIndex = visibleSlides().findIndex((slide) => slide.id === previousId);
+      activeSlide = Math.max(0, nextIndex);
+      refreshBusy = false;
+    }, Number(board.settings.refreshSeconds || 12) * 1000);
+
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) {
+        loadBoard().then(draw).catch(() => draw());
+      }
+    });
+
+    window.addEventListener("error", () => {
+      clearTimeout(screenTimer);
+      screenTimer = setTimeout(() => window.location.reload(), 5000);
+    });
+
+    setTimeout(() => window.location.reload(), 6 * 60 * 60 * 1000);
+  };
+  screenView = window.screenView;
+
+  const baseAdminView = adminView;
+  window.adminView = async function adminViewWithCafeDefaults() {
+    await loadBoard();
+    const cafe = (board.slides || []).find((slide) => slide.template === "menu");
+    if (cafe && cafe.fields) {
+      cafe.fields.photoNotes = cafe.fields.photoNotes || "Fresh drinks | Tea, coffee and hot chocolate for the training break\nQuick snacks | Simple choices for before or after class\nFamily friendly | Refreshments for parents, students and visitors";
+      cafe.fields.imageLeft = cafe.fields.imageLeft || "/assets/students-group.svg";
+      cafe.fields.imageRight = cafe.fields.imageRight || "/assets/training.svg";
+    }
+    draftSlideId = board.slides[0] && board.slides[0].id;
+    renderAdmin();
+  };
+  adminView = window.adminView;
+
+  const baseBoot = boot;
+  window.boot = async function bootWithCafeOverrides() {
+    try {
+      if (route() === "/screen" || route() === "/") await screenView();
+      else if (route() === "/templates") await templatesView();
+      else if (route() === "/export") await exportView();
+      else await adminView();
+    } catch (error) {
+      app.innerHTML = `<main class="error-page"><h1>Something needs attention</h1><p>${escapeHtml(error.message)}</p></main>`;
+    }
+  };
 
   const baseLabelFor = labelFor;
   window.labelFor = function labelForWithCafe(key) {
@@ -195,4 +310,12 @@
     });
   };
   renderAdmin = window.renderAdmin;
+
+  /*
+    The original app has already booted before this extension loads. Re-run the active
+    view so the cafe renderer and defaults are used immediately after cache refresh.
+  */
+  if (route() === "/screen" || route() === "/" || route() === "/admin") {
+    window.boot().catch(() => null);
+  }
 })();
