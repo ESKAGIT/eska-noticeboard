@@ -20,6 +20,19 @@
     } catch (_) {}
   }
 
+  const nativeFetch = window.fetch.bind(window);
+  window.fetch = async function fetchWithNoticeboardBackup(input, options = {}) {
+    const response = await nativeFetch(input, options);
+    try {
+      const url = typeof input === "string" ? input : input && input.url;
+      const method = String(options.method || (input && input.method) || "GET").toUpperCase();
+      if (response.ok && method === "PUT" && String(url || "").includes("/api/noticeboard")) {
+        setTimeout(backupToBrowser, 0);
+      }
+    } catch (_) {}
+    return response;
+  };
+
   async function restoreFromBrowserBackup() {
     const raw = localStorage.getItem("eskaNoticeboardBackup");
     if (!raw) return showStatus("No browser backup found on this computer.", true);
