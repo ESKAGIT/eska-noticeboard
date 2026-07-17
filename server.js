@@ -48,6 +48,15 @@ function sendJson(res, status, data) {
   send(res, status, JSON.stringify(data), "application/json; charset=utf-8");
 }
 
+function sendDownload(res, filename, body) {
+  res.writeHead(200, {
+    "content-type": "application/json; charset=utf-8",
+    "content-disposition": `attachment; filename="${filename}"`,
+    "cache-control": "no-store"
+  });
+  res.end(body);
+}
+
 function readBody(req) {
   return new Promise((resolve, reject) => {
     let total = 0;
@@ -150,6 +159,33 @@ const server = http.createServer(async (req, res) => {
 
     if (req.method === "GET" && url.pathname === "/api/noticeboard") {
       send(res, 200, fs.readFileSync(DATA_FILE, "utf8"));
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/backup") {
+      if (!isAuthorized(req)) {
+        sendJson(res, 401, { error: "Admin PIN required." });
+        return;
+      }
+      const stamp = new Date().toISOString().slice(0, 10);
+      sendDownload(res, `eska-noticeboard-backup-${stamp}.json`, fs.readFileSync(DATA_FILE, "utf8"));
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/restore") {
+      if (!isAuthorized(req)) {
+        sendJson(res, 401, { error: "Admin PIN required." });
+        return;
+      }
+      const body = await readBody(req);
+      const parsed = JSON.parse(body);
+      if (!parsed || !Array.isArray(parsed.slides) || !parsed.brand || !parsed.settings) {
+        sendJson(res, 400, { error: "That backup file does not look like an ESKA noticeboard backup." });
+        return;
+      }
+      parsed.updatedAt = new Date().toISOString();
+      fs.writeFileSync(DATA_FILE, JSON.stringify(parsed, null, 2));
+      sendJson(res, 200, { ok: true, updatedAt: parsed.updatedAt });
       return;
     }
 
