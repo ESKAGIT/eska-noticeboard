@@ -68,10 +68,16 @@
       .map((item) => item.trim())
       .filter(Boolean)
       .map((item) => item.split("|").map((part) => part.trim()));
+    const image4 = field(slide, "image4", "/assets/dojo-class.svg");
+    const image5 = field(slide, "image5", "/assets/students-group.svg");
+    const image6 = field(slide, "image6", "/assets/training.svg");
     const photos = [
-      [image, (photoNotes[0] && photoNotes[0][0]) || "Fresh drinks", (photoNotes[0] && photoNotes[0][1]) || "Hot and cold options available from the cafe."],
-      [imageLeft, (photoNotes[1] && photoNotes[1][0]) || "Quick snacks", (photoNotes[1] && photoNotes[1][1]) || "Easy grab-and-go choices before or after class."],
-      [imageRight, (photoNotes[2] && photoNotes[2][0]) || "Family friendly", (photoNotes[2] && photoNotes[2][1]) || "Refreshments for students, parents, and visitors."]
+      [image, (photoNotes[0] && photoNotes[0][0]) || "Fresh drinks", (photoNotes[0] && photoNotes[0][1]) || "Tea, coffee and hot chocolate for the training break."],
+      [imageLeft, (photoNotes[1] && photoNotes[1][0]) || "Quick snacks", (photoNotes[1] && photoNotes[1][1]) || "Simple choices before or after class."],
+      [imageRight, (photoNotes[2] && photoNotes[2][0]) || "Family friendly", (photoNotes[2] && photoNotes[2][1]) || "Refreshments for parents, students and visitors."],
+      [image4, (photoNotes[3] && photoNotes[3][0]) || "Cold drinks", (photoNotes[3] && photoNotes[3][1]) || "Easy refreshments while you wait."],
+      [image5, (photoNotes[4] && photoNotes[4][0]) || "After class", (photoNotes[4] && photoNotes[4][1]) || "Grab something before heading home."],
+      [image6, (photoNotes[5] && photoNotes[5][0]) || "Cafe favourites", (photoNotes[5] && photoNotes[5][1]) || "Ask at reception for today's options."]
     ];
     const cafeMedia = (src, title, index) => {
       const value = String(src || "");
@@ -86,13 +92,6 @@
     };
     const content = `
       <div class="cafe-layout">
-        <div class="cafe-intro">
-          <p class="eyebrow">${escapeHtml(field(slide, "eyebrow", "Dojo cafe"))}</p>
-          <h1>${escapeHtml(field(slide, "heading", "Cafe Menu"))}</h1>
-          <h2>${escapeHtml(field(slide, "subheading", "Refreshments for students and families"))}</h2>
-          <p class="body-copy">${escapeHtml(field(slide, "body", ""))}</p>
-          ${field(slide, "cta") ? `<div class="cta">${escapeHtml(field(slide, "cta"))}</div>` : ""}
-        </div>
         <div class="menu-gallery">
           ${photos.map(([src, title, detail], index) => `
             <article class="menu-photo-card">
@@ -105,6 +104,13 @@
           `).join("")}
         </div>
         <div class="menu-board">
+          <div class="cafe-intro">
+            <p class="eyebrow">${escapeHtml(field(slide, "eyebrow", "Dojo cafe"))}</p>
+            <h1>${escapeHtml(field(slide, "heading", "Cafe Menu"))}</h1>
+            <h2>${escapeHtml(field(slide, "subheading", "Refreshments for students and families"))}</h2>
+            <p class="body-copy">${escapeHtml(field(slide, "body", ""))}</p>
+            ${field(slide, "cta") ? `<div class="cta">${escapeHtml(field(slide, "cta"))}</div>` : ""}
+          </div>
           <div class="menu-items">
             ${items.map(([name = "Menu item", price = "GBP 0.00", detail = "Description"]) => `
               <article>
@@ -125,9 +131,12 @@
     await loadBoard();
     const cafe = (board.slides || []).find((slide) => slide.template === "menu");
     if (cafe && cafe.fields) {
-      cafe.fields.photoNotes = cafe.fields.photoNotes || "Fresh drinks | Tea, coffee and hot chocolate for the training break\nQuick snacks | Simple choices for before or after class\nFamily friendly | Refreshments for parents, students and visitors";
+      cafe.fields.photoNotes = cafe.fields.photoNotes || "Fresh drinks | Tea, coffee and hot chocolate for the training break\nQuick snacks | Simple choices before or after class\nFamily friendly | Refreshments for parents, students and visitors\nCold drinks | Easy refreshments while you wait\nAfter class | Grab something before heading home\nCafe favourites | Ask at reception for today's options";
       cafe.fields.imageLeft = cafe.fields.imageLeft || "/assets/students-group.svg";
       cafe.fields.imageRight = cafe.fields.imageRight || "/assets/training.svg";
+      cafe.fields.image4 = cafe.fields.image4 || "/assets/dojo-class.svg";
+      cafe.fields.image5 = cafe.fields.image5 || "/assets/students-group.svg";
+      cafe.fields.image6 = cafe.fields.image6 || "/assets/training.svg";
     }
     activeSlide = 0;
     const recordingMode = isUsbExport();
@@ -195,9 +204,12 @@
     await loadBoard();
     const cafe = (board.slides || []).find((slide) => slide.template === "menu");
     if (cafe && cafe.fields) {
-      cafe.fields.photoNotes = cafe.fields.photoNotes || "Fresh drinks | Tea, coffee and hot chocolate for the training break\nQuick snacks | Simple choices for before or after class\nFamily friendly | Refreshments for parents, students and visitors";
+      cafe.fields.photoNotes = cafe.fields.photoNotes || "Fresh drinks | Tea, coffee and hot chocolate for the training break\nQuick snacks | Simple choices before or after class\nFamily friendly | Refreshments for parents, students and visitors\nCold drinks | Easy refreshments while you wait\nAfter class | Grab something before heading home\nCafe favourites | Ask at reception for today's options";
       cafe.fields.imageLeft = cafe.fields.imageLeft || "/assets/students-group.svg";
       cafe.fields.imageRight = cafe.fields.imageRight || "/assets/training.svg";
+      cafe.fields.image4 = cafe.fields.image4 || "/assets/dojo-class.svg";
+      cafe.fields.image5 = cafe.fields.image5 || "/assets/students-group.svg";
+      cafe.fields.image6 = cafe.fields.image6 || "/assets/training.svg";
     }
     draftSlideId = board.slides[0] && board.slides[0].id;
     renderAdmin();
@@ -220,6 +232,12 @@
   window.labelFor = function labelForWithCafe(key) {
     if (key === "menuItems") return "Cafe menu, one per line: item | price | description";
     if (key === "photoNotes") return "Photo writing, one per line: heading | short description";
+    if (key === "image") return "Cafe photo 1";
+    if (key === "imageLeft") return "Cafe photo 2";
+    if (key === "imageRight") return "Cafe photo 3";
+    if (key === "image4") return "Cafe photo 4";
+    if (key === "image5") return "Cafe photo 5";
+    if (key === "image6") return "Cafe photo 6";
     return baseLabelFor(key);
   };
   labelFor = window.labelFor;
@@ -229,7 +247,7 @@
     if (!slide || slide.template !== "menu") return baseEditorForm(slide);
     const options = templates.map((item) => `<option value="${item.id}" ${slide.template === item.id ? "selected" : ""}>${item.name}</option>`).join("");
     const animOptions = animations.map(([id, label]) => `<option value="${id}" ${slide.animation === id ? "selected" : ""}>${label}</option>`).join("");
-    const fields = ["eyebrow", "heading", "subheading", "body", "photoNotes", "menuItems", "cta", "image", "imageLeft", "imageRight", "logo", "background", "accent", "textColor", "panelColor"];
+    const fields = ["eyebrow", "heading", "subheading", "body", "photoNotes", "menuItems", "cta", "image", "imageLeft", "imageRight", "image4", "image5", "image6", "logo", "background", "accent", "textColor", "panelColor"];
     return `
       <form class="edit-form">
         <div class="form-grid">
@@ -250,6 +268,9 @@
           <button class="secondary" id="applyToImage" type="button">Use as photo 1</button>
           <button class="secondary" id="applyToLeftImage" type="button">Use as photo 2</button>
           <button class="secondary" id="applyToRightImage" type="button">Use as photo 3</button>
+          <button class="secondary" id="applyToImage4" type="button">Use as photo 4</button>
+          <button class="secondary" id="applyToImage5" type="button">Use as photo 5</button>
+          <button class="secondary" id="applyToImage6" type="button">Use as photo 6</button>
           <button class="secondary" id="applyToLogo" type="button">Use as slide logo</button>
           <button class="secondary" id="applyToBackground" type="button">Use as background</button>
           <button class="secondary" id="applyToVideo" type="button">Use upload as video</button>
@@ -274,12 +295,15 @@
         heading: "Cafe Menu",
         subheading: "Refreshments for students and families",
         body: "Grab a drink or snack before class, after training, or while you wait.",
-        photoNotes: "Fresh drinks | Tea, coffee and hot chocolate for the training break\nQuick snacks | Simple choices for before or after class\nFamily friendly | Refreshments for parents, students and visitors",
+        photoNotes: "Fresh drinks | Tea, coffee and hot chocolate for the training break\nQuick snacks | Simple choices before or after class\nFamily friendly | Refreshments for parents, students and visitors\nCold drinks | Easy refreshments while you wait\nAfter class | Grab something before heading home\nCafe favourites | Ask at reception for today's options",
         menuItems: "Tea | GBP 1.50 | Freshly brewed cup\nCoffee | GBP 2.00 | Americano or white coffee\nHot chocolate | GBP 2.20 | Warm and sweet\nWater | GBP 1.00 | Still bottled water\nSnack bar | GBP 1.20 | Quick pre-class snack",
         cta: "Ask at reception",
         image: "/assets/dojo-class.svg",
         imageLeft: "/assets/students-group.svg",
         imageRight: "/assets/training.svg",
+        image4: "/assets/dojo-class.svg",
+        image5: "/assets/students-group.svg",
+        image6: "/assets/training.svg",
         logo: "/assets/eska-logo-exact.svg",
         background: "linear-gradient(135deg, #ffffff 0%, #fff7f3 100%)",
         accent: "#e61f2a",
@@ -288,6 +312,21 @@
     };
   };
   createSlideFromTemplate = window.createSlideFromTemplate;
+
+  const baseBindEditor = bindEditor;
+  window.bindEditor = function bindEditorWithCafePhotos(slide) {
+    baseBindEditor(slide);
+    if (!slide || slide.template !== "menu") return;
+    const bindPhotoButton = (id, target) => {
+      const button = document.querySelector(id);
+      if (!button) return;
+      button.addEventListener("click", () => uploadInto(slide, target));
+    };
+    bindPhotoButton("#applyToImage4", "image4");
+    bindPhotoButton("#applyToImage5", "image5");
+    bindPhotoButton("#applyToImage6", "image6");
+  };
+  bindEditor = window.bindEditor;
 
   const baseSaveBoard = saveBoard;
   window.saveBoard = async function saveBoardWithBackup() {
