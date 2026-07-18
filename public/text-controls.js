@@ -1,5 +1,7 @@
 (function () {
-  const textTargets = [
+  if (typeof route !== "function" || route() !== "/admin") return;
+
+  const targets = [
     [".copy-block .eyebrow", "eyebrow", "bodySize", "Small label"],
     [".copy-block h1", "heading", "headingSize", "Heading"],
     [".copy-block h2", "subheading", "subheadingSize", "Subheading"],
@@ -12,7 +14,7 @@
     [".cafe-intro .cta", "cta", "bodySize", "Call to action"]
   ];
 
-  let selectedElement = null;
+  let selected = null;
   let selectedField = "";
   let selectedSizeField = "";
   let saveTimer = null;
@@ -30,18 +32,16 @@
     return "";
   }
 
-  function pxValue(value, fallback = 0) {
-    const clean = cssLength(value);
-    const number = parseFloat(clean || "");
+  function px(value, fallback = 0) {
+    const number = parseFloat(cssLength(value));
     return Number.isFinite(number) ? number : fallback;
   }
 
-  function getCurrentSlide() {
+  function currentSlide() {
     return board && board.slides && (board.slides.find((slide) => slide.id === draftSlideId) || board.slides[0]);
   }
 
-  function textStyleVars(slide) {
-    const styles = [];
+  function styleVars(slide) {
     const values = {
       "--text-x": cssLength(field(slide, "textX")),
       "--text-y": cssLength(field(slide, "textY")),
@@ -50,45 +50,53 @@
       "--subheading-size": cssLength(field(slide, "subheadingSize")),
       "--body-size": cssLength(field(slide, "bodySize"))
     };
-    Object.entries(values).forEach(([name, value]) => {
-      if (value) styles.push(`${name}: ${value}`);
-    });
-    return styles;
+    return Object.entries(values)
+      .filter(([, value]) => value)
+      .map(([key, value]) => `${key}: ${value}`);
   }
 
-  function setToolbarMessage(message) {
-    const label = document.querySelector("#directTextSelection");
-    if (label) label.textContent = message;
+  function setMessage(message) {
+    const box = document.querySelector("#directTextSelection");
+    if (box) box.textContent = message;
   }
 
-  function syncFieldInput(name, value) {
+  function syncFormField(name, value) {
     const input = document.querySelector(`[data-field="${name}"]`);
     if (input && input.value !== value) input.value = value;
   }
 
-  function saveLater() {
+  function saveSoon() {
     clearTimeout(saveTimer);
     saveTimer = setTimeout(async () => {
-      if (!board || route() !== "/admin") return;
       try {
-        if (typeof api === "function") await api("/api/noticeboard", { method: "PUT", body: JSON.stringify(board) });
-        else if (typeof saveBoard === "function") await saveBoard();
-        setToolbarMessage("Saved text edit");
+        await api("/api/noticeboard", { method: "PUT", body: JSON.stringify(board) });
+        setMessage("Saved");
       } catch (error) {
         if (typeof showStatus === "function") showStatus(error.message || "Could not save text edit.", true);
       }
-    }, 700);
+    }, 600);
   }
 
-  function applyStyleVar(name, value) {
-    const slideEl = selectedElement && selectedElement.closest(".preview-slide");
-    if (slideEl) slideEl.style.setProperty(name, value);
+  function setField(name, value) {
+    const slide = currentSlide();
+    if (!slide) return;
+    slide.fields[name] = value;
+    syncFormField(name, value);
+    saveSoon();
   }
 
-  const previousSlideStyle = window.slideStyle || slideStyle;
-  window.slideStyle = function slideStyleWithTextControls(slide) {
-    const original = previousSlideStyle(slide);
-    const extra = textStyleVars(slide);
+  function applyVar(name, value) {
+    const slideElement = document.querySelector(".preview-wrap .preview-slide");
+    if (slideElement) {
+      if (value) slideElement.style.setProperty(name, value);
+      else slideElement.style.removeProperty(name);
+    }
+  }
+
+  const oldSlideStyle = window.slideStyle || slideStyle;
+  window.slideStyle = function slideStyleWithDirectText(slide) {
+    const original = oldSlideStyle(slide);
+    const extra = styleVars(slide);
     if (!extra.length) return original;
     const extraText = extra.join("; ");
     if (!original) return ` style="${escapeHtml(extraText)}"`;
@@ -96,141 +104,140 @@
   };
   slideStyle = window.slideStyle;
 
-  const previousEditorForm = window.editorForm || editorForm;
-  window.editorForm = function editorFormWithDirectTextToolbar(slide) {
-    let html = previousEditorForm(slide);
+  const oldEditorForm = window.editorForm || editorForm;
+  window.editorForm = function editorFormWithDirectText(slide) {
+    const html = oldEditorForm(slide);
     if (!slide || html.includes("directTextToolbar")) return html;
     const toolbar = `
-      <div class="direct-text-toolbar" id="directTextToolbar">
-        <div><strong>Text editing</strong><span id="directTextSelection">Click text on the preview to edit it</span></div>
-        <button type="button" data-direct-action="smaller">A-</button>
-        <button type="button" data-direct-action="bigger">A+</button>
-        <button type="button" data-direct-action="up">Up</button>
-        <button type="button" data-direct-action="down">Down</button>
-        <button type="button" data-direct-action="left">Left</button>
-        <button type="button" data-direct-action="right">Right</button>
-        <button type="button" data-direct-action="narrower">Narrower</button>
-        <button type="button" data-direct-action="wider">Wider</button>
-        <button type="button" data-direct-action="reset">Reset</button>
-      </div>
+      <section class="direct-text-toolbar" id="directTextToolbar">
+        <div class="direct-text-head">
+          <strong>PowerPoint-style text editing</strong>
+          <span id="directTextSelection">Click a text box on the slide preview</span>
+        </div>
+        <label class="direct-text-editor">
+          Edit selected text
+          <textarea id="directTextInput" rows="3" placeholder="Click text on the preview first"></textarea>
+        </label>
+        <div class="direct-text-buttons">
+          <button type="button" data-direct-action="smaller">A-</button>
+          <button type="button" data-direct-action="bigger">A+</button>
+          <button type="button" data-direct-action="up">Up</button>
+          <button type="button" data-direct-action="down">Down</button>
+          <button type="button" data-direct-action="left">Left</button>
+          <button type="button" data-direct-action="right">Right</button>
+          <button type="button" data-direct-action="narrower">Narrower</button>
+          <button type="button" data-direct-action="wider">Wider</button>
+          <button type="button" data-direct-action="reset">Reset</button>
+        </div>
+      </section>
     `;
     return html.replace('<div class="upload-row">', `${toolbar}<div class="upload-row">`);
   };
   editorForm = window.editorForm;
 
-  function selectEditable(element) {
-    selectedElement = element;
-    selectedField = element.dataset.textField || "";
-    selectedSizeField = element.dataset.sizeField || "";
-    document.querySelectorAll(".direct-editable.selected").forEach((item) => item.classList.remove("selected"));
-    document.querySelectorAll(".direct-edit-block.selected").forEach((item) => item.classList.remove("selected"));
-    element.classList.add("selected");
-    const block = element.closest(".copy-block, .cafe-intro");
-    if (block) block.classList.add("selected");
-    setToolbarMessage(`Editing ${element.dataset.textLabel || selectedField}`);
-  }
-
-  function updateTextField(element) {
-    const slide = getCurrentSlide();
-    if (!slide || !element.dataset.textField) return;
-    const value = element.innerText.replace(/\u00a0/g, " ").trim();
-    slide.fields[element.dataset.textField] = value;
-    syncFieldInput(element.dataset.textField, value);
-    saveLater();
-  }
-
-  function setupEditableText() {
+  function markText() {
     const preview = document.querySelector(".preview-wrap");
-    const slide = getCurrentSlide();
-    if (!preview || !slide) return;
+    if (!preview) return;
 
-    textTargets.forEach(([selector, fieldName, sizeField, label]) => {
+    targets.forEach(([selector, fieldName, sizeField, label]) => {
       preview.querySelectorAll(selector).forEach((element) => {
         if (!element.textContent.trim()) return;
-        element.contentEditable = "true";
-        element.spellcheck = false;
-        element.dataset.textField = fieldName;
-        element.dataset.sizeField = sizeField;
-        element.dataset.textLabel = label;
         element.classList.add("direct-editable");
-        const block = element.closest(".copy-block, .cafe-intro");
-        if (block) block.classList.add("direct-edit-block");
-        element.addEventListener("focus", () => selectEditable(element));
-        element.addEventListener("click", () => selectEditable(element));
-        element.addEventListener("input", () => updateTextField(element));
-        element.addEventListener("keydown", (event) => {
-          if (event.key === "Enter" && fieldName !== "body") {
-            event.preventDefault();
-            element.blur();
-          }
-        });
+        element.dataset.directField = fieldName;
+        element.dataset.directSizeField = sizeField;
+        element.dataset.directLabel = label;
+        element.setAttribute("tabindex", "0");
       });
     });
 
-    document.querySelectorAll("[data-direct-action]").forEach((button) => {
-      button.addEventListener("click", () => runToolbarAction(button.dataset.directAction));
+    preview.addEventListener("click", (event) => {
+      const item = event.target.closest(".direct-editable");
+      if (!item || !preview.contains(item)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      selectText(item);
     });
   }
 
-  function setSlideField(name, value) {
-    const slide = getCurrentSlide();
-    if (!slide) return;
-    slide.fields[name] = value;
-    syncFieldInput(name, value);
-    saveLater();
+  function selectText(element) {
+    selected = element;
+    selectedField = element.dataset.directField || "";
+    selectedSizeField = element.dataset.directSizeField || "";
+    document.querySelectorAll(".direct-editable.selected").forEach((item) => item.classList.remove("selected"));
+    selected.classList.add("selected");
+    selected.contentEditable = "true";
+    selected.focus();
+    const input = document.querySelector("#directTextInput");
+    if (input) input.value = selected.innerText.trim();
+    setMessage(`Editing ${selected.dataset.directLabel || selectedField}`);
   }
 
-  function runToolbarAction(action) {
-    const slide = getCurrentSlide();
-    if (!slide || !selectedElement) {
-      setToolbarMessage("Click some text on the preview first");
+  function selectedSlideFieldValue(name, fallback = "") {
+    const slide = currentSlide();
+    return slide ? field(slide, name, fallback) : fallback;
+  }
+
+  function handleTextInput(value) {
+    if (!selected || !selectedField) {
+      setMessage("Click text on the slide preview first");
+      return;
+    }
+    selected.innerText = value;
+    setField(selectedField, value);
+  }
+
+  function action(name) {
+    if (!selected) {
+      setMessage("Click text on the slide preview first");
       return;
     }
 
-    if (action === "bigger" || action === "smaller") {
-      if (!selectedSizeField) return;
-      const computed = parseFloat(getComputedStyle(selectedElement).fontSize) || 32;
-      const current = pxValue(field(slide, selectedSizeField), computed);
-      const next = Math.max(10, Math.min(140, current + (action === "bigger" ? 4 : -4)));
-      const value = `${Math.round(next)}px`;
-      setSlideField(selectedSizeField, value);
-      applyStyleVar(selectedSizeField === "headingSize" ? "--heading-size" : selectedSizeField === "subheadingSize" ? "--subheading-size" : "--body-size", value);
-      setToolbarMessage(`${selectedElement.dataset.textLabel}: ${action === "bigger" ? "bigger" : "smaller"}`);
+    if (name === "bigger" || name === "smaller") {
+      const computed = parseFloat(getComputedStyle(selected).fontSize) || 32;
+      const value = `${Math.max(10, Math.min(150, Math.round(px(selectedSlideFieldValue(selectedSizeField), computed) + (name === "bigger" ? 4 : -4))))}px`;
+      setField(selectedSizeField, value);
+      applyVar(selectedSizeField === "headingSize" ? "--heading-size" : selectedSizeField === "subheadingSize" ? "--subheading-size" : "--body-size", value);
       return;
     }
 
-    const currentX = pxValue(field(slide, "textX"), 0);
-    const currentY = pxValue(field(slide, "textY"), 0);
-    const currentWidth = pxValue(field(slide, "textWidth"), 780);
-
-    if (action === "left" || action === "right") {
-      const value = `${Math.round(currentX + (action === "right" ? 12 : -12))}px`;
-      setSlideField("textX", value);
-      applyStyleVar("--text-x", value);
-    } else if (action === "up" || action === "down") {
-      const value = `${Math.round(currentY + (action === "down" ? 12 : -12))}px`;
-      setSlideField("textY", value);
-      applyStyleVar("--text-y", value);
-    } else if (action === "wider" || action === "narrower") {
-      const value = `${Math.max(240, Math.min(1200, Math.round(currentWidth + (action === "wider" ? 48 : -48))))}px`;
-      setSlideField("textWidth", value);
-      applyStyleVar("--text-width", value);
-    } else if (action === "reset") {
-      ["textX", "textY", "textWidth", selectedSizeField].filter(Boolean).forEach((key) => setSlideField(key, ""));
-      const slideEl = selectedElement.closest(".preview-slide");
-      if (slideEl) ["--text-x", "--text-y", "--text-width", "--heading-size", "--subheading-size", "--body-size"].forEach((key) => slideEl.style.removeProperty(key));
+    if (name === "left" || name === "right") {
+      const value = `${Math.round(px(selectedSlideFieldValue("textX"), 0) + (name === "right" ? 12 : -12))}px`;
+      setField("textX", value);
+      applyVar("--text-x", value);
+    } else if (name === "up" || name === "down") {
+      const value = `${Math.round(px(selectedSlideFieldValue("textY"), 0) + (name === "down" ? 12 : -12))}px`;
+      setField("textY", value);
+      applyVar("--text-y", value);
+    } else if (name === "wider" || name === "narrower") {
+      const value = `${Math.max(220, Math.min(1300, Math.round(px(selectedSlideFieldValue("textWidth"), 780) + (name === "wider" ? 56 : -56))))}px`;
+      setField("textWidth", value);
+      applyVar("--text-width", value);
+    } else if (name === "reset") {
+      ["textX", "textY", "textWidth", "headingSize", "subheadingSize", "bodySize"].forEach((key) => setField(key, ""));
+      ["--text-x", "--text-y", "--text-width", "--heading-size", "--subheading-size", "--body-size"].forEach((key) => applyVar(key, ""));
     }
   }
 
-  const previousRenderAdmin = window.renderAdmin || renderAdmin;
-  window.renderAdmin = function renderAdminWithDirectTextEditing() {
-    previousRenderAdmin();
-    selectedElement = null;
+  function bindToolbar() {
+    const input = document.querySelector("#directTextInput");
+    if (input) {
+      input.addEventListener("input", () => handleTextInput(input.value));
+    }
+    document.querySelectorAll("[data-direct-action]").forEach((button) => {
+      button.addEventListener("click", () => action(button.dataset.directAction));
+    });
+  }
+
+  const oldRenderAdmin = window.renderAdmin || renderAdmin;
+  window.renderAdmin = function renderAdminWithDirectText() {
+    oldRenderAdmin();
+    selected = null;
     selectedField = "";
     selectedSizeField = "";
-    setupEditableText();
+    markText();
+    bindToolbar();
   };
   renderAdmin = window.renderAdmin;
 
-  if (route() === "/admin") renderAdmin();
+  renderAdmin();
 })();
