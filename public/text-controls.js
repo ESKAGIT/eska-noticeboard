@@ -6,7 +6,12 @@
     ["heading", "Heading", "headingSize"],
     ["subheading", "Subheading", "subheadingSize"],
     ["body", "Body text", "bodySize"],
-    ["cta", "Call to action", "bodySize"]
+    ["cta", "Call to action", "bodySize"],
+    ["date", "Date", "bodySize"],
+    ["time", "Time", "bodySize"],
+    ["location", "Location", "bodySize"],
+    ["dateList", "Dates list", "bodySize"],
+    ["menuItems", "Menu items", "bodySize"]
   ];
 
   const clickTargets = [
@@ -15,6 +20,15 @@
     [".copy-block h2", "subheading"],
     [".copy-block .body-copy", "body"],
     [".copy-block .cta", "cta"],
+    [".meta-row span:nth-child(1)", "date"],
+    [".meta-row span:nth-child(2)", "time"],
+    [".meta-row span:nth-child(3)", "location"],
+    [".info-cards article:nth-child(1) strong", "date"],
+    [".info-cards article:nth-child(1) span", "time"],
+    [".info-cards article:nth-child(2) span", "location"],
+    [".info-cards article:nth-child(3) span", "cta"],
+    [".date-board", "dateList"],
+    [".menu-items", "menuItems"],
     [".cafe-intro .eyebrow", "eyebrow"],
     [".cafe-intro h1", "heading"],
     [".cafe-intro h2", "subheading"],
@@ -140,7 +154,7 @@
       <section class="direct-text-toolbar" id="directTextToolbar">
         <div class="direct-text-head">
           <strong>Text editor</strong>
-          <span id="directTextSelection">Choose a text part below, or click text on the preview</span>
+          <span id="directTextSelection">Edit text on preview: ON. Choose a text part below, or click text on the preview.</span>
         </div>
         <div class="direct-text-parts">
           ${editableFields.map(([key, label]) => `<button type="button" data-direct-field="${key}">${label}</button>`).join("")}
@@ -169,6 +183,7 @@
   function markPreviewText() {
     const preview = document.querySelector(".preview-wrap");
     if (!preview) return;
+    preview.classList.add("direct-editing-enabled");
     clickTargets.forEach(([selector, name]) => {
       preview.querySelectorAll(selector).forEach((element) => {
         if (!element.textContent.trim()) return;
