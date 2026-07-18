@@ -103,12 +103,15 @@
   background: #ead8cf;
 }
 
-.preview-wrap.direct-editing-enabled {
+.preview-wrap {
   position: relative;
+}
+
+.preview-wrap {
   box-shadow: inset 0 0 0 3px rgba(230, 31, 42, 0.16);
 }
 
-.preview-wrap.direct-editing-enabled::after {
+.preview-wrap::after {
   content: "Text editor ON";
   position: absolute;
   top: 12px;
@@ -139,6 +142,21 @@
   pointer-events: none;
 }
 
+.preview-wrap .copy-block .eyebrow,
+.preview-wrap .copy-block h1,
+.preview-wrap .copy-block h2,
+.preview-wrap .copy-block .body-copy,
+.preview-wrap .copy-block .cta,
+.preview-wrap .cafe-intro .eyebrow,
+.preview-wrap .cafe-intro h1,
+.preview-wrap .cafe-intro h2,
+.preview-wrap .cafe-intro .body-copy,
+.preview-wrap .cafe-intro .cta,
+.preview-wrap .meta-row span,
+.preview-wrap .info-cards article span,
+.preview-wrap .info-cards article strong,
+.preview-wrap .date-board,
+.preview-wrap .menu-items,
 .preview-wrap .direct-editable {
   pointer-events: auto !important;
   position: relative;
@@ -148,6 +166,21 @@
   box-shadow: 0 0 0 2px rgba(230, 31, 42, 0);
 }
 
+.preview-wrap .copy-block .eyebrow:hover,
+.preview-wrap .copy-block h1:hover,
+.preview-wrap .copy-block h2:hover,
+.preview-wrap .copy-block .body-copy:hover,
+.preview-wrap .copy-block .cta:hover,
+.preview-wrap .cafe-intro .eyebrow:hover,
+.preview-wrap .cafe-intro h1:hover,
+.preview-wrap .cafe-intro h2:hover,
+.preview-wrap .cafe-intro .body-copy:hover,
+.preview-wrap .cafe-intro .cta:hover,
+.preview-wrap .meta-row span:hover,
+.preview-wrap .info-cards article span:hover,
+.preview-wrap .info-cards article strong:hover,
+.preview-wrap .date-board:hover,
+.preview-wrap .menu-items:hover,
 .preview-wrap .direct-editable:hover {
   box-shadow: 0 0 0 2px rgba(230, 31, 42, 0.26);
 }
