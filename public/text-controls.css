@@ -36,10 +36,8 @@
 }
 
 .direct-text-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
+  display: grid;
+  gap: 12px;
   margin-top: 18px;
   padding: 14px;
   border: 1px solid var(--line);
@@ -47,24 +45,42 @@
   background: #fff8f5;
 }
 
-.direct-text-toolbar > div {
+.direct-text-head {
   display: grid;
-  min-width: min(100%, 320px);
-  margin-right: 6px;
+  gap: 3px;
 }
 
-.direct-text-toolbar strong {
+.direct-text-head strong {
   color: var(--ink);
   font-size: 15px;
 }
 
-.direct-text-toolbar span {
+.direct-text-head span {
   color: var(--muted);
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 800;
 }
 
-.direct-text-toolbar button {
+.direct-text-editor {
+  display: grid;
+  gap: 6px;
+  color: #333;
+  font-weight: 900;
+}
+
+.direct-text-editor textarea {
+  width: 100%;
+  min-height: 76px;
+  resize: vertical;
+}
+
+.direct-text-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.direct-text-buttons button {
   min-height: 38px;
   padding: 8px 11px;
   border: 0;
@@ -74,31 +90,24 @@
   font-weight: 900;
 }
 
-.direct-text-toolbar button:hover {
+.direct-text-buttons button:hover {
   background: #ead8cf;
 }
 
-.preview-wrap .direct-edit-block {
-  outline: 2px dashed transparent;
-  outline-offset: 8px;
-}
-
-.preview-wrap .direct-edit-block.selected {
-  outline-color: rgba(230, 31, 42, 0.4);
-}
-
 .preview-wrap .direct-editable {
+  pointer-events: auto !important;
   border-radius: 5px;
-  cursor: text;
+  cursor: text !important;
+  box-shadow: 0 0 0 2px rgba(230, 31, 42, 0);
 }
 
 .preview-wrap .direct-editable:hover {
-  box-shadow: 0 0 0 2px rgba(230, 31, 42, 0.18);
+  box-shadow: 0 0 0 2px rgba(230, 31, 42, 0.26);
 }
 
 .preview-wrap .direct-editable.selected,
 .preview-wrap .direct-editable:focus {
-  outline: 3px solid rgba(230, 31, 42, 0.72);
+  outline: 3px solid rgba(230, 31, 42, 0.78);
   outline-offset: 5px;
-  background: rgba(255, 255, 255, 0.42);
+  background: rgba(255, 255, 255, 0.5);
 }
