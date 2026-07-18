@@ -1,22 +1,28 @@
 (function () {
   if (typeof route !== "function" || route() !== "/admin") return;
 
-  const targets = [
-    [".copy-block .eyebrow", "eyebrow", "bodySize", "Small label"],
-    [".copy-block h1", "heading", "headingSize", "Heading"],
-    [".copy-block h2", "subheading", "subheadingSize", "Subheading"],
-    [".copy-block .body-copy", "body", "bodySize", "Body text"],
-    [".copy-block .cta", "cta", "bodySize", "Call to action"],
-    [".cafe-intro .eyebrow", "eyebrow", "bodySize", "Small label"],
-    [".cafe-intro h1", "heading", "headingSize", "Heading"],
-    [".cafe-intro h2", "subheading", "subheadingSize", "Subheading"],
-    [".cafe-intro .body-copy", "body", "bodySize", "Body text"],
-    [".cafe-intro .cta", "cta", "bodySize", "Call to action"]
+  const editableFields = [
+    ["eyebrow", "Small label", "bodySize"],
+    ["heading", "Heading", "headingSize"],
+    ["subheading", "Subheading", "subheadingSize"],
+    ["body", "Body text", "bodySize"],
+    ["cta", "Call to action", "bodySize"]
   ];
 
-  let selected = null;
-  let selectedField = "";
-  let selectedSizeField = "";
+  const clickTargets = [
+    [".copy-block .eyebrow", "eyebrow"],
+    [".copy-block h1", "heading"],
+    [".copy-block h2", "subheading"],
+    [".copy-block .body-copy", "body"],
+    [".copy-block .cta", "cta"],
+    [".cafe-intro .eyebrow", "eyebrow"],
+    [".cafe-intro h1", "heading"],
+    [".cafe-intro h2", "subheading"],
+    [".cafe-intro .body-copy", "body"],
+    [".cafe-intro .cta", "cta"]
+  ];
+
+  let selectedField = "heading";
   let saveTimer = null;
 
   function cleanCss(value = "") {
@@ -41,6 +47,14 @@
     return board && board.slides && (board.slides.find((slide) => slide.id === draftSlideId) || board.slides[0]);
   }
 
+  function fieldConfig(name = selectedField) {
+    return editableFields.find(([key]) => key === name) || editableFields[1];
+  }
+
+  function sizeFieldFor(name = selectedField) {
+    return fieldConfig(name)[2];
+  }
+
   function styleVars(slide) {
     const values = {
       "--text-x": cssLength(field(slide, "textX")),
@@ -60,9 +74,12 @@
     if (box) box.textContent = message;
   }
 
-  function syncFormField(name, value) {
-    const input = document.querySelector(`[data-field="${name}"]`);
-    if (input && input.value !== value) input.value = value;
+  function syncInputs(name, value) {
+    const main = document.querySelector("#directTextInput");
+    if (name === selectedField && main && main.value !== value) main.value = value;
+    document.querySelectorAll(`[data-field="${name}"]`).forEach((input) => {
+      if (input.value !== value) input.value = value;
+    });
   }
 
   function saveSoon() {
@@ -74,27 +91,38 @@
       } catch (error) {
         if (typeof showStatus === "function") showStatus(error.message || "Could not save text edit.", true);
       }
-    }, 600);
+    }, 650);
   }
 
-  function setField(name, value) {
+  function setSlideField(name, value) {
     const slide = currentSlide();
     if (!slide) return;
     slide.fields[name] = value;
-    syncFormField(name, value);
+    syncInputs(name, value);
     saveSoon();
   }
 
   function applyVar(name, value) {
-    const slideElement = document.querySelector(".preview-wrap .preview-slide");
-    if (slideElement) {
-      if (value) slideElement.style.setProperty(name, value);
-      else slideElement.style.removeProperty(name);
-    }
+    const slideEl = document.querySelector(".preview-wrap .preview-slide");
+    if (!slideEl) return;
+    if (value) slideEl.style.setProperty(name, value);
+    else slideEl.style.removeProperty(name);
+  }
+
+  function previewElementFor(name) {
+    const preview = document.querySelector(".preview-wrap");
+    if (!preview) return null;
+    const target = clickTargets.find(([, fieldName]) => fieldName === name);
+    return target ? preview.querySelector(target[0]) : null;
+  }
+
+  function refreshSelectedPreviewText(value) {
+    const element = previewElementFor(selectedField);
+    if (element) element.innerText = value;
   }
 
   const oldSlideStyle = window.slideStyle || slideStyle;
-  window.slideStyle = function slideStyleWithDirectText(slide) {
+  window.slideStyle = function slideStyleWithTextControls(slide) {
     const original = oldSlideStyle(slide);
     const extra = styleVars(slide);
     if (!extra.length) return original;
@@ -105,18 +133,21 @@
   slideStyle = window.slideStyle;
 
   const oldEditorForm = window.editorForm || editorForm;
-  window.editorForm = function editorFormWithDirectText(slide) {
+  window.editorForm = function editorFormWithReliableTextControls(slide) {
     const html = oldEditorForm(slide);
     if (!slide || html.includes("directTextToolbar")) return html;
     const toolbar = `
       <section class="direct-text-toolbar" id="directTextToolbar">
         <div class="direct-text-head">
-          <strong>PowerPoint-style text editing</strong>
-          <span id="directTextSelection">Click a text box on the slide preview</span>
+          <strong>Text editor</strong>
+          <span id="directTextSelection">Choose a text part below, or click text on the preview</span>
+        </div>
+        <div class="direct-text-parts">
+          ${editableFields.map(([key, label]) => `<button type="button" data-direct-field="${key}">${label}</button>`).join("")}
         </div>
         <label class="direct-text-editor">
           Edit selected text
-          <textarea id="directTextInput" rows="3" placeholder="Click text on the preview first"></textarea>
+          <textarea id="directTextInput" rows="3"></textarea>
         </label>
         <div class="direct-text-buttons">
           <button type="button" data-direct-action="smaller">A-</button>
@@ -135,107 +166,125 @@
   };
   editorForm = window.editorForm;
 
-  function markText() {
+  function markPreviewText() {
     const preview = document.querySelector(".preview-wrap");
     if (!preview) return;
-
-    targets.forEach(([selector, fieldName, sizeField, label]) => {
+    clickTargets.forEach(([selector, name]) => {
       preview.querySelectorAll(selector).forEach((element) => {
         if (!element.textContent.trim()) return;
         element.classList.add("direct-editable");
-        element.dataset.directField = fieldName;
-        element.dataset.directSizeField = sizeField;
-        element.dataset.directLabel = label;
+        element.dataset.directField = name;
+        element.contentEditable = "true";
+        element.spellcheck = false;
         element.setAttribute("tabindex", "0");
       });
     });
+  }
 
-    preview.addEventListener("click", (event) => {
-      const item = event.target.closest(".direct-editable");
-      if (!item || !preview.contains(item)) return;
-      event.preventDefault();
-      event.stopPropagation();
-      selectText(item);
+  function selectField(name) {
+    const slide = currentSlide();
+    if (!slide) return;
+    selectedField = name;
+    const [, label] = fieldConfig(name);
+    document.querySelectorAll("[data-direct-field]").forEach((button) => {
+      button.classList.toggle("active", button.dataset.directField === name);
     });
-  }
-
-  function selectText(element) {
-    selected = element;
-    selectedField = element.dataset.directField || "";
-    selectedSizeField = element.dataset.directSizeField || "";
     document.querySelectorAll(".direct-editable.selected").forEach((item) => item.classList.remove("selected"));
-    selected.classList.add("selected");
-    selected.contentEditable = "true";
-    selected.focus();
+    const element = previewElementFor(name);
+    if (element) element.classList.add("selected");
     const input = document.querySelector("#directTextInput");
-    if (input) input.value = selected.innerText.trim();
-    setMessage(`Editing ${selected.dataset.directLabel || selectedField}`);
+    if (input) input.value = field(slide, name);
+    setMessage(`Editing ${label}`);
   }
 
-  function selectedSlideFieldValue(name, fallback = "") {
+  function updateSelectedText(value) {
+    if (!selectedField) selectField("heading");
+    setSlideField(selectedField, value);
+    refreshSelectedPreviewText(value);
+  }
+
+  function slideValue(name, fallback = "") {
     const slide = currentSlide();
     return slide ? field(slide, name, fallback) : fallback;
   }
 
-  function handleTextInput(value) {
-    if (!selected || !selectedField) {
-      setMessage("Click text on the slide preview first");
-      return;
-    }
-    selected.innerText = value;
-    setField(selectedField, value);
-  }
+  function runAction(action) {
+    if (!selectedField) selectField("heading");
+    const sizeField = sizeFieldFor(selectedField);
+    const element = previewElementFor(selectedField);
 
-  function action(name) {
-    if (!selected) {
-      setMessage("Click text on the slide preview first");
-      return;
-    }
-
-    if (name === "bigger" || name === "smaller") {
-      const computed = parseFloat(getComputedStyle(selected).fontSize) || 32;
-      const value = `${Math.max(10, Math.min(150, Math.round(px(selectedSlideFieldValue(selectedSizeField), computed) + (name === "bigger" ? 4 : -4))))}px`;
-      setField(selectedSizeField, value);
-      applyVar(selectedSizeField === "headingSize" ? "--heading-size" : selectedSizeField === "subheadingSize" ? "--subheading-size" : "--body-size", value);
+    if (action === "bigger" || action === "smaller") {
+      const computed = element ? parseFloat(getComputedStyle(element).fontSize) : 32;
+      const value = `${Math.max(10, Math.min(150, Math.round(px(slideValue(sizeField), computed) + (action === "bigger" ? 4 : -4))))}px`;
+      setSlideField(sizeField, value);
+      applyVar(sizeField === "headingSize" ? "--heading-size" : sizeField === "subheadingSize" ? "--subheading-size" : "--body-size", value);
       return;
     }
 
-    if (name === "left" || name === "right") {
-      const value = `${Math.round(px(selectedSlideFieldValue("textX"), 0) + (name === "right" ? 12 : -12))}px`;
-      setField("textX", value);
+    if (action === "left" || action === "right") {
+      const value = `${Math.round(px(slideValue("textX"), 0) + (action === "right" ? 12 : -12))}px`;
+      setSlideField("textX", value);
       applyVar("--text-x", value);
-    } else if (name === "up" || name === "down") {
-      const value = `${Math.round(px(selectedSlideFieldValue("textY"), 0) + (name === "down" ? 12 : -12))}px`;
-      setField("textY", value);
+    } else if (action === "up" || action === "down") {
+      const value = `${Math.round(px(slideValue("textY"), 0) + (action === "down" ? 12 : -12))}px`;
+      setSlideField("textY", value);
       applyVar("--text-y", value);
-    } else if (name === "wider" || name === "narrower") {
-      const value = `${Math.max(220, Math.min(1300, Math.round(px(selectedSlideFieldValue("textWidth"), 780) + (name === "wider" ? 56 : -56))))}px`;
-      setField("textWidth", value);
+    } else if (action === "wider" || action === "narrower") {
+      const value = `${Math.max(220, Math.min(1300, Math.round(px(slideValue("textWidth"), 780) + (action === "wider" ? 56 : -56))))}px`;
+      setSlideField("textWidth", value);
       applyVar("--text-width", value);
-    } else if (name === "reset") {
-      ["textX", "textY", "textWidth", "headingSize", "subheadingSize", "bodySize"].forEach((key) => setField(key, ""));
+    } else if (action === "reset") {
+      ["textX", "textY", "textWidth", "headingSize", "subheadingSize", "bodySize"].forEach((key) => setSlideField(key, ""));
       ["--text-x", "--text-y", "--text-width", "--heading-size", "--subheading-size", "--body-size"].forEach((key) => applyVar(key, ""));
     }
   }
 
-  function bindToolbar() {
+  function bindDirectEditor() {
+    const toolbar = document.querySelector("#directTextToolbar");
     const input = document.querySelector("#directTextInput");
-    if (input) {
-      input.addEventListener("input", () => handleTextInput(input.value));
-    }
-    document.querySelectorAll("[data-direct-action]").forEach((button) => {
-      button.addEventListener("click", () => action(button.dataset.directAction));
+    const preview = document.querySelector(".preview-wrap");
+    if (!toolbar || !input) return;
+
+    toolbar.addEventListener("click", (event) => {
+      const fieldButton = event.target.closest("[data-direct-field]");
+      const actionButton = event.target.closest("[data-direct-action]");
+      if (fieldButton) selectField(fieldButton.dataset.directField);
+      if (actionButton) runAction(actionButton.dataset.directAction);
     });
+
+    input.addEventListener("input", () => updateSelectedText(input.value));
+
+    if (preview) {
+      preview.addEventListener("pointerdown", (event) => {
+        const element = event.target.closest(".direct-editable");
+        if (!element || !preview.contains(element)) return;
+        selectField(element.dataset.directField || "heading");
+      }, true);
+
+      preview.addEventListener("input", (event) => {
+        const element = event.target.closest(".direct-editable");
+        if (!element || !preview.contains(element)) return;
+        const name = element.dataset.directField || "heading";
+        selectedField = name;
+        selectField(name);
+        setSlideField(name, element.innerText.trim());
+      }, true);
+
+      preview.addEventListener("focusin", (event) => {
+        const element = event.target.closest(".direct-editable");
+        if (!element || !preview.contains(element)) return;
+        selectField(element.dataset.directField || "heading");
+      }, true);
+    }
+
+    selectField(selectedField || "heading");
   }
 
   const oldRenderAdmin = window.renderAdmin || renderAdmin;
-  window.renderAdmin = function renderAdminWithDirectText() {
+  window.renderAdmin = function renderAdminWithReliableTextControls() {
     oldRenderAdmin();
-    selected = null;
-    selectedField = "";
-    selectedSizeField = "";
-    markText();
-    bindToolbar();
+    markPreviewText();
+    bindDirectEditor();
   };
   renderAdmin = window.renderAdmin;
 
