@@ -169,6 +169,60 @@
     }, 0);
   }
 
+  function ensureFloatingEditor() {
+    const preview = document.querySelector(".preview-wrap");
+    if (!preview) return null;
+    let editor = preview.querySelector("#floatingTextEditor");
+    if (editor) return editor;
+    editor = document.createElement("div");
+    editor.id = "floatingTextEditor";
+    editor.className = "floating-text-editor";
+    editor.innerHTML = `
+      <div class="floating-text-editor-head">
+        <strong>Edit text</strong>
+        <button type="button" data-float-close>Done</button>
+      </div>
+      <textarea rows="5"></textarea>
+      <small>Changes save automatically.</small>
+    `;
+    preview.appendChild(editor);
+    editor.querySelector("[data-float-close]").addEventListener("click", () => {
+      editor.classList.remove("show");
+    });
+    editor.querySelector("textarea").addEventListener("input", (event) => {
+      updateSelectedText(event.target.value);
+    });
+    return editor;
+  }
+
+  function placeFloatingEditor(editor, element) {
+    const preview = document.querySelector(".preview-wrap");
+    if (!preview || !element) return;
+    const previewRect = preview.getBoundingClientRect();
+    const elementRect = element.getBoundingClientRect();
+    const left = Math.min(Math.max(elementRect.left - previewRect.left, 14), Math.max(14, previewRect.width - 430));
+    const top = Math.min(Math.max(elementRect.bottom - previewRect.top + 10, 56), Math.max(56, previewRect.height - 230));
+    editor.style.left = `${Math.round(left)}px`;
+    editor.style.top = `${Math.round(top)}px`;
+  }
+
+  function openFloatingEditor(name, element) {
+    const slide = currentSlide();
+    const editor = ensureFloatingEditor();
+    if (!slide || !editor) return;
+    selectedField = name;
+    const [, label] = fieldConfig(name);
+    editor.querySelector("strong").textContent = `Edit ${label}`;
+    const textarea = editor.querySelector("textarea");
+    textarea.value = field(slide, name);
+    editor.classList.add("show");
+    placeFloatingEditor(editor, element);
+    window.setTimeout(() => {
+      textarea.focus({ preventScroll: true });
+      textarea.select();
+    }, 0);
+  }
+
   const oldSlideStyle = window.slideStyle || slideStyle;
   window.slideStyle = function slideStyleWithTextControls(slide) {
     const original = oldSlideStyle(slide);
@@ -340,8 +394,11 @@
     document.addEventListener("pointerdown", (event) => {
       const match = editableFromTarget(event.target);
       if (!match) return;
+      event.preventDefault();
+      event.stopPropagation();
       prepareEditableElement(match.element, match.field);
       selectField(match.field, match.element, true);
+      openFloatingEditor(match.field, match.element);
     }, true);
 
     document.addEventListener("focusin", (event) => {
