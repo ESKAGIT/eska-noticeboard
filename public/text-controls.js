@@ -39,6 +39,7 @@
   let selectedField = "heading";
   let saveTimer = null;
   let enhanceTimer = null;
+  let globalEventsBound = false;
 
   function cleanCss(value = "") {
     return String(value).replace(/[;"<>]/g, "").trim();
@@ -136,6 +137,24 @@
     if (element) element.innerText = value;
   }
 
+  function editableFromTarget(target) {
+    const preview = target && target.closest ? target.closest(".preview-wrap") : null;
+    if (!preview) return null;
+    for (const [selector, name] of clickTargets) {
+      const element = target.closest(selector);
+      if (element && preview.contains(element)) return { element, field: name };
+    }
+    return null;
+  }
+
+  function prepareEditableElement(element, name) {
+    element.classList.add("direct-editable");
+    element.dataset.directField = name;
+    element.contentEditable = "true";
+    element.spellcheck = false;
+    element.setAttribute("tabindex", "0");
+  }
+
   const oldSlideStyle = window.slideStyle || slideStyle;
   window.slideStyle = function slideStyleWithTextControls(slide) {
     const original = oldSlideStyle(slide);
@@ -188,11 +207,7 @@
     clickTargets.forEach(([selector, name]) => {
       preview.querySelectorAll(selector).forEach((element) => {
         if (!element.textContent.trim()) return;
-        element.classList.add("direct-editable");
-        element.dataset.directField = name;
-        element.contentEditable = "true";
-        element.spellcheck = false;
-        element.setAttribute("tabindex", "0");
+        prepareEditableElement(element, name);
       });
     });
   }
@@ -303,6 +318,34 @@
     selectField(selectedField || "heading");
   }
 
+  function bindGlobalEditorEvents() {
+    if (globalEventsBound) return;
+    globalEventsBound = true;
+
+    document.addEventListener("pointerdown", (event) => {
+      const match = editableFromTarget(event.target);
+      if (!match) return;
+      prepareEditableElement(match.element, match.field);
+      selectField(match.field);
+    }, true);
+
+    document.addEventListener("focusin", (event) => {
+      const match = editableFromTarget(event.target);
+      if (!match) return;
+      prepareEditableElement(match.element, match.field);
+      selectField(match.field);
+    }, true);
+
+    document.addEventListener("input", (event) => {
+      const match = editableFromTarget(event.target);
+      if (!match) return;
+      prepareEditableElement(match.element, match.field);
+      selectedField = match.field;
+      selectField(match.field);
+      setSlideField(match.field, match.element.innerText.trim());
+    }, true);
+  }
+
   function enhanceAdmin() {
     markPreviewText();
     bindDirectEditor();
@@ -334,6 +377,7 @@
   renderAdmin = window.renderAdmin;
 
   renderAdmin();
+  bindGlobalEditorEvents();
   watchAdminPreview();
   enhanceAdminSoon();
 })();
