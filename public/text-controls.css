@@ -74,12 +74,14 @@
   resize: vertical;
 }
 
+.direct-text-parts,
 .direct-text-buttons {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
+.direct-text-parts button,
 .direct-text-buttons button {
   min-height: 38px;
   padding: 8px 11px;
@@ -90,12 +92,36 @@
   font-weight: 900;
 }
 
+.direct-text-parts button.active {
+  color: #fff;
+  background: var(--red);
+  box-shadow: 0 8px 18px rgba(230, 31, 42, 0.22);
+}
+
+.direct-text-parts button:hover,
 .direct-text-buttons button:hover {
   background: #ead8cf;
 }
 
+.preview-wrap .photo-panel,
+.preview-wrap .gallery-photo,
+.preview-wrap .video-panel,
+.preview-wrap .pt-photo,
+.preview-wrap .notice-orb,
+.preview-wrap .hero-logo,
+.preview-wrap .split-half,
+.preview-wrap .corner-logo,
+.preview-wrap .menu-gallery,
+.preview-wrap .menu-items,
+.preview-wrap .date-board,
+.preview-wrap .info-cards {
+  pointer-events: none;
+}
+
 .preview-wrap .direct-editable {
   pointer-events: auto !important;
+  position: relative;
+  z-index: 20;
   border-radius: 5px;
   cursor: text !important;
   box-shadow: 0 0 0 2px rgba(230, 31, 42, 0);
