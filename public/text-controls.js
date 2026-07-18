@@ -38,6 +38,7 @@
 
   let selectedField = "heading";
   let saveTimer = null;
+  let enhanceTimer = null;
 
   function cleanCss(value = "") {
     return String(value).replace(/[;"<>]/g, "").trim();
@@ -260,16 +261,23 @@
     const preview = document.querySelector(".preview-wrap");
     if (!toolbar || !input) return;
 
-    toolbar.addEventListener("click", (event) => {
-      const fieldButton = event.target.closest("[data-direct-field]");
-      const actionButton = event.target.closest("[data-direct-action]");
-      if (fieldButton) selectField(fieldButton.dataset.directField);
-      if (actionButton) runAction(actionButton.dataset.directAction);
-    });
+    if (toolbar.dataset.directBound !== "true") {
+      toolbar.dataset.directBound = "true";
+      toolbar.addEventListener("click", (event) => {
+        const fieldButton = event.target.closest("[data-direct-field]");
+        const actionButton = event.target.closest("[data-direct-action]");
+        if (fieldButton) selectField(fieldButton.dataset.directField);
+        if (actionButton) runAction(actionButton.dataset.directAction);
+      });
+    }
 
-    input.addEventListener("input", () => updateSelectedText(input.value));
+    if (input.dataset.directBound !== "true") {
+      input.dataset.directBound = "true";
+      input.addEventListener("input", () => updateSelectedText(input.value));
+    }
 
-    if (preview) {
+    if (preview && preview.dataset.directBound !== "true") {
+      preview.dataset.directBound = "true";
       preview.addEventListener("pointerdown", (event) => {
         const element = event.target.closest(".direct-editable");
         if (!element || !preview.contains(element)) return;
@@ -295,13 +303,37 @@
     selectField(selectedField || "heading");
   }
 
+  function enhanceAdmin() {
+    markPreviewText();
+    bindDirectEditor();
+  }
+
+  function enhanceAdminSoon() {
+    clearTimeout(enhanceTimer);
+    enhanceTimer = setTimeout(enhanceAdmin, 0);
+  }
+
+  function watchAdminPreview() {
+    const appRoot = document.querySelector("#app") || document.body;
+    if (!appRoot || appRoot.dataset.directObserver === "true") return;
+    appRoot.dataset.directObserver = "true";
+    const observer = new MutationObserver(() => enhanceAdminSoon());
+    observer.observe(appRoot, { childList: true, subtree: true });
+    document.addEventListener("click", (event) => {
+      if (event.target.closest(".slide-list-item, [data-id], [data-key], [data-field], #addSlide")) {
+        enhanceAdminSoon();
+      }
+    }, true);
+  }
+
   const oldRenderAdmin = window.renderAdmin || renderAdmin;
   window.renderAdmin = function renderAdminWithReliableTextControls() {
     oldRenderAdmin();
-    markPreviewText();
-    bindDirectEditor();
+    enhanceAdmin();
   };
   renderAdmin = window.renderAdmin;
 
   renderAdmin();
+  watchAdminPreview();
+  enhanceAdminSoon();
 })();
