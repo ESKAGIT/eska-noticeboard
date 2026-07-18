@@ -155,6 +155,20 @@
     element.setAttribute("tabindex", "0");
   }
 
+  function focusEditableElement(element) {
+    if (!element) return;
+    window.setTimeout(() => {
+      element.focus({ preventScroll: true });
+      const selection = window.getSelection && window.getSelection();
+      if (!selection || !document.createRange) return;
+      const range = document.createRange();
+      range.selectNodeContents(element);
+      range.collapse(false);
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }, 0);
+  }
+
   const oldSlideStyle = window.slideStyle || slideStyle;
   window.slideStyle = function slideStyleWithTextControls(slide) {
     const original = oldSlideStyle(slide);
@@ -212,7 +226,7 @@
     });
   }
 
-  function selectField(name) {
+  function selectField(name, preferredElement = null, shouldFocus = false) {
     const slide = currentSlide();
     if (!slide) return;
     selectedField = name;
@@ -221,10 +235,11 @@
       button.classList.toggle("active", button.dataset.directField === name);
     });
     document.querySelectorAll(".direct-editable.selected").forEach((item) => item.classList.remove("selected"));
-    const element = previewElementFor(name);
+    const element = preferredElement || previewElementFor(name);
     if (element) element.classList.add("selected");
+    if (shouldFocus) focusEditableElement(element);
     const input = document.querySelector("#directTextInput");
-    if (input) input.value = field(slide, name);
+    if (input) input.value = preferredElement ? preferredElement.innerText.trim() : field(slide, name);
     setMessage(`Editing ${label}`);
   }
 
@@ -296,7 +311,7 @@
       preview.addEventListener("pointerdown", (event) => {
         const element = event.target.closest(".direct-editable");
         if (!element || !preview.contains(element)) return;
-        selectField(element.dataset.directField || "heading");
+        selectField(element.dataset.directField || "heading", element, true);
       }, true);
 
       preview.addEventListener("input", (event) => {
@@ -304,14 +319,14 @@
         if (!element || !preview.contains(element)) return;
         const name = element.dataset.directField || "heading";
         selectedField = name;
-        selectField(name);
+        selectField(name, element, false);
         setSlideField(name, element.innerText.trim());
       }, true);
 
       preview.addEventListener("focusin", (event) => {
         const element = event.target.closest(".direct-editable");
         if (!element || !preview.contains(element)) return;
-        selectField(element.dataset.directField || "heading");
+        selectField(element.dataset.directField || "heading", element, false);
       }, true);
     }
 
@@ -326,14 +341,14 @@
       const match = editableFromTarget(event.target);
       if (!match) return;
       prepareEditableElement(match.element, match.field);
-      selectField(match.field);
+      selectField(match.field, match.element, true);
     }, true);
 
     document.addEventListener("focusin", (event) => {
       const match = editableFromTarget(event.target);
       if (!match) return;
       prepareEditableElement(match.element, match.field);
-      selectField(match.field);
+      selectField(match.field, match.element, false);
     }, true);
 
     document.addEventListener("input", (event) => {
@@ -341,7 +356,7 @@
       if (!match) return;
       prepareEditableElement(match.element, match.field);
       selectedField = match.field;
-      selectField(match.field);
+      selectField(match.field, match.element, false);
       setSlideField(match.field, match.element.innerText.trim());
     }, true);
   }
