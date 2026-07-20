@@ -10,6 +10,12 @@
     ["photoNotes", "Photo notes", "textarea"]
   ];
 
+  const sizeFields = [
+    ["headingSize", "Heading size", 36, 150, 92],
+    ["subheadingSize", "Subheading size", 22, 78, 38],
+    ["bodySize", "Body size", 18, 56, 28]
+  ];
+
   let panel = null;
   let saveTimer = null;
   let lastSlideId = "";
@@ -51,18 +57,37 @@
           </label>
         `).join("")}
       </div>
+      <div class="quick-size-tools" aria-label="Text size tools">
+        <div class="quick-size-head">
+          <strong>Text Size</strong>
+          <button type="button" data-size-reset>Reset sizes</button>
+        </div>
+        ${sizeFields.map(([name, label, min, max]) => `
+          <label class="quick-size-row">
+            <span>${label}</span>
+            <small>Small</small>
+            <input data-quick-size="${name}" type="range" min="${min}" max="${max}" step="2">
+            <small>Large</small>
+          </label>
+        `).join("")}
+      </div>
     `;
     document.body.appendChild(panel);
 
     panel.addEventListener("input", (event) => {
       const control = event.target.closest("[data-quick-field]");
-      if (!control) return;
-      updateField(control.dataset.quickField, control.value);
+      const sizeControl = event.target.closest("[data-quick-size]");
+      if (control) updateField(control.dataset.quickField, control.value);
+      if (sizeControl) updateField(sizeControl.dataset.quickSize, `${sizeControl.value}px`);
     });
 
     panel.querySelector("[data-quick-toggle]").addEventListener("click", () => {
       panel.classList.toggle("collapsed");
       panel.querySelector("[data-quick-toggle]").textContent = panel.classList.contains("collapsed") ? "Show" : "Hide";
+    });
+
+    panel.querySelector("[data-size-reset]").addEventListener("click", () => {
+      resetSizes();
     });
 
     return panel;
@@ -102,6 +127,25 @@
     saveSoon();
   }
 
+  function resetSizes() {
+    const slide = currentSlide();
+    if (!slide) return;
+    slide.fields = slide.fields || {};
+    sizeFields.forEach(([name]) => {
+      delete slide.fields[name];
+      syncNormalFields(name, "");
+    });
+    refreshPreview(slide);
+    refreshPanel();
+    saveSoon();
+  }
+
+  function parseSize(slide, name, fallback) {
+    const raw = fieldValue(slide, name);
+    const match = String(raw).match(/(\d+(\.\d+)?)/);
+    return match ? Number(match[1]) : fallback;
+  }
+
   function refreshPanel() {
     if (!isAdmin()) {
       if (panel) panel.hidden = true;
@@ -119,6 +163,12 @@
       const control = activePanel.querySelector(`[data-quick-field="${name}"]`);
       if (!control || document.activeElement === control) return;
       control.value = fieldValue(slide, name);
+    });
+
+    sizeFields.forEach(([name, , , , fallback]) => {
+      const control = activePanel.querySelector(`[data-quick-size="${name}"]`);
+      if (!control || document.activeElement === control) return;
+      control.value = parseSize(slide, name, fallback);
     });
 
     lastSlideId = slide.id;
