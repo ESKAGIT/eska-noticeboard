@@ -13,6 +13,32 @@
   box-shadow: 0 24px 70px rgba(20, 20, 20, .28);
 }
 
+.slide .copy-block h1,
+.slide .cafe-intro h1,
+.slide .split-copy h1 {
+  font-size: var(--heading-size) !important;
+}
+
+.slide .copy-block h2,
+.slide .cafe-intro h2,
+.slide .split-copy h2 {
+  font-size: var(--subheading-size) !important;
+}
+
+.slide .copy-block .body-copy,
+.slide .copy-block .cta,
+.slide .cafe-intro .body-copy,
+.slide .cafe-intro .cta,
+.slide .split-copy .body-copy,
+.slide .date-board strong,
+.slide .date-board span,
+.slide .date-board small,
+.slide .menu-items strong,
+.slide .menu-items small,
+.slide .menu-items span {
+  font-size: var(--body-size) !important;
+}
+
 .quick-editor[hidden] {
   display: none;
 }
