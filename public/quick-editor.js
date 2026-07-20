@@ -16,9 +16,25 @@
     ["bodySize", "Body size", 18, 56, 28]
   ];
 
+  const clickTargets = [
+    [".copy-block .eyebrow", "eyebrow"],
+    [".copy-block h1", "heading"],
+    [".copy-block h2", "subheading"],
+    [".copy-block .body-copy", "body"],
+    [".copy-block .cta", "cta"],
+    [".cafe-intro .eyebrow", "eyebrow"],
+    [".cafe-intro h1", "heading"],
+    [".cafe-intro h2", "subheading"],
+    [".cafe-intro .body-copy", "body"],
+    [".cafe-intro .cta", "cta"],
+    [".date-board", "dateList"],
+    [".menu-items", "menuItems"]
+  ];
+
   let panel = null;
   let saveTimer = null;
   let lastSlideId = "";
+  let selectedField = "heading";
   let installed = false;
 
   function isAdmin() {
@@ -49,7 +65,7 @@
       </div>
       <div class="quick-editor-body">
         ${fields.map(([name, label, type]) => `
-          <label class="${type === "textarea" ? "wide" : ""}">
+          <label class="${type === "textarea" ? "wide" : ""}" data-quick-label="${name}">
             ${label}
             ${type === "textarea"
               ? `<textarea data-quick-field="${name}" rows="${name === "dateList" || name === "menuItems" ? "5" : "3"}"></textarea>`
@@ -77,8 +93,19 @@
     panel.addEventListener("input", (event) => {
       const control = event.target.closest("[data-quick-field]");
       const sizeControl = event.target.closest("[data-quick-size]");
-      if (control) updateField(control.dataset.quickField, control.value);
+      if (control) {
+        selectedField = control.dataset.quickField;
+        markSelectedField();
+        updateField(control.dataset.quickField, control.value);
+      }
       if (sizeControl) updateField(sizeControl.dataset.quickSize, `${sizeControl.value}px`);
+    });
+
+    panel.addEventListener("focusin", (event) => {
+      const control = event.target.closest("[data-quick-field]");
+      if (!control) return;
+      selectedField = control.dataset.quickField;
+      markSelectedField();
     });
 
     panel.querySelector("[data-quick-toggle]").addEventListener("click", () => {
@@ -108,6 +135,39 @@
     document.querySelectorAll(`[data-field="${name}"]`).forEach((input) => {
       if (input.value !== value) input.value = value;
     });
+  }
+
+  function matchPreviewText(target) {
+    const preview = target && target.closest ? target.closest(".preview-wrap") : null;
+    if (!preview) return null;
+    for (const [selector, name] of clickTargets) {
+      const element = target.closest(selector);
+      if (element && preview.contains(element)) return { element, name };
+    }
+    return null;
+  }
+
+  function markSelectedField() {
+    if (!panel) return;
+    panel.querySelectorAll("[data-quick-label]").forEach((label) => {
+      label.classList.toggle("selected", label.dataset.quickLabel === selectedField);
+    });
+  }
+
+  function focusField(name) {
+    selectedField = name;
+    const activePanel = ensurePanel();
+    activePanel.classList.remove("collapsed");
+    activePanel.querySelector("[data-quick-toggle]").textContent = "Hide";
+    refreshPanel();
+    markSelectedField();
+    const control = activePanel.querySelector(`[data-quick-field="${name}"]`);
+    if (!control) return;
+    control.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    window.setTimeout(() => {
+      control.focus({ preventScroll: true });
+      if (control.select) control.select();
+    }, 0);
   }
 
   function refreshPreview(slide) {
@@ -165,6 +225,8 @@
       control.value = fieldValue(slide, name);
     });
 
+    markSelectedField();
+
     sizeFields.forEach(([name, , , , fallback]) => {
       const control = activePanel.querySelector(`[data-quick-size="${name}"]`);
       if (!control || document.activeElement === control) return;
@@ -183,6 +245,15 @@
       if (!slide || slide.id !== lastSlideId) refreshPanel();
     });
     observer.observe(document.body, { childList: true, subtree: true });
+
+    document.addEventListener("pointerdown", (event) => {
+      if (event.target.closest("#quickTextEditor")) return;
+      const match = matchPreviewText(event.target);
+      if (!match) return;
+      event.preventDefault();
+      event.stopPropagation();
+      focusField(match.name);
+    }, true);
 
     document.addEventListener("click", () => {
       window.setTimeout(refreshPanel, 0);
