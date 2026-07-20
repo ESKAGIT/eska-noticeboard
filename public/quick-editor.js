@@ -11,10 +11,21 @@
   ];
 
   const sizeFields = [
-    ["headingSize", "Heading size", 36, 150, 92],
-    ["subheadingSize", "Subheading size", 22, 78, 38],
-    ["bodySize", "Body size", 18, 56, 28]
+    ["headingSize", "Heading size", 36, 150, 92, "--heading-size"],
+    ["subheadingSize", "Subheading size", 22, 78, 38, "--subheading-size"],
+    ["bodySize", "Body size", 18, 72, 28, "--body-size"]
   ];
+
+  const fieldSizes = {
+    eyebrow: "bodySize",
+    heading: "headingSize",
+    subheading: "subheadingSize",
+    cta: "bodySize",
+    body: "bodySize",
+    dateList: "bodySize",
+    menuItems: "bodySize",
+    photoNotes: "bodySize"
+  };
 
   const clickTargets = [
     [".copy-block .eyebrow", "eyebrow"],
@@ -78,6 +89,12 @@
           <strong>Text Size</strong>
           <button type="button" data-size-reset>Reset sizes</button>
         </div>
+        <label class="quick-size-row selected-size">
+          <span data-selected-size-label>Selected text size</span>
+          <small>Small</small>
+          <input data-selected-size type="range" min="14" max="150" step="2">
+          <small>Large</small>
+        </label>
         ${sizeFields.map(([name, label, min, max]) => `
           <label class="quick-size-row">
             <span>${label}</span>
@@ -93,12 +110,14 @@
     panel.addEventListener("input", (event) => {
       const control = event.target.closest("[data-quick-field]");
       const sizeControl = event.target.closest("[data-quick-size]");
+      const selectedSizeControl = event.target.closest("[data-selected-size]");
       if (control) {
         selectedField = control.dataset.quickField;
         markSelectedField();
         updateField(control.dataset.quickField, control.value);
       }
-      if (sizeControl) updateField(sizeControl.dataset.quickSize, `${sizeControl.value}px`);
+      if (sizeControl) updateSize(sizeControl.dataset.quickSize, `${sizeControl.value}px`);
+      if (selectedSizeControl) updateSelectedSize(`${selectedSizeControl.value}px`);
     });
 
     panel.addEventListener("focusin", (event) => {
@@ -187,6 +206,32 @@
     saveSoon();
   }
 
+  function sizeInfo(name) {
+    return sizeFields.find(([key]) => key === name) || sizeFields[2];
+  }
+
+  function selectedSizeField() {
+    return fieldSizes[selectedField] || "bodySize";
+  }
+
+  function applySizeToPreview(name, value) {
+    const [, , , , , variable] = sizeInfo(name);
+    const slideEl = document.querySelector(".preview-wrap .preview-slide");
+    if (!slideEl || !variable) return;
+    if (value) slideEl.style.setProperty(variable, value);
+    else slideEl.style.removeProperty(variable);
+  }
+
+  function updateSize(name, value) {
+    updateField(name, value);
+    applySizeToPreview(name, value);
+    refreshSizeControls();
+  }
+
+  function updateSelectedSize(value) {
+    updateSize(selectedSizeField(), value);
+  }
+
   function resetSizes() {
     const slide = currentSlide();
     if (!slide) return;
@@ -194,6 +239,7 @@
     sizeFields.forEach(([name]) => {
       delete slide.fields[name];
       syncNormalFields(name, "");
+      applySizeToPreview(name, "");
     });
     refreshPreview(slide);
     refreshPanel();
@@ -204,6 +250,27 @@
     const raw = fieldValue(slide, name);
     const match = String(raw).match(/(\d+(\.\d+)?)/);
     return match ? Number(match[1]) : fallback;
+  }
+
+  function refreshSizeControls() {
+    if (!panel) return;
+    const slide = currentSlide();
+    if (!slide) return;
+
+    sizeFields.forEach(([name, , , , fallback]) => {
+      const control = panel.querySelector(`[data-quick-size="${name}"]`);
+      if (!control || document.activeElement === control) return;
+      control.value = parseSize(slide, name, fallback);
+    });
+
+    const selectedControl = panel.querySelector("[data-selected-size]");
+    const selectedLabel = panel.querySelector("[data-selected-size-label]");
+    const selectedName = selectedSizeField();
+    const [, label, , , fallback] = sizeInfo(selectedName);
+    if (selectedLabel) selectedLabel.textContent = `Selected text size (${label.replace(" size", "")})`;
+    if (selectedControl && document.activeElement !== selectedControl) {
+      selectedControl.value = parseSize(slide, selectedName, fallback);
+    }
   }
 
   function refreshPanel() {
@@ -227,11 +294,7 @@
 
     markSelectedField();
 
-    sizeFields.forEach(([name, , , , fallback]) => {
-      const control = activePanel.querySelector(`[data-quick-size="${name}"]`);
-      if (!control || document.activeElement === control) return;
-      control.value = parseSize(slide, name, fallback);
-    });
+    refreshSizeControls();
 
     lastSlideId = slide.id;
   }
