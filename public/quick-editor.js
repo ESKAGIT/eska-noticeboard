@@ -11,20 +11,25 @@
   ];
 
   const sizeFields = [
+    ["eyebrowSize", "Small label size", 12, 48, 22, "--eyebrow-size"],
     ["headingSize", "Heading size", 36, 150, 92, "--heading-size"],
     ["subheadingSize", "Subheading size", 22, 78, 38, "--subheading-size"],
-    ["bodySize", "Body size", 18, 72, 28, "--body-size"]
+    ["bodySize", "Body size", 18, 72, 28, "--body-size"],
+    ["ctaSize", "Call to action size", 16, 56, 24, "--cta-size"],
+    ["dateListSize", "Dates list size", 16, 64, 28, "--date-list-size"],
+    ["menuItemsSize", "Menu items size", 14, 56, 26, "--menu-items-size"],
+    ["photoNotesSize", "Photo notes size", 14, 56, 24, "--photo-notes-size"]
   ];
 
   const fieldSizes = {
-    eyebrow: "bodySize",
+    eyebrow: "eyebrowSize",
     heading: "headingSize",
     subheading: "subheadingSize",
-    cta: "bodySize",
+    cta: "ctaSize",
     body: "bodySize",
-    dateList: "bodySize",
-    menuItems: "bodySize",
-    photoNotes: "bodySize"
+    dateList: "dateListSize",
+    menuItems: "menuItemsSize",
+    photoNotes: "photoNotesSize"
   };
 
   const clickTargets = [
@@ -95,28 +100,18 @@
           <input data-selected-size type="range" min="14" max="150" step="2">
           <small>Large</small>
         </label>
-        ${sizeFields.map(([name, label, min, max]) => `
-          <label class="quick-size-row">
-            <span>${label}</span>
-            <small>Small</small>
-            <input data-quick-size="${name}" type="range" min="${min}" max="${max}" step="2">
-            <small>Large</small>
-          </label>
-        `).join("")}
       </div>
     `;
     document.body.appendChild(panel);
 
     panel.addEventListener("input", (event) => {
       const control = event.target.closest("[data-quick-field]");
-      const sizeControl = event.target.closest("[data-quick-size]");
       const selectedSizeControl = event.target.closest("[data-selected-size]");
       if (control) {
         selectedField = control.dataset.quickField;
         markSelectedField();
         updateField(control.dataset.quickField, control.value);
       }
-      if (sizeControl) updateSize(sizeControl.dataset.quickSize, `${sizeControl.value}px`);
       if (selectedSizeControl) updateSelectedSize(`${selectedSizeControl.value}px`);
     });
 
@@ -252,22 +247,48 @@
     return match ? Number(match[1]) : fallback;
   }
 
+  function cssLengthValue(value = "") {
+    const clean = String(value).replace(/[;"<>]/g, "").trim();
+    if (!clean) return "";
+    if (/^-?\d+(\.\d+)?$/.test(clean)) return `${clean}px`;
+    if (/^-?\d+(\.\d+)?(px|rem|em|%|vw|vh)$/i.test(clean)) return clean;
+    return "";
+  }
+
+  function sizeVars(slide) {
+    return sizeFields
+      .map(([name, , , , , variable]) => {
+        const value = cssLengthValue(fieldValue(slide, name));
+        return value ? `${variable}: ${value}` : "";
+      })
+      .filter(Boolean);
+  }
+
+  const baseSlideStyle = window.slideStyle || slideStyle;
+  window.slideStyle = function slideStyleWithQuickEditorSizes(slide) {
+    const original = baseSlideStyle(slide);
+    const extra = sizeVars(slide);
+    if (!extra.length) return original;
+    const extraText = extra.join("; ");
+    if (!original) return ` style="${escapeHtml(extraText)}"`;
+    return original.replace(/"$/, `; ${escapeHtml(extraText)}"`);
+  };
+  slideStyle = window.slideStyle;
+
   function refreshSizeControls() {
     if (!panel) return;
     const slide = currentSlide();
     if (!slide) return;
 
-    sizeFields.forEach(([name, , , , fallback]) => {
-      const control = panel.querySelector(`[data-quick-size="${name}"]`);
-      if (!control || document.activeElement === control) return;
-      control.value = parseSize(slide, name, fallback);
-    });
-
     const selectedControl = panel.querySelector("[data-selected-size]");
     const selectedLabel = panel.querySelector("[data-selected-size-label]");
     const selectedName = selectedSizeField();
-    const [, label, , , fallback] = sizeInfo(selectedName);
+    const [, label, min, max, fallback] = sizeInfo(selectedName);
     if (selectedLabel) selectedLabel.textContent = `Selected text size (${label.replace(" size", "")})`;
+    if (selectedControl) {
+      selectedControl.min = min;
+      selectedControl.max = max;
+    }
     if (selectedControl && document.activeElement !== selectedControl) {
       selectedControl.value = parseSize(slide, selectedName, fallback);
     }
