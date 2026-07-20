@@ -13,6 +13,11 @@
   box-shadow: 0 24px 70px rgba(20, 20, 20, .28);
 }
 
+.slide .copy-block .eyebrow,
+.slide .cafe-intro .eyebrow {
+  font-size: var(--eyebrow-size) !important;
+}
+
 .slide .copy-block h1,
 .slide .cafe-intro h1,
 .slide .split-copy h1 {
@@ -26,17 +31,26 @@
 }
 
 .slide .copy-block .body-copy,
-.slide .copy-block .cta,
 .slide .cafe-intro .body-copy,
-.slide .cafe-intro .cta,
-.slide .split-copy .body-copy,
+.slide .split-copy .body-copy {
+  font-size: var(--body-size) !important;
+}
+
+.slide .copy-block .cta,
+.slide .cafe-intro .cta {
+  font-size: var(--cta-size) !important;
+}
+
 .slide .date-board strong,
 .slide .date-board span,
-.slide .date-board small,
+.slide .date-board small {
+  font-size: var(--date-list-size) !important;
+}
+
 .slide .menu-items strong,
 .slide .menu-items small,
 .slide .menu-items span {
-  font-size: var(--body-size) !important;
+  font-size: var(--menu-items-size) !important;
 }
 
 .quick-editor[hidden] {
