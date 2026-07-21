@@ -7,7 +7,8 @@
     ["body", "Body text", "textarea"],
     ["dateList", "Dates / timetable list", "textarea"],
     ["menuItems", "Menu items", "textarea"],
-    ["photoNotes", "Photo notes", "textarea"]
+    ["photoNotes", "Photo notes", "textarea"],
+    ["qrText", "QR text", "input"]
   ];
 
   const sizeFields = [
@@ -18,7 +19,8 @@
     ["ctaSize", "Call to action size", 16, 56, 24, "--cta-size"],
     ["dateListSize", "Dates list size", 16, 64, 28, "--date-list-size"],
     ["menuItemsSize", "Menu items size", 14, 56, 26, "--menu-items-size"],
-    ["photoNotesSize", "Photo notes size", 14, 56, 24, "--photo-notes-size"]
+    ["photoNotesSize", "Photo notes size", 14, 56, 24, "--photo-notes-size"],
+    ["qrTextSize", "QR text size", 10, 42, 18, "--qr-text-size"]
   ];
 
   const fieldSizes = {
@@ -29,7 +31,8 @@
     body: "bodySize",
     dateList: "dateListSize",
     menuItems: "menuItemsSize",
-    photoNotes: "photoNotesSize"
+    photoNotes: "photoNotesSize",
+    qrText: "qrTextSize"
   };
 
   const imageFields = [
@@ -39,8 +42,20 @@
     ["image4", "Picture 4", "--image-4"],
     ["image5", "Picture 5", "--image-5"],
     ["image6", "Picture 6", "--image-6"],
-    ["logo", "Logo", "--logo"]
+    ["logo", "Logo", "--logo"],
+    ["qr", "QR code", "--qr"]
   ];
+
+  const imageFallbacks = {
+    qr: { Width: 320, Height: 140 },
+    logo: { Width: 120, Height: 120 },
+    image: { Width: 520, Height: 360 },
+    imageLeft: { Width: 520, Height: 360 },
+    imageRight: { Width: 520, Height: 360 },
+    image4: { Width: 320, Height: 220 },
+    image5: { Width: 320, Height: 220 },
+    image6: { Width: 320, Height: 220 }
+  };
 
   const imageTargets = [
     [".hero-logo", "image"],
@@ -54,6 +69,7 @@
     [".menu-photo-card:nth-child(4) .menu-photo", "image4"],
     [".menu-photo-card:nth-child(5) .menu-photo", "image5"],
     [".menu-photo-card:nth-child(6) .menu-photo", "image6"],
+    [".qr-layer", "qr"],
     [".split-left", "imageLeft"],
     [".split-right", "imageRight"]
   ];
@@ -69,6 +85,7 @@
     [".cafe-intro h2", "subheading"],
     [".cafe-intro .body-copy", "body"],
     [".cafe-intro .cta", "cta"],
+    [".qr-text", "qrText"],
     [".date-board", "dateList"],
     [".menu-items", "menuItems"]
   ];
@@ -490,6 +507,11 @@
     return match ? Number(match[0]) : fallback;
   }
 
+  function imageFallback(control) {
+    const defaults = imageFallbacks[selectedImage] || imageFallbacks.image;
+    return defaults[control] || (control === "PosX" || control === "PosY" ? 50 : 0);
+  }
+
   function refreshImageControls() {
     if (!panel) return;
     const slide = currentSlide();
@@ -504,12 +526,12 @@
     const y = panel.querySelector('[data-image-control="Y"]');
     const posX = panel.querySelector('[data-image-control="PosX"]');
     const posY = panel.querySelector('[data-image-control="PosY"]');
-    if (width && document.activeElement !== width) width.value = parseNumber(slide, imageFieldKey("Width"), 520);
-    if (height && document.activeElement !== height) height.value = parseNumber(slide, imageFieldKey("Height"), 360);
-    if (x && document.activeElement !== x) x.value = parseNumber(slide, imageFieldKey("X"), 0);
-    if (y && document.activeElement !== y) y.value = parseNumber(slide, imageFieldKey("Y"), 0);
-    if (posX && document.activeElement !== posX) posX.value = parseNumber(slide, imageFieldKey("PosX"), 50);
-    if (posY && document.activeElement !== posY) posY.value = parseNumber(slide, imageFieldKey("PosY"), 50);
+    if (width && document.activeElement !== width) width.value = parseNumber(slide, imageFieldKey("Width"), imageFallback("Width"));
+    if (height && document.activeElement !== height) height.value = parseNumber(slide, imageFieldKey("Height"), imageFallback("Height"));
+    if (x && document.activeElement !== x) x.value = parseNumber(slide, imageFieldKey("X"), imageFallback("X"));
+    if (y && document.activeElement !== y) y.value = parseNumber(slide, imageFieldKey("Y"), imageFallback("Y"));
+    if (posX && document.activeElement !== posX) posX.value = parseNumber(slide, imageFieldKey("PosX"), imageFallback("PosX"));
+    if (posY && document.activeElement !== posY) posY.value = parseNumber(slide, imageFieldKey("PosY"), imageFallback("PosY"));
     markSelectedImage();
   }
 
