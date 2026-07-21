@@ -10,6 +10,33 @@
     box.className = `status show${isError ? " error" : ""}`;
   }
 
+  function backupToBrowser() {
+    if (!board) return;
+    try {
+      localStorage.setItem("eskaNoticeboardBackup", JSON.stringify({
+        savedAt: new Date().toISOString(),
+        board
+      }));
+    } catch (_) {
+      // Browser storage may be full or disabled; server save still continues.
+    }
+  }
+
+  async function restoreFromBrowserBackup() {
+    const raw = localStorage.getItem("eskaNoticeboardBackup");
+    if (!raw) return showStatus("No browser backup found on this computer.", true);
+    const backup = JSON.parse(raw);
+    if (!backup || !backup.board || !Array.isArray(backup.board.slides)) {
+      return showStatus("Browser backup is not valid.", true);
+    }
+    if (!window.confirm(`Restore browser backup from ${backup.savedAt || "unknown time"}?`)) return;
+    board = backup.board;
+    await api("/api/noticeboard", { method: "PUT", body: JSON.stringify(board) });
+    draftSlideId = board.slides[0] && board.slides[0].id;
+    showStatus("Restored browser backup.");
+    renderAdmin();
+  }
+
   async function flushAutosave() {
     if (!board || route() === "/screen" || route() === "/") return;
     if (autoSaveBusy) {
@@ -21,6 +48,7 @@
     setAutosaveStatus("Saving changes...");
     try {
       await api("/api/noticeboard", { method: "PUT", body: JSON.stringify(board) });
+      backupToBrowser();
       setAutosaveStatus("Saved automatically.");
       clearTimeout(statusTimer);
       statusTimer = setTimeout(() => {
@@ -53,6 +81,15 @@
     });
   }
 
+  if (!templates.some((item) => item.id === "menu")) {
+    templates.push({
+      id: "menu",
+      name: "Cafe Menu",
+      category: "Cafe",
+      description: "Menu board with picture, item prices, and descriptions."
+    });
+  }
+
   if (!animations.some(([id]) => id === "centre-side")) {
     animations.push(["centre-side", "Centre image to side"]);
   }
@@ -63,6 +100,15 @@
 
   function imageCss(value = "") {
     return String(value).replace(/[\\'"<>]/g, "").trim();
+  }
+
+  function cssLength(value = "") {
+    const clean = cssValue(value);
+    if (!clean) return "";
+    if (/^-?\d+(\.\d+)?$/.test(clean)) return `${clean}px`;
+    if (/^-?\d+(\.\d+)?(px|rem|em|%|vw|vh)$/i.test(clean)) return clean;
+    if (/^clamp\(/i.test(clean)) return clean;
+    return "";
   }
 
   function dateItems(slide) {
@@ -90,6 +136,12 @@
     const accent = field(slide, "accent");
     const textColor = field(slide, "textColor");
     const panelColor = field(slide, "panelColor");
+    const textX = cssLength(field(slide, "textX"));
+    const textY = cssLength(field(slide, "textY"));
+    const textWidth = cssLength(field(slide, "textWidth"));
+    const headingSize = cssLength(field(slide, "headingSize"));
+    const subheadingSize = cssLength(field(slide, "subheadingSize"));
+    const bodySize = cssLength(field(slide, "bodySize"));
 
     if (background) {
       const clean = cssValue(background);
@@ -99,6 +151,12 @@
     if (accent) styles.push(`--slide-accent: ${cssValue(accent)}`);
     if (textColor) styles.push(`--slide-text: ${cssValue(textColor)}`);
     if (panelColor) styles.push(`--panel-bg: ${cssValue(panelColor)}`);
+    if (textX) styles.push(`--text-x: ${textX}`);
+    if (textY) styles.push(`--text-y: ${textY}`);
+    if (textWidth) styles.push(`--text-width: ${textWidth}`);
+    if (headingSize) styles.push(`--heading-size: ${headingSize}`);
+    if (subheadingSize) styles.push(`--subheading-size: ${subheadingSize}`);
+    if (bodySize) styles.push(`--body-size: ${bodySize}`);
 
     return styles.length ? ` style="${escapeHtml(styles.join("; "))}"` : "";
   };
@@ -167,6 +225,26 @@
           <div class="video-panel">${video ? mediaTag(video, "Course video") : `<span>${escapeHtml(field(slide, "cta", "Add video"))}</span>`}</div>
         </div>
       `;
+    } else if (slide.template === "menu") {
+      const items = field(slide, "menuItems", "")
+        .split(/\r?\n/)
+        .map((item) => item.trim())
+        .filter(Boolean)
+        .map((item) => item.split("|").map((part) => part.trim()));
+      content = `
+        <div class="menu-photo">${mediaTag(image, field(slide, "heading"))}</div>
+        <div class="menu-board">
+          ${copyBlock(slide)}
+          <div class="menu-items">
+            ${items.map(([name = "Menu item", price = "GBP 0.00", detail = "Description"]) => `
+              <article>
+                <div><strong>${escapeHtml(name)}</strong><small>${escapeHtml(detail)}</small></div>
+                <span>${escapeHtml(price)}</span>
+              </article>
+            `).join("")}
+          </div>
+        </div>
+      `;
     } else if (slide.template === "gallery") {
       content = `<div class="gallery-photo">${mediaTag(image, field(slide, "heading"))}</div>${copyBlock(slide)}`;
     } else {
@@ -179,9 +257,24 @@
   window.editorForm = function editorForm(slide) {
     const options = templates.map((item) => `<option value="${item.id}" ${slide.template === item.id ? "selected" : ""}>${item.name}</option>`).join("");
     const animOptions = animations.map(([id, label]) => `<option value="${id}" ${slide.animation === id ? "selected" : ""}>${label}</option>`).join("");
-    const fields = ["eyebrow", "heading", "subheading", "body", "dateList", "date", "time", "location", "cta", "image", "imageLeft", "imageRight", "video", "logo", "background", "accent", "textColor", "panelColor"];
+    const fields = ["eyebrow", "heading", "subheading", "body", "dateList", "menuItems", "date", "time", "location", "cta", "image", "imageLeft", "imageRight", "image4", "image5", "image6", "video", "logo", "background", "accent", "textColor", "panelColor", "textX", "textY", "textWidth", "headingSize", "subheadingSize", "bodySize"];
     return `
       <form class="edit-form">
+        <section class="quick-text-editor" aria-label="Quick text editor">
+          <div class="quick-text-editor-head">
+            <strong>Quick Text Editor</strong>
+            <span>Type here. The slide updates and saves automatically.</span>
+          </div>
+          <div class="quick-text-grid">
+            <label>Small label<input data-field="eyebrow" value="${escapeHtml(field(slide, "eyebrow"))}"></label>
+            <label>Heading<input data-field="heading" value="${escapeHtml(field(slide, "heading"))}"></label>
+            <label>Subheading<input data-field="subheading" value="${escapeHtml(field(slide, "subheading"))}"></label>
+            <label>Call to action<input data-field="cta" value="${escapeHtml(field(slide, "cta"))}"></label>
+            <label class="span-two">Body text<textarea data-field="body" rows="3">${escapeHtml(field(slide, "body"))}</textarea></label>
+            <label class="span-two">Dates list / timetable<textarea data-field="dateList" rows="4">${escapeHtml(field(slide, "dateList"))}</textarea></label>
+            <label class="span-two">Menu items<textarea data-field="menuItems" rows="4">${escapeHtml(field(slide, "menuItems"))}</textarea></label>
+          </div>
+        </section>
         <div class="form-grid">
           <label>Template<select data-key="template">${options}</select></label>
           <label>Animation<select data-key="animation">${animOptions}</select></label>
@@ -191,15 +284,18 @@
         <div class="form-grid two">
           ${fields.map((key) => `
             <label class="${key === "body" ? "span-two" : ""}">${labelFor(key)}
-              ${key === "body" || key === "dateList" ? `<textarea data-field="${key}" rows="${key === "dateList" ? "7" : "4"}">${escapeHtml(field(slide, key))}</textarea>` : `<input data-field="${key}" value="${escapeHtml(field(slide, key))}">`}
+              ${key === "body" || key === "dateList" || key === "menuItems" ? `<textarea data-field="${key}" rows="${key === "dateList" || key === "menuItems" ? "7" : "4"}">${escapeHtml(field(slide, key))}</textarea>` : `<input data-field="${key}" value="${escapeHtml(field(slide, key))}">`}
             </label>
           `).join("")}
         </div>
         <div class="upload-row">
           <label>Upload image/video<input id="mediaUpload" type="file" accept="image/*,video/mp4,video/quicktime"><small>For Apple TV, use MP4 video where possible.</small></label>
-          <button class="secondary" id="applyToImage" type="button">Use upload as image</button>
-          <button class="secondary" id="applyToLeftImage" type="button">Use as left split image</button>
-          <button class="secondary" id="applyToRightImage" type="button">Use as right split image</button>
+          <button class="secondary" id="applyToImage" type="button">Use as picture 1</button>
+          <button class="secondary" id="applyToLeftImage" type="button">Use as picture 2</button>
+          <button class="secondary" id="applyToRightImage" type="button">Use as picture 3</button>
+          <button class="secondary" id="applyToImage4" type="button">Use as picture 4</button>
+          <button class="secondary" id="applyToImage5" type="button">Use as picture 5</button>
+          <button class="secondary" id="applyToImage6" type="button">Use as picture 6</button>
           <button class="secondary" id="applyToLogo" type="button">Use as slide logo</button>
           <button class="secondary" id="applyToBackground" type="button">Use as background</button>
           <button class="secondary" id="applyToVideo" type="button">Use upload as video</button>
@@ -214,12 +310,22 @@
     return ({
       imageLeft: "Left split image",
       imageRight: "Right split image",
+      image4: "Picture 4",
+      image5: "Picture 5",
+      image6: "Picture 6",
       dateList: "Date list, one per line: date | title | details",
+      menuItems: "Cafe menu, one per line: item | price | description",
       logo: "Slide logo",
       background: "Background colour/image",
       accent: "Accent colour",
       textColor: "Text colour",
-      panelColor: "Panel colour"
+      panelColor: "Panel colour",
+      textX: "Text horizontal position, e.g. -40 or 5%",
+      textY: "Text vertical position, e.g. 30 or -5%",
+      textWidth: "Text box width, e.g. 720 or 45%",
+      headingSize: "Heading size, e.g. 72",
+      subheadingSize: "Subheading size, e.g. 34",
+      bodySize: "Body text size, e.g. 24"
     })[key] || originalLabelFor(key);
   };
 
@@ -249,9 +355,18 @@
       scheduleAutosave(250);
       renderAdmin();
     });
-    document.querySelector("#applyToImage").addEventListener("click", () => uploadInto(slide, "image"));
-    document.querySelector("#applyToLeftImage").addEventListener("click", () => uploadInto(slide, "imageLeft"));
-    document.querySelector("#applyToRightImage").addEventListener("click", () => uploadInto(slide, "imageRight"));
+    const bindUploadButton = (selector, target) => {
+      const button = document.querySelector(selector);
+      if (!button || button.dataset.pictureUploadBound === "1") return;
+      button.dataset.pictureUploadBound = "1";
+      button.addEventListener("click", () => uploadInto(slide, target));
+    };
+    bindUploadButton("#applyToImage", "image");
+    bindUploadButton("#applyToLeftImage", "imageLeft");
+    bindUploadButton("#applyToRightImage", "imageRight");
+    bindUploadButton("#applyToImage4", "image4");
+    bindUploadButton("#applyToImage5", "image5");
+    bindUploadButton("#applyToImage6", "image6");
     document.querySelector("#applyToLogo").addEventListener("click", () => uploadInto(slide, "logo"));
     document.querySelector("#applyToBackground").addEventListener("click", () => uploadInto(slide, "background"));
     document.querySelector("#applyToVideo").addEventListener("click", () => uploadInto(slide, "video"));
@@ -310,7 +425,7 @@
     const current = board.slides.find((slide) => slide.id === draftSlideId) || board.slides[0];
     draftSlideId = current && current.id;
     app.innerHTML = `
-      ${shell("ESKA Noticeboard Admin", `<a class="secondary" href="/export">Export for USB</a><button class="primary" id="saveBoard">Save Live Screen</button>`)}
+      ${shell("ESKA Noticeboard Admin", `<a class="secondary" href="/api/backup" target="_blank">Download Backup</a><button class="secondary" id="restoreBrowserBackup" type="button">Restore Browser Backup</button><a class="secondary" href="/export">Export for USB</a><button class="primary" id="saveBoard">Save Live Screen</button>`)}
       <main class="admin-layout">
         <aside class="slide-list">
           <button class="primary wide" id="addSlide">Add Slide</button>
@@ -332,6 +447,9 @@
     document.querySelector("#saveBoard").addEventListener("click", () => {
       clearTimeout(autoSaveTimer);
       flushAutosave().catch((error) => showStatus(error.message, true));
+    });
+    document.querySelector("#restoreBrowserBackup").addEventListener("click", () => {
+      restoreFromBrowserBackup().catch((error) => showStatus(error.message, true));
     });
     document.querySelector("#addSlide").addEventListener("click", () => {
       const slide = createSlideFromTemplate("notice");
@@ -364,13 +482,36 @@
       slide.fields.accent = "#e61f2a";
       slide.fields.panelColor = "rgba(255, 255, 255, 0.96)";
     }
+    if (templateId === "menu") {
+      slide.animation = "stagger";
+      slide.duration = 16000;
+      slide.fields.eyebrow = "Dojo cafe";
+      slide.fields.heading = "Cafe Menu";
+      slide.fields.subheading = "Refreshments for students and families";
+      slide.fields.body = "Grab a drink or snack before class, after training, or while you wait.";
+      slide.fields.cta = "Ask at reception";
+      slide.fields.image = "/assets/dojo-class.svg";
+      slide.fields.menuItems = "Tea | GBP 1.50 | Freshly brewed cup\nCoffee | GBP 2.00 | Americano or white coffee\nHot chocolate | GBP 2.20 | Warm and sweet\nWater | GBP 1.00 | Still bottled water\nSnack bar | GBP 1.20 | Quick pre-class snack";
+      slide.fields.accent = "#e61f2a";
+      slide.fields.panelColor = "rgba(255, 255, 255, 0.96)";
+    }
     slide.fields.imageLeft = slide.fields.imageLeft || "";
     slide.fields.imageRight = slide.fields.imageRight || "";
+    slide.fields.image4 = slide.fields.image4 || "";
+    slide.fields.image5 = slide.fields.image5 || "";
+    slide.fields.image6 = slide.fields.image6 || "";
     slide.fields.logo = slide.fields.logo || "";
     slide.fields.background = slide.fields.background || "";
     slide.fields.accent = slide.fields.accent || "";
     slide.fields.textColor = slide.fields.textColor || "";
     slide.fields.panelColor = slide.fields.panelColor || "";
+    slide.fields.textX = slide.fields.textX || "";
+    slide.fields.textY = slide.fields.textY || "";
+    slide.fields.textWidth = slide.fields.textWidth || "";
+    slide.fields.headingSize = slide.fields.headingSize || "";
+    slide.fields.subheadingSize = slide.fields.subheadingSize || "";
+    slide.fields.bodySize = slide.fields.bodySize || "";
+    slide.fields.menuItems = slide.fields.menuItems || "";
     return slide;
   };
 
@@ -385,8 +526,6 @@
 
   if (route() === "/admin" || route() === "/templates") {
     adminView().catch(() => null);
-  } else if (route() === "/screen" || route() === "/") {
-    clearTimeout(screenTimer);
-    screenView().catch(() => null);
   }
 })();
+

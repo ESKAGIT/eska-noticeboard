@@ -238,6 +238,12 @@
     if (key === "image4") return "Cafe photo 4";
     if (key === "image5") return "Cafe photo 5";
     if (key === "image6") return "Cafe photo 6";
+    if (key === "textX") return "Text horizontal position, e.g. -40 or 5%";
+    if (key === "textY") return "Text vertical position, e.g. 30 or -5%";
+    if (key === "textWidth") return "Text box width, e.g. 720 or 45%";
+    if (key === "headingSize") return "Heading size, e.g. 72";
+    if (key === "subheadingSize") return "Subheading size, e.g. 34";
+    if (key === "bodySize") return "Body text size, e.g. 24";
     return baseLabelFor(key);
   };
   labelFor = window.labelFor;
@@ -247,9 +253,24 @@
     if (!slide || slide.template !== "menu") return baseEditorForm(slide);
     const options = templates.map((item) => `<option value="${item.id}" ${slide.template === item.id ? "selected" : ""}>${item.name}</option>`).join("");
     const animOptions = animations.map(([id, label]) => `<option value="${id}" ${slide.animation === id ? "selected" : ""}>${label}</option>`).join("");
-    const fields = ["eyebrow", "heading", "subheading", "body", "photoNotes", "menuItems", "cta", "image", "imageLeft", "imageRight", "image4", "image5", "image6", "logo", "background", "accent", "textColor", "panelColor"];
+    const fields = ["eyebrow", "heading", "subheading", "body", "photoNotes", "menuItems", "cta", "image", "imageLeft", "imageRight", "image4", "image5", "image6", "logo", "background", "accent", "textColor", "panelColor", "textX", "textY", "textWidth", "headingSize", "subheadingSize", "bodySize"];
     return `
       <form class="edit-form">
+        <section class="quick-text-editor" aria-label="Quick text editor">
+          <div class="quick-text-editor-head">
+            <strong>Quick Text Editor</strong>
+            <span>Type here. The slide updates and saves automatically.</span>
+          </div>
+          <div class="quick-text-grid">
+            <label>Small label<input data-field="eyebrow" value="${escapeHtml(field(slide, "eyebrow"))}"></label>
+            <label>Heading<input data-field="heading" value="${escapeHtml(field(slide, "heading"))}"></label>
+            <label>Subheading<input data-field="subheading" value="${escapeHtml(field(slide, "subheading"))}"></label>
+            <label>Call to action<input data-field="cta" value="${escapeHtml(field(slide, "cta"))}"></label>
+            <label class="span-two">Body text<textarea data-field="body" rows="3">${escapeHtml(field(slide, "body"))}</textarea></label>
+            <label class="span-two">Photo writing<textarea data-field="photoNotes" rows="4">${escapeHtml(field(slide, "photoNotes"))}</textarea></label>
+            <label class="span-two">Menu items<textarea data-field="menuItems" rows="4">${escapeHtml(field(slide, "menuItems"))}</textarea></label>
+          </div>
+        </section>
         <div class="form-grid">
           <label>Template<select data-key="template">${options}</select></label>
           <label>Animation<select data-key="animation">${animOptions}</select></label>
@@ -319,7 +340,8 @@
     if (!slide || slide.template !== "menu") return;
     const bindPhotoButton = (id, target) => {
       const button = document.querySelector(id);
-      if (!button) return;
+      if (!button || button.dataset.pictureUploadBound === "1") return;
+      button.dataset.pictureUploadBound = "1";
       button.addEventListener("click", () => uploadInto(slide, target));
     };
     bindPhotoButton("#applyToImage4", "image4");
@@ -354,7 +376,7 @@
     The original app has already booted before this extension loads. Re-run the active
     view so the cafe renderer and defaults are used immediately after cache refresh.
   */
-  if (route() === "/screen" || route() === "/" || route() === "/admin") {
+  if (route() === "/admin") {
     window.boot().catch(() => null);
   }
 })();

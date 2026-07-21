@@ -32,6 +32,32 @@
     photoNotes: "photoNotesSize"
   };
 
+  const imageFields = [
+    ["image", "Picture 1", "--image"],
+    ["imageLeft", "Picture 2", "--image-left"],
+    ["imageRight", "Picture 3", "--image-right"],
+    ["image4", "Picture 4", "--image-4"],
+    ["image5", "Picture 5", "--image-5"],
+    ["image6", "Picture 6", "--image-6"],
+    ["logo", "Logo", "--logo"]
+  ];
+
+  const imageTargets = [
+    [".hero-logo", "image"],
+    [".notice-orb", "logo"],
+    [".photo-panel", "image"],
+    [".gallery-photo", "image"],
+    [".pt-photo", "image"],
+    [".menu-photo-card:nth-child(1) .menu-photo", "image"],
+    [".menu-photo-card:nth-child(2) .menu-photo", "imageLeft"],
+    [".menu-photo-card:nth-child(3) .menu-photo", "imageRight"],
+    [".menu-photo-card:nth-child(4) .menu-photo", "image4"],
+    [".menu-photo-card:nth-child(5) .menu-photo", "image5"],
+    [".menu-photo-card:nth-child(6) .menu-photo", "image6"],
+    [".split-left", "imageLeft"],
+    [".split-right", "imageRight"]
+  ];
+
   const clickTargets = [
     [".copy-block .eyebrow", "eyebrow"],
     [".copy-block h1", "heading"],
@@ -51,6 +77,9 @@
   let saveTimer = null;
   let lastSlideId = "";
   let selectedField = "heading";
+  let selectedImage = "image";
+  let imageOverlay = null;
+  let activePictureDrag = null;
   let installed = false;
 
   function isAdmin() {
@@ -101,18 +130,77 @@
           <small>Large</small>
         </label>
       </div>
+      <div class="quick-image-tools" aria-label="Picture tools">
+        <div class="quick-size-head">
+          <strong>Picture Tools</strong>
+          <button type="button" data-image-reset>Reset picture</button>
+        </div>
+        <div class="quick-image-picks">
+          ${imageFields.map(([name, label]) => `<button type="button" data-image-pick="${name}">${label}</button>`).join("")}
+        </div>
+        <label class="quick-size-row">
+          <span data-selected-image-label>Selected picture</span>
+          <small>Small</small>
+          <input data-image-control="Width" type="range" min="80" max="1500" step="10">
+          <small>Wide</small>
+        </label>
+        <label class="quick-size-row">
+          <span>Height</span>
+          <small>Short</small>
+          <input data-image-control="Height" type="range" min="80" max="950" step="10">
+          <small>Tall</small>
+        </label>
+        <label class="quick-size-row">
+          <span>Move left/right</span>
+          <small>Left</small>
+          <input data-image-control="X" type="range" min="-500" max="500" step="5">
+          <small>Right</small>
+        </label>
+        <label class="quick-size-row">
+          <span>Move up/down</span>
+          <small>Up</small>
+          <input data-image-control="Y" type="range" min="-350" max="350" step="5">
+          <small>Down</small>
+        </label>
+        <label class="quick-size-row">
+          <span>Crop position X</span>
+          <small>Left</small>
+          <input data-image-control="PosX" type="range" min="0" max="100" step="1">
+          <small>Right</small>
+        </label>
+        <label class="quick-size-row">
+          <span>Crop position Y</span>
+          <small>Top</small>
+          <input data-image-control="PosY" type="range" min="0" max="100" step="1">
+          <small>Bottom</small>
+        </label>
+        <div class="quick-fit-buttons">
+          <button type="button" data-image-fit="cover">Fill</button>
+          <button type="button" data-image-fit="contain">Fit</button>
+          <button type="button" data-image-fit="fill">Stretch</button>
+        </div>
+      </div>
     `;
     document.body.appendChild(panel);
 
     panel.addEventListener("input", (event) => {
       const control = event.target.closest("[data-quick-field]");
       const selectedSizeControl = event.target.closest("[data-selected-size]");
+      const imageControl = event.target.closest("[data-image-control]");
       if (control) {
         selectedField = control.dataset.quickField;
         markSelectedField();
         updateField(control.dataset.quickField, control.value);
       }
       if (selectedSizeControl) updateSelectedSize(`${selectedSizeControl.value}px`);
+      if (imageControl) updateSelectedImageValue(imageControl.dataset.imageControl, imageControl.value);
+    });
+
+    panel.addEventListener("click", (event) => {
+      const imagePick = event.target.closest("[data-image-pick]");
+      const imageFit = event.target.closest("[data-image-fit]");
+      if (imagePick) selectImage(imagePick.dataset.imagePick);
+      if (imageFit) updateSelectedImageValue("Fit", imageFit.dataset.imageFit);
     });
 
     panel.addEventListener("focusin", (event) => {
@@ -129,6 +217,10 @@
 
     panel.querySelector("[data-size-reset]").addEventListener("click", () => {
       resetSizes();
+    });
+
+    panel.querySelector("[data-image-reset]").addEventListener("click", () => {
+      resetImage();
     });
 
     return panel;
@@ -161,6 +253,16 @@
     return null;
   }
 
+  function matchPreviewImage(target) {
+    const preview = target && target.closest ? target.closest(".preview-wrap") : null;
+    if (!preview) return null;
+    for (const [selector, name] of imageTargets) {
+      const element = target.closest(selector);
+      if (element && preview.contains(element)) return { element, name };
+    }
+    return null;
+  }
+
   function markSelectedField() {
     if (!panel) return;
     panel.querySelectorAll("[data-quick-label]").forEach((label) => {
@@ -184,10 +286,33 @@
     }, 0);
   }
 
+  function imageInfo(name = selectedImage) {
+    return imageFields.find(([key]) => key === name) || imageFields[0];
+  }
+
+  function imageFieldKey(control, imageName = selectedImage) {
+    return `${imageName}${control}`;
+  }
+
+  function selectImage(name) {
+    selectedImage = name;
+    markSelectedImage();
+    refreshImageControls();
+    drawPictureSelection();
+  }
+
+  function markSelectedImage() {
+    if (!panel) return;
+    panel.querySelectorAll("[data-image-pick]").forEach((button) => {
+      button.classList.toggle("active", button.dataset.imagePick === selectedImage);
+    });
+  }
+
   function refreshPreview(slide) {
     const preview = document.querySelector(".preview-wrap");
     if (preview && typeof renderSlide === "function") {
       preview.innerHTML = renderSlide(slide, true);
+      window.setTimeout(drawPictureSelection, 0);
     }
   }
 
@@ -199,6 +324,15 @@
     syncNormalFields(name, value);
     refreshPreview(slide);
     saveSoon();
+  }
+
+  function updateSelectedImageValue(control, rawValue) {
+    const suffix = control;
+    const isPercent = suffix === "PosX" || suffix === "PosY";
+    const isFit = suffix === "Fit";
+    const value = isFit ? rawValue : `${rawValue}${isPercent ? "%" : "px"}`;
+    setImageField(suffix, value);
+    refreshImageControls();
   }
 
   function sizeInfo(name) {
@@ -255,6 +389,19 @@
     return "";
   }
 
+  function cssPercentValue(value = "") {
+    const clean = String(value).replace(/[;"<>]/g, "").trim();
+    if (!clean) return "";
+    if (/^-?\d+(\.\d+)?$/.test(clean)) return `${clean}%`;
+    if (/^-?\d+(\.\d+)?%$/i.test(clean)) return clean;
+    return "";
+  }
+
+  function cssKeywordValue(value = "") {
+    const clean = String(value).replace(/[;"<>]/g, "").trim();
+    return /^(cover|contain|fill|scale-down|none)$/i.test(clean) ? clean : "";
+  }
+
   function sizeVars(slide) {
     return sizeFields
       .map(([name, , , , , variable]) => {
@@ -264,10 +411,54 @@
       .filter(Boolean);
   }
 
+  function imageVars(slide) {
+    const vars = [];
+    imageFields.forEach(([name, , prefix]) => {
+      const width = cssLengthValue(fieldValue(slide, imageFieldKey("Width", name)));
+      const height = cssLengthValue(fieldValue(slide, imageFieldKey("Height", name)));
+      const x = cssLengthValue(fieldValue(slide, imageFieldKey("X", name)));
+      const y = cssLengthValue(fieldValue(slide, imageFieldKey("Y", name)));
+      const fit = cssKeywordValue(fieldValue(slide, imageFieldKey("Fit", name)));
+      const posX = cssPercentValue(fieldValue(slide, imageFieldKey("PosX", name)));
+      const posY = cssPercentValue(fieldValue(slide, imageFieldKey("PosY", name)));
+      if (width) vars.push(`${prefix}-w: ${width}`);
+      if (height) vars.push(`${prefix}-h: ${height}`);
+      if (x) vars.push(`${prefix}-x: ${x}`);
+      if (y) vars.push(`${prefix}-y: ${y}`);
+      if (fit) vars.push(`${prefix}-fit: ${fit}`);
+      if (posX) vars.push(`${prefix}-pos-x: ${posX}`);
+      if (posY) vars.push(`${prefix}-pos-y: ${posY}`);
+    });
+    return vars;
+  }
+
+  function applyImageToPreview(imageName = selectedImage) {
+    const slide = currentSlide();
+    const slideEl = document.querySelector(".preview-wrap .preview-slide");
+    if (!slide || !slideEl) return;
+    const [, , prefix] = imageInfo(imageName);
+    const properties = {
+      Width: "-w",
+      Height: "-h",
+      X: "-x",
+      Y: "-y",
+      Fit: "-fit",
+      PosX: "-pos-x",
+      PosY: "-pos-y"
+    };
+    Object.entries(properties).forEach(([suffix, property]) => {
+      const value = fieldValue(slide, imageFieldKey(suffix, imageName));
+      const cssName = `${prefix}${property}`;
+      if (value) slideEl.style.setProperty(cssName, value);
+      else slideEl.style.removeProperty(cssName);
+    });
+    drawPictureSelection();
+  }
+
   const baseSlideStyle = window.slideStyle || slideStyle;
   window.slideStyle = function slideStyleWithQuickEditorSizes(slide) {
     const original = baseSlideStyle(slide);
-    const extra = sizeVars(slide);
+    const extra = [...sizeVars(slide), ...imageVars(slide)];
     if (!extra.length) return original;
     const extraText = extra.join("; ");
     if (!original) return ` style="${escapeHtml(extraText)}"`;
@@ -294,6 +485,201 @@
     }
   }
 
+  function parseNumber(slide, key, fallback) {
+    const match = String(fieldValue(slide, key)).match(/-?\d+(\.\d+)?/);
+    return match ? Number(match[0]) : fallback;
+  }
+
+  function refreshImageControls() {
+    if (!panel) return;
+    const slide = currentSlide();
+    if (!slide) return;
+    const [, label] = imageInfo();
+    const labelEl = panel.querySelector("[data-selected-image-label]");
+    if (labelEl) labelEl.textContent = `${label} width`;
+
+    const width = panel.querySelector('[data-image-control="Width"]');
+    const height = panel.querySelector('[data-image-control="Height"]');
+    const x = panel.querySelector('[data-image-control="X"]');
+    const y = panel.querySelector('[data-image-control="Y"]');
+    const posX = panel.querySelector('[data-image-control="PosX"]');
+    const posY = panel.querySelector('[data-image-control="PosY"]');
+    if (width && document.activeElement !== width) width.value = parseNumber(slide, imageFieldKey("Width"), 520);
+    if (height && document.activeElement !== height) height.value = parseNumber(slide, imageFieldKey("Height"), 360);
+    if (x && document.activeElement !== x) x.value = parseNumber(slide, imageFieldKey("X"), 0);
+    if (y && document.activeElement !== y) y.value = parseNumber(slide, imageFieldKey("Y"), 0);
+    if (posX && document.activeElement !== posX) posX.value = parseNumber(slide, imageFieldKey("PosX"), 50);
+    if (posY && document.activeElement !== posY) posY.value = parseNumber(slide, imageFieldKey("PosY"), 50);
+    markSelectedImage();
+  }
+
+  function setImageField(suffix, value, shouldSave = true) {
+    const slide = currentSlide();
+    if (!slide) return;
+    slide.fields = slide.fields || {};
+    slide.fields[imageFieldKey(suffix)] = value;
+    syncNormalFields(imageFieldKey(suffix), value);
+    applyImageToPreview(selectedImage);
+    if (shouldSave) saveSoon();
+  }
+
+  function setImageFields(values) {
+    const slide = currentSlide();
+    if (!slide) return;
+    slide.fields = slide.fields || {};
+    Object.entries(values).forEach(([suffix, value]) => {
+      slide.fields[imageFieldKey(suffix)] = value;
+      syncNormalFields(imageFieldKey(suffix), value);
+    });
+    applyImageToPreview(selectedImage);
+    refreshImageControls();
+  }
+
+  function resetImage() {
+    const slide = currentSlide();
+    if (!slide) return;
+    ["Width", "Height", "X", "Y", "Fit", "PosX", "PosY"].forEach((suffix) => {
+      delete slide.fields[imageFieldKey(suffix)];
+      syncNormalFields(imageFieldKey(suffix), "");
+    });
+    refreshPreview(slide);
+    refreshImageControls();
+    saveSoon();
+  }
+
+  function ensureImageOverlay() {
+    if (imageOverlay) return imageOverlay;
+    imageOverlay = document.createElement("div");
+    imageOverlay.className = "quick-picture-box";
+    imageOverlay.innerHTML = `
+      <span class="quick-picture-label">Picture</span>
+      ${["nw", "n", "ne", "e", "se", "s", "sw", "w"].map((handle) => `<button type="button" class="quick-picture-handle quick-picture-${handle}" data-picture-handle="${handle}" aria-label="Resize picture ${handle}"></button>`).join("")}
+    `;
+    imageOverlay.addEventListener("pointerdown", (event) => {
+      const handle = event.target.closest("[data-picture-handle]");
+      if (!handle) return;
+      const element = selectedImageElement();
+      if (!element) return;
+      beginPictureDrag(event, element, selectedImage, handle.dataset.pictureHandle);
+    });
+    return imageOverlay;
+  }
+
+  function selectedImageElement() {
+    const preview = document.querySelector(".preview-wrap");
+    if (!preview) return null;
+    for (const [selector, name] of imageTargets) {
+      if (name !== selectedImage) continue;
+      const element = preview.querySelector(selector);
+      if (element) return element;
+    }
+    return null;
+  }
+
+  function drawPictureSelection() {
+    if (!isAdmin()) return;
+    const preview = document.querySelector(".preview-wrap");
+    const element = selectedImageElement();
+    if (!preview || !element) {
+      if (imageOverlay) imageOverlay.remove();
+      return;
+    }
+    const overlay = ensureImageOverlay();
+    if (!overlay.parentElement) preview.appendChild(overlay);
+    const previewRect = preview.getBoundingClientRect();
+    const rect = element.getBoundingClientRect();
+    overlay.style.left = `${rect.left - previewRect.left}px`;
+    overlay.style.top = `${rect.top - previewRect.top}px`;
+    overlay.style.width = `${rect.width}px`;
+    overlay.style.height = `${rect.height}px`;
+    const [, label] = imageInfo();
+    const labelEl = overlay.querySelector(".quick-picture-label");
+    if (labelEl) labelEl.textContent = label;
+  }
+
+  function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+  }
+
+  function beginPictureDrag(event, element, imageName, mode = "move") {
+    const slide = currentSlide();
+    if (!slide) return;
+    event.preventDefault();
+    event.stopPropagation();
+    selectedImage = imageName;
+    markSelectedImage();
+
+    const rect = element.getBoundingClientRect();
+    activePictureDrag = {
+      mode,
+      startX: event.clientX,
+      startY: event.clientY,
+      imageName,
+      width: rect.width,
+      height: rect.height,
+      x: parseNumber(slide, imageFieldKey("X", imageName), 0),
+      y: parseNumber(slide, imageFieldKey("Y", imageName), 0)
+    };
+    document.body.classList.add("quick-picture-dragging");
+    window.addEventListener("pointermove", movePictureDrag, true);
+    window.addEventListener("pointerup", endPictureDrag, true);
+    window.addEventListener("pointercancel", endPictureDrag, true);
+  }
+
+  function movePictureDrag(event) {
+    if (!activePictureDrag) return;
+    event.preventDefault();
+    const drag = activePictureDrag;
+    const dx = event.clientX - drag.startX;
+    const dy = event.clientY - drag.startY;
+    let nextWidth = drag.width;
+    let nextHeight = drag.height;
+    let nextX = drag.x;
+    let nextY = drag.y;
+
+    if (drag.mode === "move") {
+      nextX = drag.x + dx;
+      nextY = drag.y + dy;
+    } else {
+      if (drag.mode.includes("e")) nextWidth = drag.width + dx;
+      if (drag.mode.includes("s")) nextHeight = drag.height + dy;
+      if (drag.mode.includes("w")) {
+        nextWidth = drag.width - dx;
+        nextX = drag.x + dx;
+      }
+      if (drag.mode.includes("n")) {
+        nextHeight = drag.height - dy;
+        nextY = drag.y + dy;
+      }
+      const minSize = 60;
+      if (nextWidth < minSize) {
+        if (drag.mode.includes("w")) nextX -= minSize - nextWidth;
+        nextWidth = minSize;
+      }
+      if (nextHeight < minSize) {
+        if (drag.mode.includes("n")) nextY -= minSize - nextHeight;
+        nextHeight = minSize;
+      }
+    }
+
+    setImageFields({
+      Width: `${Math.round(clamp(nextWidth, 40, 1600))}px`,
+      Height: `${Math.round(clamp(nextHeight, 40, 1000))}px`,
+      X: `${Math.round(clamp(nextX, -800, 800))}px`,
+      Y: `${Math.round(clamp(nextY, -600, 600))}px`
+    });
+  }
+
+  function endPictureDrag() {
+    if (!activePictureDrag) return;
+    activePictureDrag = null;
+    document.body.classList.remove("quick-picture-dragging");
+    window.removeEventListener("pointermove", movePictureDrag, true);
+    window.removeEventListener("pointerup", endPictureDrag, true);
+    window.removeEventListener("pointercancel", endPictureDrag, true);
+    saveSoon();
+  }
+
   function refreshPanel() {
     if (!isAdmin()) {
       if (panel) panel.hidden = true;
@@ -316,6 +702,8 @@
     markSelectedField();
 
     refreshSizeControls();
+    refreshImageControls();
+    window.setTimeout(drawPictureSelection, 0);
 
     lastSlideId = slide.id;
   }
@@ -333,11 +721,18 @@
     document.addEventListener("pointerdown", (event) => {
       if (event.target.closest("#quickTextEditor")) return;
       const match = matchPreviewText(event.target);
-      if (!match) return;
+      const imageMatch = matchPreviewImage(event.target);
+      if (!match && !imageMatch) return;
       event.preventDefault();
       event.stopPropagation();
-      focusField(match.name);
+      if (imageMatch) {
+        selectImage(imageMatch.name);
+        beginPictureDrag(event, imageMatch.element, imageMatch.name, "move");
+      }
+      else focusField(match.name);
     }, true);
+
+    window.addEventListener("resize", drawPictureSelection);
 
     document.addEventListener("click", () => {
       window.setTimeout(refreshPanel, 0);
