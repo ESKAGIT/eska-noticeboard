@@ -592,4 +592,8 @@ async function boot() {
   }
 }
 
-boot();
+if (route() === "/screen" || route() === "/") {
+  window.__eskaScreenBootDeferred = true;
+} else {
+  boot();
+}
