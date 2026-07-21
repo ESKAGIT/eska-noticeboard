@@ -47,7 +47,7 @@
           <label class="span-two">QR image URL/path<input data-field="qr" value="${escapeHtml(field(slide, "qr"))}"></label>
         </div>
         <div class="upload-row">
-          <button class="secondary" id="applyToQr" type="button">Use upload as QR code</button>
+          <button class="secondary" id="applyToQr" data-upload-target="qr" type="button">Use upload as QR code</button>
         </div>
       </section>
     `;
@@ -81,10 +81,10 @@
     }
 
     const qrButton = document.querySelector("#applyToQr");
-    if (qrButton) {
+    if (qrButton && qrButton.dataset.qrVisibleBound !== "1") {
+      qrButton.dataset.qrVisibleBound = "1";
       qrButton.addEventListener("click", () => {
         slide.fields.qrVisible = "true";
-        uploadInto(slide, "qr");
       });
     }
   };

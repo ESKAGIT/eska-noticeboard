@@ -14,6 +14,26 @@
 .eyebrow { color: var(--slide-accent, var(--red)); }
 .cta { background: var(--slide-accent, var(--red)); }
 
+.split-upload-panel {
+  margin: 18px 0;
+  padding: 16px;
+  border: 2px solid rgba(230, 31, 42, .2);
+  border-radius: 8px;
+  background: #fffaf8;
+}
+
+.split-upload-panel h3 {
+  margin: 0 0 6px;
+  color: var(--red);
+  font-size: 18px;
+}
+
+.split-upload-panel p {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-weight: 800;
+}
+
 .split-course {
   background:
     var(--slide-bg-image, radial-gradient(circle at 50% 50%, rgba(230, 31, 42, 0.08), transparent 40%)),

@@ -258,6 +258,16 @@
     const options = templates.map((item) => `<option value="${item.id}" ${slide.template === item.id ? "selected" : ""}>${item.name}</option>`).join("");
     const animOptions = animations.map(([id, label]) => `<option value="${id}" ${slide.animation === id ? "selected" : ""}>${label}</option>`).join("");
     const fields = ["eyebrow", "heading", "subheading", "body", "dateList", "menuItems", "date", "time", "location", "cta", "image", "imageLeft", "imageRight", "image4", "image5", "image6", "video", "logo", "background", "accent", "textColor", "panelColor", "textX", "textY", "textWidth", "headingSize", "subheadingSize", "bodySize"];
+    const splitUploadControls = slide.template === "course" ? `
+        <section class="split-upload-panel" aria-label="Split reveal photo controls">
+          <h3>Split reveal photos</h3>
+          <p>Use these for the two photos that part to reveal the course text.</p>
+          <div class="upload-row">
+            <button class="secondary" data-upload-target="imageLeft" type="button">Use as split left photo</button>
+            <button class="secondary" data-upload-target="imageRight" type="button">Use as split right photo</button>
+          </div>
+        </section>
+    ` : "";
     return `
       <form class="edit-form">
         <section class="quick-text-editor" aria-label="Quick text editor">
@@ -288,17 +298,18 @@
             </label>
           `).join("")}
         </div>
+        ${splitUploadControls}
         <div class="upload-row">
           <label>Upload image/video<input id="mediaUpload" type="file" accept="image/*,video/mp4,video/quicktime"><small>For Apple TV, use MP4 video where possible.</small></label>
-          <button class="secondary" id="applyToImage" type="button">Use as picture 1</button>
-          <button class="secondary" id="applyToLeftImage" type="button">Use as picture 2</button>
-          <button class="secondary" id="applyToRightImage" type="button">Use as picture 3</button>
-          <button class="secondary" id="applyToImage4" type="button">Use as picture 4</button>
-          <button class="secondary" id="applyToImage5" type="button">Use as picture 5</button>
-          <button class="secondary" id="applyToImage6" type="button">Use as picture 6</button>
-          <button class="secondary" id="applyToLogo" type="button">Use as slide logo</button>
-          <button class="secondary" id="applyToBackground" type="button">Use as background</button>
-          <button class="secondary" id="applyToVideo" type="button">Use upload as video</button>
+          <button class="secondary" id="applyToImage" data-upload-target="image" type="button">Use as picture 1</button>
+          <button class="secondary" id="applyToLeftImage" data-upload-target="imageLeft" type="button">Use as picture 2</button>
+          <button class="secondary" id="applyToRightImage" data-upload-target="imageRight" type="button">Use as picture 3</button>
+          <button class="secondary" id="applyToImage4" data-upload-target="image4" type="button">Use as picture 4</button>
+          <button class="secondary" id="applyToImage5" data-upload-target="image5" type="button">Use as picture 5</button>
+          <button class="secondary" id="applyToImage6" data-upload-target="image6" type="button">Use as picture 6</button>
+          <button class="secondary" id="applyToLogo" data-upload-target="logo" type="button">Use as slide logo</button>
+          <button class="secondary" id="applyToBackground" data-upload-target="background" type="button">Use as background</button>
+          <button class="secondary" id="applyToVideo" data-upload-target="video" type="button">Use upload as video</button>
           <button class="danger" id="deleteSlide" type="button">Delete slide</button>
         </div>
       </form>
@@ -355,21 +366,11 @@
       scheduleAutosave(250);
       renderAdmin();
     });
-    const bindUploadButton = (selector, target) => {
-      const button = document.querySelector(selector);
-      if (!button || button.dataset.pictureUploadBound === "1") return;
+    document.querySelectorAll("[data-upload-target]").forEach((button) => {
+      if (button.dataset.pictureUploadBound === "1") return;
       button.dataset.pictureUploadBound = "1";
-      button.addEventListener("click", () => uploadInto(slide, target));
-    };
-    bindUploadButton("#applyToImage", "image");
-    bindUploadButton("#applyToLeftImage", "imageLeft");
-    bindUploadButton("#applyToRightImage", "imageRight");
-    bindUploadButton("#applyToImage4", "image4");
-    bindUploadButton("#applyToImage5", "image5");
-    bindUploadButton("#applyToImage6", "image6");
-    document.querySelector("#applyToLogo").addEventListener("click", () => uploadInto(slide, "logo"));
-    document.querySelector("#applyToBackground").addEventListener("click", () => uploadInto(slide, "background"));
-    document.querySelector("#applyToVideo").addEventListener("click", () => uploadInto(slide, "video"));
+      button.addEventListener("click", () => uploadInto(slide, button.dataset.uploadTarget));
+    });
   };
 
   async function uploadFileDirect(file) {
@@ -413,7 +414,9 @@
     try {
       const saved = await uploadFileDirect(file);
       slide.fields[target] = saved.url;
-      showStatus(`Uploaded and set as ${target}.`);
+      if (target === "imageRight") slide.fields.image2 = saved.url;
+      const label = target === "imageLeft" ? "split left photo" : target === "imageRight" ? "split right photo" : target;
+      showStatus(`Uploaded and set as ${label}.`);
       scheduleAutosave(100);
       renderAdmin();
     } catch (error) {
