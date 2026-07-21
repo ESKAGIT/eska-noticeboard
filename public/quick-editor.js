@@ -192,9 +192,8 @@
           <small>Bottom</small>
         </label>
         <div class="quick-fit-buttons">
-          <button type="button" data-image-fit="cover">Fill</button>
-          <button type="button" data-image-fit="contain">Fit</button>
-          <button type="button" data-image-fit="fill">Stretch</button>
+          <button type="button" data-image-fit="cover">Fill crop</button>
+          <button type="button" data-image-fit="contain">Fit whole</button>
         </div>
       </div>
     `;
@@ -414,9 +413,10 @@
     return "";
   }
 
-  function cssKeywordValue(value = "") {
+  function cssKeywordValue(value = "", imageName = "") {
     const clean = String(value).replace(/[;"<>]/g, "").trim();
-    return /^(cover|contain|fill|scale-down|none)$/i.test(clean) ? clean : "";
+    if (/^fill$/i.test(clean)) return imageName === "qr" ? "contain" : "cover";
+    return /^(cover|contain|scale-down|none)$/i.test(clean) ? clean : "";
   }
 
   function sizeVars(slide) {
@@ -435,7 +435,7 @@
       const height = cssLengthValue(fieldValue(slide, imageFieldKey("Height", name)));
       const x = cssLengthValue(fieldValue(slide, imageFieldKey("X", name)));
       const y = cssLengthValue(fieldValue(slide, imageFieldKey("Y", name)));
-      const fit = cssKeywordValue(fieldValue(slide, imageFieldKey("Fit", name)));
+      const fit = cssKeywordValue(fieldValue(slide, imageFieldKey("Fit", name)), name);
       const posX = cssPercentValue(fieldValue(slide, imageFieldKey("PosX", name)));
       const posY = cssPercentValue(fieldValue(slide, imageFieldKey("PosY", name)));
       if (width) vars.push(`${prefix}-w: ${width}`);
@@ -464,7 +464,8 @@
       PosY: "-pos-y"
     };
     Object.entries(properties).forEach(([suffix, property]) => {
-      const value = fieldValue(slide, imageFieldKey(suffix, imageName));
+      const rawValue = fieldValue(slide, imageFieldKey(suffix, imageName));
+      const value = suffix === "Fit" ? cssKeywordValue(rawValue, imageName) : rawValue;
       const cssName = `${prefix}${property}`;
       if (value) slideEl.style.setProperty(cssName, value);
       else slideEl.style.removeProperty(cssName);
@@ -632,8 +633,10 @@
     markSelectedImage();
 
     const rect = element.getBoundingClientRect();
+    const lockedFrame = element.classList.contains("split-half");
     activePictureDrag = {
-      mode,
+      mode: lockedFrame && mode !== "move" ? "move" : mode,
+      lockedFrame,
       startX: event.clientX,
       startY: event.clientY,
       imageName,
@@ -684,12 +687,15 @@
       }
     }
 
-    setImageFields({
-      Width: `${Math.round(clamp(nextWidth, 40, 1600))}px`,
-      Height: `${Math.round(clamp(nextHeight, 40, 1000))}px`,
+    const updates = {
       X: `${Math.round(clamp(nextX, -800, 800))}px`,
       Y: `${Math.round(clamp(nextY, -600, 600))}px`
-    });
+    };
+    if (drag.mode !== "move" && !drag.lockedFrame) {
+      updates.Width = `${Math.round(clamp(nextWidth, 40, 1600))}px`;
+      updates.Height = `${Math.round(clamp(nextHeight, 40, 1000))}px`;
+    }
+    setImageFields(updates);
   }
 
   function endPictureDrag() {
