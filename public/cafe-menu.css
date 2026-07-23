@@ -102,6 +102,21 @@
   line-height: 1;
 }
 
+.menu-photo-copy em {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  margin-top: 7px;
+  padding: 4px 9px;
+  border-radius: 7px;
+  background: var(--slide-accent, var(--red));
+  color: #fff;
+  font-size: clamp(12px, 0.92vw, 17px);
+  font-style: normal;
+  font-weight: 900;
+  line-height: 1;
+}
+
 .menu-photo-copy span {
   display: block;
   margin-top: 5px;

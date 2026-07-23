@@ -413,12 +413,14 @@
     setAutosaveStatus(`Uploading ${file.name}...`);
     try {
       const saved = await uploadFileDirect(file);
+      slide.fields = slide.fields || {};
       slide.fields[target] = saved.url;
       if (target === "imageRight") slide.fields.image2 = saved.url;
+      if (target === "qr") slide.fields.qrVisible = "true";
       const label = target === "imageLeft" ? "split left photo" : target === "imageRight" ? "split right photo" : target;
-      showStatus(`Uploaded and set as ${label}.`);
-      scheduleAutosave(100);
       renderAdmin();
+      await flushAutosave();
+      showStatus(`Uploaded and saved as ${label}.`);
     } catch (error) {
       showStatus(error.message || "Upload failed.", true);
     }

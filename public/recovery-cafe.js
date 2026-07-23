@@ -71,13 +71,22 @@
     const image4 = field(slide, "image4", "/assets/dojo-class.svg");
     const image5 = field(slide, "image5", "/assets/students-group.svg");
     const image6 = field(slide, "image6", "/assets/training.svg");
+    const photoInfo = (index, fallbackTitle, fallbackDetail, fallbackPrice = "") => {
+      const parts = photoNotes[index] || [];
+      const title = parts[0] || fallbackTitle;
+      const hasPrice = parts.length >= 3;
+      const secondLooksLikePrice = /(^| )(£|gbp|from|\d+([.,]\d{2})?)( |$)/i.test(parts[1] || "");
+      const price = hasPrice || secondLooksLikePrice ? parts[1] : fallbackPrice;
+      const detail = hasPrice ? parts[2] : (secondLooksLikePrice ? fallbackDetail : (parts[1] || fallbackDetail));
+      return [title, price, detail];
+    };
     const photos = [
-      [image, (photoNotes[0] && photoNotes[0][0]) || "Fresh drinks", (photoNotes[0] && photoNotes[0][1]) || "Tea, coffee and hot chocolate for the training break."],
-      [imageLeft, (photoNotes[1] && photoNotes[1][0]) || "Quick snacks", (photoNotes[1] && photoNotes[1][1]) || "Simple choices before or after class."],
-      [imageRight, (photoNotes[2] && photoNotes[2][0]) || "Family friendly", (photoNotes[2] && photoNotes[2][1]) || "Refreshments for parents, students and visitors."],
-      [image4, (photoNotes[3] && photoNotes[3][0]) || "Cold drinks", (photoNotes[3] && photoNotes[3][1]) || "Easy refreshments while you wait."],
-      [image5, (photoNotes[4] && photoNotes[4][0]) || "After class", (photoNotes[4] && photoNotes[4][1]) || "Grab something before heading home."],
-      [image6, (photoNotes[5] && photoNotes[5][0]) || "Cafe favourites", (photoNotes[5] && photoNotes[5][1]) || "Ask at reception for today's options."]
+      [image, ...photoInfo(0, "Fresh drinks", "Tea, coffee and hot chocolate for the training break.", "From GBP 1.50")],
+      [imageLeft, ...photoInfo(1, "Quick snacks", "Simple choices before or after class.", "From GBP 1.20")],
+      [imageRight, ...photoInfo(2, "Family friendly", "Refreshments for parents, students and visitors.", "Ask at reception")],
+      [image4, ...photoInfo(3, "Cold drinks", "Easy refreshments while you wait.", "From GBP 1.00")],
+      [image5, ...photoInfo(4, "After class", "Grab something before heading home.", "From GBP 2.00")],
+      [image6, ...photoInfo(5, "Cafe favourites", "Ask at reception for today's options.", "Today's price")]
     ];
     const cafeMedia = (src, title, index) => {
       const value = String(src || "");
@@ -93,11 +102,12 @@
     const content = `
       <div class="cafe-layout">
         <div class="menu-gallery">
-          ${photos.map(([src, title, detail], index) => `
+          ${photos.map(([src, title, price, detail], index) => `
             <article class="menu-photo-card">
               <div class="menu-photo">${cafeMedia(src, title, index)}</div>
               <div class="menu-photo-copy">
                 <strong>${escapeHtml(title)}</strong>
+                ${price ? `<em>${escapeHtml(price)}</em>` : ""}
                 <span>${escapeHtml(detail)}</span>
               </div>
             </article>
@@ -131,7 +141,7 @@
     await loadBoard();
     const cafe = (board.slides || []).find((slide) => slide.template === "menu");
     if (cafe && cafe.fields) {
-      cafe.fields.photoNotes = cafe.fields.photoNotes || "Fresh drinks | Tea, coffee and hot chocolate for the training break\nQuick snacks | Simple choices before or after class\nFamily friendly | Refreshments for parents, students and visitors\nCold drinks | Easy refreshments while you wait\nAfter class | Grab something before heading home\nCafe favourites | Ask at reception for today's options";
+      cafe.fields.photoNotes = cafe.fields.photoNotes || "Fresh drinks | From GBP 1.50 | Tea, coffee and hot chocolate for the training break\nQuick snacks | From GBP 1.20 | Simple choices before or after class\nFamily friendly | Ask at reception | Refreshments for parents, students and visitors\nCold drinks | From GBP 1.00 | Easy refreshments while you wait\nAfter class | From GBP 2.00 | Grab something before heading home\nCafe favourites | Today's price | Ask at reception for today's options";
       cafe.fields.imageLeft = cafe.fields.imageLeft || "/assets/students-group.svg";
       cafe.fields.imageRight = cafe.fields.imageRight || "/assets/training.svg";
       cafe.fields.image4 = cafe.fields.image4 || "/assets/dojo-class.svg";
@@ -204,7 +214,7 @@
     await loadBoard();
     const cafe = (board.slides || []).find((slide) => slide.template === "menu");
     if (cafe && cafe.fields) {
-      cafe.fields.photoNotes = cafe.fields.photoNotes || "Fresh drinks | Tea, coffee and hot chocolate for the training break\nQuick snacks | Simple choices before or after class\nFamily friendly | Refreshments for parents, students and visitors\nCold drinks | Easy refreshments while you wait\nAfter class | Grab something before heading home\nCafe favourites | Ask at reception for today's options";
+      cafe.fields.photoNotes = cafe.fields.photoNotes || "Fresh drinks | From GBP 1.50 | Tea, coffee and hot chocolate for the training break\nQuick snacks | From GBP 1.20 | Simple choices before or after class\nFamily friendly | Ask at reception | Refreshments for parents, students and visitors\nCold drinks | From GBP 1.00 | Easy refreshments while you wait\nAfter class | From GBP 2.00 | Grab something before heading home\nCafe favourites | Today's price | Ask at reception for today's options";
       cafe.fields.imageLeft = cafe.fields.imageLeft || "/assets/students-group.svg";
       cafe.fields.imageRight = cafe.fields.imageRight || "/assets/training.svg";
       cafe.fields.image4 = cafe.fields.image4 || "/assets/dojo-class.svg";
@@ -231,7 +241,7 @@
   const baseLabelFor = labelFor;
   window.labelFor = function labelForWithCafe(key) {
     if (key === "menuItems") return "Cafe menu, one per line: item | price | description";
-    if (key === "photoNotes") return "Photo writing, one per line: heading | short description";
+    if (key === "photoNotes") return "Photo boxes, one per line: heading | price | description";
     if (key === "image") return "Cafe photo 1";
     if (key === "imageLeft") return "Cafe photo 2";
     if (key === "imageRight") return "Cafe photo 3";
@@ -267,7 +277,7 @@
             <label>Subheading<input data-field="subheading" value="${escapeHtml(field(slide, "subheading"))}"></label>
             <label>Call to action<input data-field="cta" value="${escapeHtml(field(slide, "cta"))}"></label>
             <label class="span-two">Body text<textarea data-field="body" rows="3">${escapeHtml(field(slide, "body"))}</textarea></label>
-            <label class="span-two">Photo writing<textarea data-field="photoNotes" rows="4">${escapeHtml(field(slide, "photoNotes"))}</textarea></label>
+            <label class="span-two">Photo boxes<textarea data-field="photoNotes" rows="4">${escapeHtml(field(slide, "photoNotes"))}</textarea></label>
             <label class="span-two">Menu items<textarea data-field="menuItems" rows="4">${escapeHtml(field(slide, "menuItems"))}</textarea></label>
           </div>
         </section>
@@ -286,15 +296,15 @@
         </div>
         <div class="upload-row">
           <label>Upload image/video<input id="mediaUpload" type="file" accept="image/*,video/mp4,video/quicktime"><small>For Apple TV, use MP4 video where possible.</small></label>
-          <button class="secondary" id="applyToImage" type="button">Use as photo 1</button>
-          <button class="secondary" id="applyToLeftImage" type="button">Use as photo 2</button>
-          <button class="secondary" id="applyToRightImage" type="button">Use as photo 3</button>
-          <button class="secondary" id="applyToImage4" type="button">Use as photo 4</button>
-          <button class="secondary" id="applyToImage5" type="button">Use as photo 5</button>
-          <button class="secondary" id="applyToImage6" type="button">Use as photo 6</button>
-          <button class="secondary" id="applyToLogo" type="button">Use as slide logo</button>
-          <button class="secondary" id="applyToBackground" type="button">Use as background</button>
-          <button class="secondary" id="applyToVideo" type="button">Use upload as video</button>
+          <button class="secondary" id="applyToImage" data-upload-target="image" type="button">Use as photo 1</button>
+          <button class="secondary" id="applyToLeftImage" data-upload-target="imageLeft" type="button">Use as photo 2</button>
+          <button class="secondary" id="applyToRightImage" data-upload-target="imageRight" type="button">Use as photo 3</button>
+          <button class="secondary" id="applyToImage4" data-upload-target="image4" type="button">Use as photo 4</button>
+          <button class="secondary" id="applyToImage5" data-upload-target="image5" type="button">Use as photo 5</button>
+          <button class="secondary" id="applyToImage6" data-upload-target="image6" type="button">Use as photo 6</button>
+          <button class="secondary" id="applyToLogo" data-upload-target="logo" type="button">Use as slide logo</button>
+          <button class="secondary" id="applyToBackground" data-upload-target="background" type="button">Use as background</button>
+          <button class="secondary" id="applyToVideo" data-upload-target="video" type="button">Use upload as video</button>
           <button class="danger" id="deleteSlide" type="button">Delete slide</button>
         </div>
       </form>
@@ -316,7 +326,7 @@
         heading: "Cafe Menu",
         subheading: "Refreshments for students and families",
         body: "Grab a drink or snack before class, after training, or while you wait.",
-        photoNotes: "Fresh drinks | Tea, coffee and hot chocolate for the training break\nQuick snacks | Simple choices before or after class\nFamily friendly | Refreshments for parents, students and visitors\nCold drinks | Easy refreshments while you wait\nAfter class | Grab something before heading home\nCafe favourites | Ask at reception for today's options",
+        photoNotes: "Fresh drinks | From GBP 1.50 | Tea, coffee and hot chocolate for the training break\nQuick snacks | From GBP 1.20 | Simple choices before or after class\nFamily friendly | Ask at reception | Refreshments for parents, students and visitors\nCold drinks | From GBP 1.00 | Easy refreshments while you wait\nAfter class | From GBP 2.00 | Grab something before heading home\nCafe favourites | Today's price | Ask at reception for today's options",
         menuItems: "Tea | GBP 1.50 | Freshly brewed cup\nCoffee | GBP 2.00 | Americano or white coffee\nHot chocolate | GBP 2.20 | Warm and sweet\nWater | GBP 1.00 | Still bottled water\nSnack bar | GBP 1.20 | Quick pre-class snack",
         cta: "Ask at reception",
         image: "/assets/dojo-class.svg",

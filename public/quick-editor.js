@@ -7,7 +7,7 @@
     ["body", "Body text", "textarea"],
     ["dateList", "Dates / timetable list", "textarea"],
     ["menuItems", "Menu items", "textarea"],
-    ["photoNotes", "Photo notes", "textarea"],
+    ["photoNotes", "Photo boxes", "textarea"],
     ["qrText", "QR text", "input"]
   ];
 
@@ -19,7 +19,7 @@
     ["ctaSize", "Call to action size", 16, 56, 24, "--cta-size"],
     ["dateListSize", "Dates list size", 16, 64, 28, "--date-list-size"],
     ["menuItemsSize", "Menu items size", 14, 56, 26, "--menu-items-size"],
-    ["photoNotesSize", "Photo notes size", 14, 56, 24, "--photo-notes-size"],
+    ["photoNotesSize", "Photo box text size", 14, 56, 24, "--photo-notes-size"],
     ["qrTextSize", "QR text size", 10, 42, 18, "--qr-text-size"]
   ];
 
@@ -44,6 +44,15 @@
     ["image6", "Picture 6", "--image-6"],
     ["logo", "Logo", "--logo"],
     ["qr", "QR code", "--qr"]
+  ];
+
+  const boxFields = [
+    ["infoBoxWidth", "Box width", 180, 900, 360, "--info-box-w"],
+    ["infoBoxHeight", "Box height", 60, 260, 138, "--info-box-h"],
+    ["infoBoxGap", "Box spacing", 0, 60, 18, "--info-box-gap"],
+    ["infoBoxX", "Move boxes left/right", -500, 500, 0, "--info-box-x"],
+    ["infoBoxY", "Move boxes up/down", -300, 300, 0, "--info-box-y"],
+    ["infoBoxTextSize", "Box text size", 14, 64, 28, "--info-box-text-size"]
   ];
 
   const imageFallbacks = {
@@ -196,6 +205,20 @@
           <button type="button" data-image-fit="contain">Fit whole</button>
         </div>
       </div>
+      <div class="quick-box-tools" aria-label="Date and info box tools">
+        <div class="quick-size-head">
+          <strong>Date / Info Box Tools</strong>
+          <button type="button" data-box-reset>Reset boxes</button>
+        </div>
+        ${boxFields.map(([name, label]) => `
+          <label class="quick-size-row">
+            <span>${label}</span>
+            <small>Less</small>
+            <input data-box-control="${name}" type="range" step="5">
+            <small>More</small>
+          </label>
+        `).join("")}
+      </div>
     `;
     document.body.appendChild(panel);
 
@@ -203,6 +226,7 @@
       const control = event.target.closest("[data-quick-field]");
       const selectedSizeControl = event.target.closest("[data-selected-size]");
       const imageControl = event.target.closest("[data-image-control]");
+      const boxControl = event.target.closest("[data-box-control]");
       if (control) {
         selectedField = control.dataset.quickField;
         markSelectedField();
@@ -210,6 +234,7 @@
       }
       if (selectedSizeControl) updateSelectedSize(`${selectedSizeControl.value}px`);
       if (imageControl) updateSelectedImageValue(imageControl.dataset.imageControl, imageControl.value);
+      if (boxControl) updateBoxValue(boxControl.dataset.boxControl, boxControl.value);
     });
 
     panel.addEventListener("click", (event) => {
@@ -237,6 +262,10 @@
 
     panel.querySelector("[data-image-reset]").addEventListener("click", () => {
       resetImage();
+    });
+
+    panel.querySelector("[data-box-reset]").addEventListener("click", () => {
+      resetBoxes();
     });
 
     return panel;
@@ -449,6 +478,15 @@
     return vars;
   }
 
+  function boxVars(slide) {
+    return boxFields
+      .map(([name, , , , , variable]) => {
+        const value = cssLengthValue(fieldValue(slide, name));
+        return value ? `${variable}: ${value}` : "";
+      })
+      .filter(Boolean);
+  }
+
   function applyImageToPreview(imageName = selectedImage) {
     const slide = currentSlide();
     const slideEl = document.querySelector(".preview-wrap .preview-slide");
@@ -476,7 +514,7 @@
   const baseSlideStyle = window.slideStyle || slideStyle;
   window.slideStyle = function slideStyleWithQuickEditorSizes(slide) {
     const original = baseSlideStyle(slide);
-    const extra = [...sizeVars(slide), ...imageVars(slide)];
+    const extra = [...sizeVars(slide), ...imageVars(slide), ...boxVars(slide)];
     if (!extra.length) return original;
     const extraText = extra.join("; ");
     if (!original) return ` style="${escapeHtml(extraText)}"`;
@@ -534,6 +572,55 @@
     if (posX && document.activeElement !== posX) posX.value = parseNumber(slide, imageFieldKey("PosX"), imageFallback("PosX"));
     if (posY && document.activeElement !== posY) posY.value = parseNumber(slide, imageFieldKey("PosY"), imageFallback("PosY"));
     markSelectedImage();
+  }
+
+  function boxInfo(name) {
+    return boxFields.find(([key]) => key === name) || boxFields[0];
+  }
+
+  function refreshBoxControls() {
+    if (!panel) return;
+    const slide = currentSlide();
+    if (!slide) return;
+    boxFields.forEach(([name, , min, max, fallback]) => {
+      const control = panel.querySelector(`[data-box-control="${name}"]`);
+      if (!control) return;
+      control.min = min;
+      control.max = max;
+      if (document.activeElement !== control) control.value = parseNumber(slide, name, fallback);
+    });
+  }
+
+  function applyBoxToPreview(name) {
+    const slide = currentSlide();
+    const slideEl = document.querySelector(".preview-wrap .preview-slide");
+    if (!slide || !slideEl) return;
+    const [, , , , , variable] = boxInfo(name);
+    const value = cssLengthValue(fieldValue(slide, name));
+    if (value) slideEl.style.setProperty(variable, value);
+    else slideEl.style.removeProperty(variable);
+  }
+
+  function updateBoxValue(name, rawValue) {
+    const slide = currentSlide();
+    if (!slide) return;
+    slide.fields = slide.fields || {};
+    slide.fields[name] = `${rawValue}px`;
+    applyBoxToPreview(name);
+    saveSoon();
+  }
+
+  function resetBoxes() {
+    const slide = currentSlide();
+    if (!slide) return;
+    slide.fields = slide.fields || {};
+    boxFields.forEach(([name]) => {
+      delete slide.fields[name];
+      applyBoxToPreview(name);
+    });
+    refreshPreview(slide);
+    refreshBoxControls();
+    saveSoon();
   }
 
   function setImageField(suffix, value, shouldSave = true) {
@@ -731,6 +818,7 @@
 
     refreshSizeControls();
     refreshImageControls();
+    refreshBoxControls();
     window.setTimeout(drawPictureSelection, 0);
 
     lastSlideId = slide.id;
