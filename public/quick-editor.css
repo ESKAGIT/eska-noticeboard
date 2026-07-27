@@ -52,7 +52,8 @@
 }
 
 .slide .info-cards,
-.slide .date-board {
+.slide .date-board,
+.slide .meta-row {
   gap: var(--info-box-gap, 18px);
   translate: var(--info-box-x, 0) var(--info-box-y, 0);
 }
@@ -62,13 +63,23 @@
 }
 
 .slide .info-cards article,
-.slide .date-board article {
+.slide .date-board article,
+.slide .meta-row span {
   width: var(--info-box-w, auto);
   min-height: var(--info-box-h, 138px);
 }
 
+.slide .meta-row {
+  gap: var(--info-box-gap, 12px);
+}
+
+.slide .meta-row span {
+  min-height: var(--info-box-h, 54px);
+}
+
 .slide .info-cards strong,
 .slide .info-cards span,
+.slide .meta-row span,
 .slide .date-board strong,
 .slide .date-board span,
 .slide .date-board small {

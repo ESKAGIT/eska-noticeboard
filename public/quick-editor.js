@@ -5,6 +5,9 @@
     ["subheading", "Subheading", "input"],
     ["cta", "Call to action", "input"],
     ["body", "Body text", "textarea"],
+    ["date", "Date", "input"],
+    ["time", "Time", "input"],
+    ["location", "Location", "input"],
     ["dateList", "Dates / timetable list", "textarea"],
     ["menuItems", "Menu items", "textarea"],
     ["photoNotes", "Photo boxes", "textarea"],
@@ -29,6 +32,9 @@
     subheading: "subheadingSize",
     cta: "ctaSize",
     body: "bodySize",
+    date: "dateListSize",
+    time: "dateListSize",
+    location: "dateListSize",
     dateList: "dateListSize",
     menuItems: "menuItemsSize",
     photoNotes: "photoNotesSize",
@@ -47,12 +53,12 @@
   ];
 
   const boxFields = [
-    ["infoBoxWidth", "Box width", 180, 900, 360, "--info-box-w"],
-    ["infoBoxHeight", "Box height", 60, 260, 138, "--info-box-h"],
-    ["infoBoxGap", "Box spacing", 0, 60, 18, "--info-box-gap"],
+    ["infoBoxWidth", "Box width", 110, 900, 140, "--info-box-w"],
+    ["infoBoxHeight", "Box height", 44, 260, 54, "--info-box-h"],
+    ["infoBoxGap", "Box spacing", 0, 60, 12, "--info-box-gap"],
     ["infoBoxX", "Move boxes left/right", -500, 500, 0, "--info-box-x"],
     ["infoBoxY", "Move boxes up/down", -300, 300, 0, "--info-box-y"],
-    ["infoBoxTextSize", "Box text size", 14, 64, 28, "--info-box-text-size"]
+    ["infoBoxTextSize", "Box text size", 14, 64, 18, "--info-box-text-size"]
   ];
 
   const imageFallbacks = {
@@ -89,6 +95,9 @@
     [".copy-block h2", "subheading"],
     [".copy-block .body-copy", "body"],
     [".copy-block .cta", "cta"],
+    [".meta-row span:nth-child(1)", "date"],
+    [".meta-row span:nth-child(2)", "time"],
+    [".meta-row span:nth-child(3)", "location"],
     [".cafe-intro .eyebrow", "eyebrow"],
     [".cafe-intro h1", "heading"],
     [".cafe-intro h2", "subheading"],
