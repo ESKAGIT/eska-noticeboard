@@ -45,6 +45,26 @@
   font-size: var(--cta-size) !important;
 }
 
+.slide .copy-block,
+.slide .split-copy,
+.slide .cafe-intro {
+  position: relative;
+  left: var(--text-x, 0);
+  top: var(--text-y, 0);
+}
+
+.slide .copy-block {
+  max-width: var(--text-width, 780px);
+}
+
+.slide .split-copy {
+  width: min(var(--text-width, 560px), 92vw);
+}
+
+.slide .cafe-intro {
+  max-width: var(--text-width, none);
+}
+
 .slide .date-board strong,
 .slide .date-board span,
 .slide .date-board small {
@@ -123,13 +143,17 @@
   object-fit: var(--image-fit, cover) !important;
 }
 
-.slide .notice-orb {
+.slide .notice-orb,
+.slide .corner-logo,
+.slide .split-copy-logo {
   width: var(--logo-w);
   height: var(--logo-h);
   translate: var(--logo-x, 0) var(--logo-y, 0);
 }
 
-.slide .notice-orb img {
+.slide .notice-orb img,
+.slide .corner-logo,
+.slide .split-copy-logo {
   object-fit: var(--logo-fit, contain) !important;
   object-position: var(--logo-pos-x, 50%) var(--logo-pos-y, 50%) !important;
 }
@@ -320,7 +344,8 @@
   border-top: 2px solid #f1ded6;
 }
 
-.quick-image-tools {
+.quick-image-tools,
+.quick-text-position-tools {
   display: grid;
   gap: 10px;
   margin-top: 14px;
@@ -431,6 +456,7 @@
 
 .quick-editor.collapsed .quick-editor-body,
 .quick-editor.collapsed .quick-size-tools,
+.quick-editor.collapsed .quick-text-position-tools,
 .quick-editor.collapsed .quick-image-tools,
 .quick-editor.collapsed .quick-box-tools,
 .quick-editor.collapsed .quick-meta-box-tools,

@@ -70,6 +70,12 @@
     ["metaBoxTextSize", "Pill text size", 12, 44, 18, "--meta-box-text-size"]
   ];
 
+  const textPositionFields = [
+    ["textX", "Move text left/right", -700, 700, 0, "--text-x"],
+    ["textY", "Move text up/down", -420, 420, 0, "--text-y"],
+    ["textWidth", "Text block width", 260, 1200, 780, "--text-width"]
+  ];
+
   const imageFallbacks = {
     qr: { Width: 320, Height: 140 },
     logo: { Width: 120, Height: 120 },
@@ -83,6 +89,8 @@
 
   const imageTargets = [
     [".hero-logo", "image"],
+    [".corner-logo", "logo"],
+    [".split-copy-logo", "logo"],
     [".notice-orb", "logo"],
     [".photo-panel", "image"],
     [".gallery-photo", "image"],
@@ -112,6 +120,10 @@
     [".cafe-intro h2", "subheading"],
     [".cafe-intro .body-copy", "body"],
     [".cafe-intro .cta", "cta"],
+    [".split-copy h1", "heading"],
+    [".split-copy h2", "subheading"],
+    [".split-copy .body-copy", "body"],
+    [".split-copy .cta", "cta"],
     [".qr-text", "qrText"],
     [".date-board", "dateList"],
     [".menu-items", "menuItems"]
@@ -173,6 +185,20 @@
           <input data-selected-size type="range" min="14" max="150" step="2">
           <small>Large</small>
         </label>
+      </div>
+      <div class="quick-text-position-tools" aria-label="Text position tools">
+        <div class="quick-size-head">
+          <strong>Text Position Tools</strong>
+          <button type="button" data-text-position-reset>Reset position</button>
+        </div>
+        ${textPositionFields.map(([name, label]) => `
+          <label class="quick-size-row">
+            <span>${label}</span>
+            <small>Less</small>
+            <input data-text-control="${name}" type="range" step="5">
+            <small>More</small>
+          </label>
+        `).join("")}
       </div>
       <div class="quick-box-tools" aria-label="Date and info box tools">
         <div class="quick-size-head">
@@ -260,6 +286,7 @@
       const imageControl = event.target.closest("[data-image-control]");
       const boxControl = event.target.closest("[data-box-control]");
       const metaBoxControl = event.target.closest("[data-meta-box-control]");
+      const textControl = event.target.closest("[data-text-control]");
       if (control) {
         selectedField = control.dataset.quickField;
         markSelectedField();
@@ -269,6 +296,7 @@
       if (imageControl) updateSelectedImageValue(imageControl.dataset.imageControl, imageControl.value);
       if (boxControl) updateBoxValue(boxControl.dataset.boxControl, boxControl.value);
       if (metaBoxControl) updateMetaBoxValue(metaBoxControl.dataset.metaBoxControl, metaBoxControl.value);
+      if (textControl) updateTextPositionValue(textControl.dataset.textControl, textControl.value);
     });
 
     panel.addEventListener("click", (event) => {
@@ -292,6 +320,10 @@
 
     panel.querySelector("[data-size-reset]").addEventListener("click", () => {
       resetSizes();
+    });
+
+    panel.querySelector("[data-text-position-reset]").addEventListener("click", () => {
+      resetTextPosition();
     });
 
     panel.querySelector("[data-image-reset]").addEventListener("click", () => {
@@ -538,6 +570,15 @@
       .filter(Boolean);
   }
 
+  function textPositionVars(slide) {
+    return textPositionFields
+      .map(([name, , , , , variable]) => {
+        const value = cssLengthValue(fieldValue(slide, name));
+        return value ? `${variable}: ${value}` : "";
+      })
+      .filter(Boolean);
+  }
+
   function metaBoxVars(slide) {
     return metaBoxFields
       .map(([name, , , , , variable]) => {
@@ -574,7 +615,7 @@
   const baseSlideStyle = window.slideStyle || slideStyle;
   window.slideStyle = function slideStyleWithQuickEditorSizes(slide) {
     const original = baseSlideStyle(slide);
-    const extra = [...sizeVars(slide), ...imageVars(slide), ...boxVars(slide), ...metaBoxVars(slide)];
+    const extra = [...sizeVars(slide), ...imageVars(slide), ...boxVars(slide), ...metaBoxVars(slide), ...textPositionVars(slide)];
     if (!extra.length) return original;
     const extraText = extra.join("; ");
     if (!original) return ` style="${escapeHtml(extraText)}"`;
@@ -625,6 +666,14 @@
     const y = panel.querySelector('[data-image-control="Y"]');
     const posX = panel.querySelector('[data-image-control="PosX"]');
     const posY = panel.querySelector('[data-image-control="PosY"]');
+    if (x) {
+      x.min = selectedImage === "qr" ? -1800 : -500;
+      x.max = selectedImage === "qr" ? 1800 : 500;
+    }
+    if (y) {
+      y.min = selectedImage === "qr" ? -1000 : -350;
+      y.max = selectedImage === "qr" ? 1000 : 350;
+    }
     if (width && document.activeElement !== width) width.value = parseNumber(slide, imageFieldKey("Width"), imageFallback("Width"));
     if (height && document.activeElement !== height) height.value = parseNumber(slide, imageFieldKey("Height"), imageFallback("Height"));
     if (x && document.activeElement !== x) x.value = parseNumber(slide, imageFieldKey("X"), imageFallback("X"));
@@ -729,6 +778,55 @@
     });
     refreshPreview(slide);
     refreshMetaBoxControls();
+    saveSoon();
+  }
+
+  function textPositionInfo(name) {
+    return textPositionFields.find(([key]) => key === name) || textPositionFields[0];
+  }
+
+  function refreshTextPositionControls() {
+    if (!panel) return;
+    const slide = currentSlide();
+    if (!slide) return;
+    textPositionFields.forEach(([name, , min, max, fallback]) => {
+      const control = panel.querySelector(`[data-text-control="${name}"]`);
+      if (!control) return;
+      control.min = min;
+      control.max = max;
+      if (document.activeElement !== control) control.value = parseNumber(slide, name, fallback);
+    });
+  }
+
+  function applyTextPositionToPreview(name) {
+    const slide = currentSlide();
+    const slideEl = document.querySelector(".preview-wrap .preview-slide");
+    if (!slide || !slideEl) return;
+    const [, , , , , variable] = textPositionInfo(name);
+    const value = cssLengthValue(fieldValue(slide, name));
+    if (value) slideEl.style.setProperty(variable, value);
+    else slideEl.style.removeProperty(variable);
+  }
+
+  function updateTextPositionValue(name, rawValue) {
+    const slide = currentSlide();
+    if (!slide) return;
+    slide.fields = slide.fields || {};
+    slide.fields[name] = `${rawValue}px`;
+    applyTextPositionToPreview(name);
+    saveSoon();
+  }
+
+  function resetTextPosition() {
+    const slide = currentSlide();
+    if (!slide) return;
+    slide.fields = slide.fields || {};
+    textPositionFields.forEach(([name]) => {
+      delete slide.fields[name];
+      applyTextPositionToPreview(name);
+    });
+    refreshPreview(slide);
+    refreshTextPositionControls();
     saveSoon();
   }
 
@@ -883,9 +981,11 @@
       }
     }
 
+    const moveLimitX = drag.imageName === "qr" ? 1800 : 800;
+    const moveLimitY = drag.imageName === "qr" ? 1000 : 600;
     const updates = {
-      X: `${Math.round(clamp(nextX, -800, 800))}px`,
-      Y: `${Math.round(clamp(nextY, -600, 600))}px`
+      X: `${Math.round(clamp(nextX, -moveLimitX, moveLimitX))}px`,
+      Y: `${Math.round(clamp(nextY, -moveLimitY, moveLimitY))}px`
     };
     if (drag.mode !== "move" && !drag.lockedFrame) {
       updates.Width = `${Math.round(clamp(nextWidth, 40, 1600))}px`;
@@ -926,6 +1026,7 @@
     markSelectedField();
 
     refreshSizeControls();
+    refreshTextPositionControls();
     refreshImageControls();
     refreshBoxControls();
     refreshMetaBoxControls();
