@@ -52,8 +52,7 @@
 }
 
 .slide .info-cards,
-.slide .date-board,
-.slide .meta-row {
+.slide .date-board {
   gap: var(--info-box-gap, 18px);
   translate: var(--info-box-x, 0) var(--info-box-y, 0);
 }
@@ -63,23 +62,24 @@
 }
 
 .slide .info-cards article,
-.slide .date-board article,
-.slide .meta-row span {
+.slide .date-board article {
   width: var(--info-box-w, auto);
   min-height: var(--info-box-h, 138px);
 }
 
 .slide .meta-row {
-  gap: var(--info-box-gap, 12px);
+  gap: var(--meta-box-gap, 12px);
+  translate: var(--meta-box-x, 0) var(--meta-box-y, 0);
 }
 
 .slide .meta-row span {
-  min-height: var(--info-box-h, 54px);
+  width: var(--meta-box-w, auto);
+  min-height: var(--meta-box-h, 54px);
+  font-size: var(--meta-box-text-size, inherit) !important;
 }
 
 .slide .info-cards strong,
 .slide .info-cards span,
-.slide .meta-row span,
 .slide .date-board strong,
 .slide .date-board span,
 .slide .date-board small {
@@ -328,7 +328,8 @@
   border-top: 2px solid #f1ded6;
 }
 
-.quick-box-tools {
+.quick-box-tools,
+.quick-meta-box-tools {
   display: grid;
   gap: 10px;
   margin-top: 14px;
@@ -423,6 +424,7 @@
 .quick-editor.collapsed .quick-size-tools,
 .quick-editor.collapsed .quick-image-tools,
 .quick-editor.collapsed .quick-box-tools,
+.quick-editor.collapsed .quick-meta-box-tools,
 .quick-editor.collapsed [data-quick-slide] {
   display: none;
 }

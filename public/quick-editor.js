@@ -53,12 +53,21 @@
   ];
 
   const boxFields = [
-    ["infoBoxWidth", "Box width", 110, 900, 140, "--info-box-w"],
-    ["infoBoxHeight", "Box height", 44, 260, 54, "--info-box-h"],
-    ["infoBoxGap", "Box spacing", 0, 60, 12, "--info-box-gap"],
+    ["infoBoxWidth", "Box width", 180, 900, 360, "--info-box-w"],
+    ["infoBoxHeight", "Box height", 60, 300, 138, "--info-box-h"],
+    ["infoBoxGap", "Box spacing", 0, 60, 18, "--info-box-gap"],
     ["infoBoxX", "Move boxes left/right", -500, 500, 0, "--info-box-x"],
     ["infoBoxY", "Move boxes up/down", -300, 300, 0, "--info-box-y"],
-    ["infoBoxTextSize", "Box text size", 14, 64, 18, "--info-box-text-size"]
+    ["infoBoxTextSize", "Box text size", 14, 64, 28, "--info-box-text-size"]
+  ];
+
+  const metaBoxFields = [
+    ["metaBoxWidth", "Pill width", 110, 520, 140, "--meta-box-w"],
+    ["metaBoxHeight", "Pill height", 44, 170, 54, "--meta-box-h"],
+    ["metaBoxGap", "Pill spacing", 0, 60, 12, "--meta-box-gap"],
+    ["metaBoxX", "Move pills left/right", -500, 500, 0, "--meta-box-x"],
+    ["metaBoxY", "Move pills up/down", -300, 300, 0, "--meta-box-y"],
+    ["metaBoxTextSize", "Pill text size", 12, 44, 18, "--meta-box-text-size"]
   ];
 
   const imageFallbacks = {
@@ -216,7 +225,7 @@
       </div>
       <div class="quick-box-tools" aria-label="Date and info box tools">
         <div class="quick-size-head">
-          <strong>Date / Info Box Tools</strong>
+          <strong>Large Date/List Card Tools</strong>
           <button type="button" data-box-reset>Reset boxes</button>
         </div>
         ${boxFields.map(([name, label]) => `
@@ -224,6 +233,20 @@
             <span>${label}</span>
             <small>Less</small>
             <input data-box-control="${name}" type="range" step="5">
+            <small>More</small>
+          </label>
+        `).join("")}
+      </div>
+      <div class="quick-meta-box-tools" aria-label="Date time and location pill tools">
+        <div class="quick-size-head">
+          <strong>Small Date/Time/Location Pill Tools</strong>
+          <button type="button" data-meta-box-reset>Reset pills</button>
+        </div>
+        ${metaBoxFields.map(([name, label]) => `
+          <label class="quick-size-row">
+            <span>${label}</span>
+            <small>Less</small>
+            <input data-meta-box-control="${name}" type="range" step="5">
             <small>More</small>
           </label>
         `).join("")}
@@ -236,6 +259,7 @@
       const selectedSizeControl = event.target.closest("[data-selected-size]");
       const imageControl = event.target.closest("[data-image-control]");
       const boxControl = event.target.closest("[data-box-control]");
+      const metaBoxControl = event.target.closest("[data-meta-box-control]");
       if (control) {
         selectedField = control.dataset.quickField;
         markSelectedField();
@@ -244,6 +268,7 @@
       if (selectedSizeControl) updateSelectedSize(`${selectedSizeControl.value}px`);
       if (imageControl) updateSelectedImageValue(imageControl.dataset.imageControl, imageControl.value);
       if (boxControl) updateBoxValue(boxControl.dataset.boxControl, boxControl.value);
+      if (metaBoxControl) updateMetaBoxValue(metaBoxControl.dataset.metaBoxControl, metaBoxControl.value);
     });
 
     panel.addEventListener("click", (event) => {
@@ -275,6 +300,10 @@
 
     panel.querySelector("[data-box-reset]").addEventListener("click", () => {
       resetBoxes();
+    });
+
+    panel.querySelector("[data-meta-box-reset]").addEventListener("click", () => {
+      resetMetaBoxes();
     });
 
     return panel;
@@ -496,6 +525,15 @@
       .filter(Boolean);
   }
 
+  function metaBoxVars(slide) {
+    return metaBoxFields
+      .map(([name, , , , , variable]) => {
+        const value = cssLengthValue(fieldValue(slide, name));
+        return value ? `${variable}: ${value}` : "";
+      })
+      .filter(Boolean);
+  }
+
   function applyImageToPreview(imageName = selectedImage) {
     const slide = currentSlide();
     const slideEl = document.querySelector(".preview-wrap .preview-slide");
@@ -523,7 +561,7 @@
   const baseSlideStyle = window.slideStyle || slideStyle;
   window.slideStyle = function slideStyleWithQuickEditorSizes(slide) {
     const original = baseSlideStyle(slide);
-    const extra = [...sizeVars(slide), ...imageVars(slide), ...boxVars(slide)];
+    const extra = [...sizeVars(slide), ...imageVars(slide), ...boxVars(slide), ...metaBoxVars(slide)];
     if (!extra.length) return original;
     const extraText = extra.join("; ");
     if (!original) return ` style="${escapeHtml(extraText)}"`;
@@ -629,6 +667,55 @@
     });
     refreshPreview(slide);
     refreshBoxControls();
+    saveSoon();
+  }
+
+  function metaBoxInfo(name) {
+    return metaBoxFields.find(([key]) => key === name) || metaBoxFields[0];
+  }
+
+  function refreshMetaBoxControls() {
+    if (!panel) return;
+    const slide = currentSlide();
+    if (!slide) return;
+    metaBoxFields.forEach(([name, , min, max, fallback]) => {
+      const control = panel.querySelector(`[data-meta-box-control="${name}"]`);
+      if (!control) return;
+      control.min = min;
+      control.max = max;
+      if (document.activeElement !== control) control.value = parseNumber(slide, name, fallback);
+    });
+  }
+
+  function applyMetaBoxToPreview(name) {
+    const slide = currentSlide();
+    const slideEl = document.querySelector(".preview-wrap .preview-slide");
+    if (!slide || !slideEl) return;
+    const [, , , , , variable] = metaBoxInfo(name);
+    const value = cssLengthValue(fieldValue(slide, name));
+    if (value) slideEl.style.setProperty(variable, value);
+    else slideEl.style.removeProperty(variable);
+  }
+
+  function updateMetaBoxValue(name, rawValue) {
+    const slide = currentSlide();
+    if (!slide) return;
+    slide.fields = slide.fields || {};
+    slide.fields[name] = `${rawValue}px`;
+    applyMetaBoxToPreview(name);
+    saveSoon();
+  }
+
+  function resetMetaBoxes() {
+    const slide = currentSlide();
+    if (!slide) return;
+    slide.fields = slide.fields || {};
+    metaBoxFields.forEach(([name]) => {
+      delete slide.fields[name];
+      applyMetaBoxToPreview(name);
+    });
+    refreshPreview(slide);
+    refreshMetaBoxControls();
     saveSoon();
   }
 
@@ -828,6 +915,7 @@
     refreshSizeControls();
     refreshImageControls();
     refreshBoxControls();
+    refreshMetaBoxControls();
     window.setTimeout(drawPictureSelection, 0);
 
     lastSlideId = slide.id;
