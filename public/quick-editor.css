@@ -337,6 +337,15 @@
   border-top: 2px solid #f1ded6;
 }
 
+.quick-tools-attention {
+  margin-inline: -8px;
+  padding: 12px 8px;
+  border: 2px solid var(--red);
+  border-radius: 10px;
+  background: #fff6f3;
+  box-shadow: 0 12px 28px rgba(237, 28, 42, .14);
+}
+
 .quick-image-picks,
 .quick-fit-buttons {
   display: flex;

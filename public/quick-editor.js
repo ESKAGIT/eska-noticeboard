@@ -174,6 +174,34 @@
           <small>Large</small>
         </label>
       </div>
+      <div class="quick-box-tools" aria-label="Date and info box tools">
+        <div class="quick-size-head">
+          <strong>Large Date/List Card Tools</strong>
+          <button type="button" data-box-reset>Reset boxes</button>
+        </div>
+        ${boxFields.map(([name, label]) => `
+          <label class="quick-size-row">
+            <span>${label}</span>
+            <small>Less</small>
+            <input data-box-control="${name}" type="range" step="5">
+            <small>More</small>
+          </label>
+        `).join("")}
+      </div>
+      <div class="quick-meta-box-tools" aria-label="Date time and location pill tools">
+        <div class="quick-size-head">
+          <strong>Small Date/Time/Location Pill Tools</strong>
+          <button type="button" data-meta-box-reset>Reset pills</button>
+        </div>
+        ${metaBoxFields.map(([name, label]) => `
+          <label class="quick-size-row">
+            <span>${label}</span>
+            <small>Less</small>
+            <input data-meta-box-control="${name}" type="range" step="5">
+            <small>More</small>
+          </label>
+        `).join("")}
+      </div>
       <div class="quick-image-tools" aria-label="Picture tools">
         <div class="quick-size-head">
           <strong>Picture Tools</strong>
@@ -222,34 +250,6 @@
           <button type="button" data-image-fit="cover">Fill crop</button>
           <button type="button" data-image-fit="contain">Fit whole</button>
         </div>
-      </div>
-      <div class="quick-box-tools" aria-label="Date and info box tools">
-        <div class="quick-size-head">
-          <strong>Large Date/List Card Tools</strong>
-          <button type="button" data-box-reset>Reset boxes</button>
-        </div>
-        ${boxFields.map(([name, label]) => `
-          <label class="quick-size-row">
-            <span>${label}</span>
-            <small>Less</small>
-            <input data-box-control="${name}" type="range" step="5">
-            <small>More</small>
-          </label>
-        `).join("")}
-      </div>
-      <div class="quick-meta-box-tools" aria-label="Date time and location pill tools">
-        <div class="quick-size-head">
-          <strong>Small Date/Time/Location Pill Tools</strong>
-          <button type="button" data-meta-box-reset>Reset pills</button>
-        </div>
-        ${metaBoxFields.map(([name, label]) => `
-          <label class="quick-size-row">
-            <span>${label}</span>
-            <small>Less</small>
-            <input data-meta-box-control="${name}" type="range" step="5">
-            <small>More</small>
-          </label>
-        `).join("")}
       </div>
     `;
     document.body.appendChild(panel);
@@ -367,6 +367,19 @@
       control.focus({ preventScroll: true });
       if (control.select) control.select();
     }, 0);
+    focusRelatedTools(name);
+  }
+
+  function focusRelatedTools(name) {
+    let selector = "";
+    if (name === "dateList") selector = ".quick-box-tools";
+    else if (["date", "time", "location"].includes(name)) selector = ".quick-meta-box-tools";
+    if (!selector || !panel) return;
+    const section = panel.querySelector(selector);
+    if (!section) return;
+    section.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    section.classList.add("quick-tools-attention");
+    window.setTimeout(() => section.classList.remove("quick-tools-attention"), 1800);
   }
 
   function imageInfo(name = selectedImage) {
