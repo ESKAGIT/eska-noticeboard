@@ -426,7 +426,7 @@
     if (!slide || slide.template !== "menu") return baseEditorForm(slide);
     const options = templates.map((item) => `<option value="${item.id}" ${slide.template === item.id ? "selected" : ""}>${item.name}</option>`).join("");
     const animOptions = animations.map(([id, label]) => `<option value="${id}" ${slide.animation === id ? "selected" : ""}>${label}</option>`).join("");
-    const fields = ["eyebrow", "heading", "subheading", "body", "photoNotes", "menuItems", "cta", "image", "imageLeft", "imageRight", "image4", "image5", "image6", "logo", "background", "accent", "textColor", "panelColor", "textX", "textY", "textWidth", "headingSize", "subheadingSize", "bodySize"];
+    const fields = ["eyebrow", "heading", "subheading", "body", "cta", "image", "imageLeft", "imageRight", "image4", "image5", "image6", "logo", "background", "accent", "textColor", "panelColor", "textX", "textY", "textWidth", "headingSize", "subheadingSize", "bodySize"];
     return `
       <form class="edit-form">
         <section class="quick-text-editor" aria-label="Quick text editor">
@@ -457,6 +457,8 @@
             </label>
           `).join("")}
         </div>
+        <input type="hidden" data-field="photoNotes" id="photoNotesRaw" value="${escapeHtml(field(slide, "photoNotes"))}">
+        <input type="hidden" data-field="menuItems" id="menuItemsRaw" value="${escapeHtml(field(slide, "menuItems"))}">
         <div class="upload-row">
           <label>Upload image/video<input id="mediaUpload" type="file" accept="image/*,video/mp4,video/quicktime"><small>For Apple TV, use MP4 video where possible.</small></label>
           <button class="secondary" id="applyToImage" data-upload-target="image" type="button">Use as photo 1</button>
