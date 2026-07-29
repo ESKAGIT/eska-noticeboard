@@ -53,6 +53,7 @@
   }
 
   function mediaLabel(item) {
+    if (item && item.label) return item.label;
     return item && item.type && item.type.startsWith("video/") ? "Video" : "Photo";
   }
 
@@ -105,7 +106,10 @@
             ? `<video src="${escapeHtml(item.url)}" muted playsinline preload="metadata"></video>`
             : `<img src="${escapeHtml(item.url)}" alt="">`}
         </div>
-        <strong>${escapeHtml(mediaLabel(item))} ${index + 1}</strong>
+        <strong>${escapeHtml(mediaLabel(item))}</strong>
+        <label class="media-library-label">Label
+          <input data-library-label="${escapeHtml(item.name)}" value="${escapeHtml(mediaLabel(item) || `${item.type && item.type.startsWith("video/") ? "Video" : "Photo"} ${index + 1}`)}" maxlength="80">
+        </label>
         <small>${escapeHtml(friendlyDate(item.updatedAt))} - ${escapeHtml(compactBytes(item.size))}</small>
         <div class="media-library-actions">
           <button class="secondary" type="button" data-library-insert="${escapeHtml(item.url)}">Insert into selected place</button>
@@ -122,6 +126,30 @@
     box.querySelectorAll("[data-library-delete]").forEach((button) => {
       button.addEventListener("click", () => deleteLibraryMedia(slide, button.dataset.libraryDelete, button.dataset.libraryUrl));
     });
+    box.querySelectorAll("[data-library-label]").forEach((input) => {
+      input.addEventListener("change", () => saveLibraryLabel(slide, input.dataset.libraryLabel, input.value));
+      input.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          input.blur();
+        }
+      });
+    });
+  }
+
+  async function saveLibraryLabel(slide, name, label) {
+    if (!name) return;
+    try {
+      const result = await api(`/api/media-library/${encodeURIComponent(name)}`, {
+        method: "PATCH",
+        body: JSON.stringify({ label })
+      });
+      mediaLibraryItems = result.media || mediaLibraryItems;
+      renderMediaLibrary(slide);
+      showStatus("Saved photo label.");
+    } catch (error) {
+      showStatus(error.message || "Could not save this photo label.", true);
+    }
   }
 
   async function deleteLibraryMedia(slide, name, url) {

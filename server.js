@@ -9,6 +9,7 @@ const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, "data");
 const DATA_FILE = path.join(DATA_DIR, "noticeboard.json");
 const UPLOAD_DIR = path.join(DATA_DIR, "uploads");
 const BACKUP_DIR = path.join(DATA_DIR, "backups");
+const MEDIA_META_FILE = path.join(DATA_DIR, "media-library.json");
 const ADMIN_PIN = process.env.ADMIN_PIN || "";
 const MAX_BODY = 60 * 1024 * 1024;
 const MAX_UPLOAD = Number(process.env.MAX_UPLOAD_BYTES || 500 * 1024 * 1024);
@@ -102,6 +103,40 @@ function safeMediaFile(name = "") {
   return clean;
 }
 
+function friendlyMediaLabel(name = "Media") {
+  return path.basename(String(name), path.extname(String(name)))
+    .replace(/^\d{10,}-[a-f0-9]{8}-/i, "")
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (letter) => letter.toUpperCase())
+    .slice(0, 80) || "Media";
+}
+
+function readMediaMeta() {
+  try {
+    if (!fs.existsSync(MEDIA_META_FILE)) return { labels: {} };
+    const parsed = JSON.parse(fs.readFileSync(MEDIA_META_FILE, "utf8"));
+    return { labels: parsed && parsed.labels && typeof parsed.labels === "object" ? parsed.labels : {} };
+  } catch (_) {
+    return { labels: {} };
+  }
+}
+
+function writeMediaMeta(meta) {
+  fs.writeFileSync(MEDIA_META_FILE, JSON.stringify({
+    labels: meta && meta.labels && typeof meta.labels === "object" ? meta.labels : {}
+  }, null, 2));
+}
+
+function setMediaLabel(name, label) {
+  const meta = readMediaMeta();
+  const cleanLabel = String(label || "").replace(/\s+/g, " ").trim().slice(0, 80);
+  if (cleanLabel) meta.labels[name] = cleanLabel;
+  else delete meta.labels[name];
+  writeMediaMeta(meta);
+}
+
 function writeSharedBackup(reason = "manual") {
   if (!fs.existsSync(DATA_FILE)) return null;
   const stored = `${backupStamp()}-${safeName(reason)}.json`;
@@ -138,6 +173,7 @@ function latestSharedBackup() {
 
 function listUploadedMedia() {
   if (!fs.existsSync(UPLOAD_DIR)) return [];
+  const meta = readMediaMeta();
   return fs.readdirSync(UPLOAD_DIR)
     .filter((name) => MIME[path.extname(name).toLowerCase()])
     .map((name) => {
@@ -146,6 +182,7 @@ function listUploadedMedia() {
       const type = (MIME[ext] || "application/octet-stream").split(";")[0];
       return {
         name,
+        label: meta.labels[name] || friendlyMediaLabel(name),
         url: `/uploads/${encodeURIComponent(name)}`,
         type,
         size: stat.size,
@@ -374,6 +411,26 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    if (req.method === "PATCH" && url.pathname.startsWith("/api/media-library/")) {
+      if (!isAuthorized(req)) {
+        sendJson(res, 401, { error: "Admin PIN required." });
+        return;
+      }
+      const name = safeMediaFile(decodeURIComponent(url.pathname.replace("/api/media-library/", "")));
+      if (!name) {
+        sendJson(res, 400, { error: "Invalid media filename." });
+        return;
+      }
+      if (!fs.existsSync(path.join(UPLOAD_DIR, name))) {
+        sendJson(res, 404, { error: "Media file not found." });
+        return;
+      }
+      const parsed = JSON.parse(await readBody(req));
+      setMediaLabel(name, parsed.label);
+      sendJson(res, 200, { ok: true, media: listUploadedMedia() });
+      return;
+    }
+
     if (req.method === "DELETE" && url.pathname.startsWith("/api/media-library/")) {
       if (!isAuthorized(req)) {
         sendJson(res, 401, { error: "Admin PIN required." });
@@ -390,6 +447,7 @@ const server = http.createServer(async (req, res) => {
         return;
       }
       fs.rmSync(filePath, { force: true });
+      setMediaLabel(name, "");
       sendJson(res, 200, { ok: true, media: listUploadedMedia() });
       return;
     }
@@ -409,6 +467,7 @@ const server = http.createServer(async (req, res) => {
       const ext = path.extname(filename || "") || extFromType;
       const stored = `${Date.now()}-${crypto.randomBytes(4).toString("hex")}-${safeName(path.basename(filename || "media", ext))}${ext}`;
       fs.writeFileSync(path.join(UPLOAD_DIR, stored), Buffer.from(match[2], "base64"));
+      setMediaLabel(stored, friendlyMediaLabel(filename || stored));
       sendJson(res, 201, { url: `/uploads/${stored}` });
       return;
     }
@@ -428,6 +487,7 @@ const server = http.createServer(async (req, res) => {
       const stored = `${Date.now()}-${crypto.randomBytes(4).toString("hex")}-${safeName(path.basename(rawName || "media", ext))}${ext}`;
       const target = path.join(UPLOAD_DIR, stored);
       const size = await streamUpload(req, target);
+      setMediaLabel(stored, friendlyMediaLabel(rawName || stored));
       sendJson(res, 201, { url: `/uploads/${stored}`, size });
       return;
     }
