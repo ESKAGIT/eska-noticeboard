@@ -2,6 +2,8 @@
   let autoSaveTimer = null;
   let autoSaveBusy = false;
   let autoSaveQueued = false;
+  let mediaLibraryItems = [];
+  let sharedBackupItems = [];
 
   function setAutosaveStatus(message, isError = false) {
     const box = document.querySelector("#status");
@@ -35,6 +37,146 @@
     draftSlideId = board.slides[0] && board.slides[0].id;
     showStatus("Restored browser backup.");
     renderAdmin();
+  }
+
+  function compactBytes(size = 0) {
+    const value = Number(size) || 0;
+    if (value > 1024 * 1024) return `${(value / 1024 / 1024).toFixed(1)} MB`;
+    if (value > 1024) return `${Math.round(value / 1024)} KB`;
+    return `${value} B`;
+  }
+
+  function friendlyDate(value = "") {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    return date.toLocaleString([], { dateStyle: "medium", timeStyle: "short" });
+  }
+
+  function mediaLabel(item) {
+    return item && item.type && item.type.startsWith("video/") ? "Video" : "Photo";
+  }
+
+  function applyTargetDefaults(slide, target) {
+    if (target === "imageRight") slide.fields.image2 = slide.fields.imageRight;
+    if (target === "qr") slide.fields.qrVisible = "true";
+    if (target === "logo") {
+      Object.assign(slide.fields, {
+        logoWidth: "92px",
+        logoHeight: "92px",
+        logoX: "0px",
+        logoY: "0px",
+        logoFit: "contain",
+        logoPosX: "50%",
+        logoPosY: "50%"
+      });
+    }
+  }
+
+  async function refreshMediaLibrary(slide) {
+    const box = document.querySelector("#mediaLibraryGrid");
+    if (box) box.innerHTML = `<p class="library-empty">Loading shared media...</p>`;
+    try {
+      const result = await api("/api/media-library");
+      mediaLibraryItems = result.media || [];
+      renderMediaLibrary(slide);
+    } catch (error) {
+      if (box) box.innerHTML = `<p class="library-empty">${escapeHtml(error.message || "Could not load shared media.")}</p>`;
+    }
+  }
+
+  function renderMediaLibrary(slide) {
+    const box = document.querySelector("#mediaLibraryGrid");
+    if (!box) return;
+    if (!mediaLibraryItems.length) {
+      box.innerHTML = `<p class="library-empty">No shared media yet. Upload a photo or video above first.</p>`;
+      return;
+    }
+    box.innerHTML = mediaLibraryItems.map((item, index) => `
+      <article class="media-library-card">
+        <div class="media-library-thumb">
+          ${item.type && item.type.startsWith("video/")
+            ? `<video src="${escapeHtml(item.url)}" muted playsinline preload="metadata"></video>`
+            : `<img src="${escapeHtml(item.url)}" alt="">`}
+        </div>
+        <strong>${escapeHtml(mediaLabel(item))} ${index + 1}</strong>
+        <small>${escapeHtml(friendlyDate(item.updatedAt))} · ${escapeHtml(compactBytes(item.size))}</small>
+        <button class="secondary" type="button" data-library-insert="${escapeHtml(item.url)}">Insert selected place</button>
+      </article>
+    `).join("");
+    box.querySelectorAll("[data-library-insert]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const target = document.querySelector("#mediaLibraryTarget").value || "image";
+        insertLibraryMedia(slide, target, button.dataset.libraryInsert);
+      });
+    });
+  }
+
+  function insertLibraryMedia(slide, target, url) {
+    if (!slide || !url) return;
+    slide.fields = slide.fields || {};
+    slide.fields[target] = url;
+    applyTargetDefaults(slide, target);
+    scheduleAutosave(150);
+    renderAdmin();
+    showStatus(`Inserted shared media as ${target}.`);
+  }
+
+  async function refreshSharedBackups() {
+    const box = document.querySelector("#sharedBackupList");
+    if (box) box.innerHTML = `<p class="library-empty">Loading shared backups...</p>`;
+    try {
+      const result = await api("/api/backups");
+      sharedBackupItems = result.backups || [];
+      renderSharedBackups();
+    } catch (error) {
+      if (box) box.innerHTML = `<p class="library-empty">${escapeHtml(error.message || "Could not load shared backups.")}</p>`;
+    }
+  }
+
+  function renderSharedBackups() {
+    const box = document.querySelector("#sharedBackupList");
+    if (!box) return;
+    if (!sharedBackupItems.length) {
+      box.innerHTML = `<p class="library-empty">No shared backups yet. Create one before making big changes.</p>`;
+      return;
+    }
+    box.innerHTML = sharedBackupItems.slice(0, 12).map((item) => `
+      <article class="shared-backup-row">
+        <div>
+          <strong>${escapeHtml(friendlyDate(item.updatedAt))}</strong>
+          <small>${escapeHtml(item.name)} · ${escapeHtml(compactBytes(item.size))}</small>
+        </div>
+        <button class="secondary" type="button" data-shared-restore="${escapeHtml(item.name)}">Restore</button>
+      </article>
+    `).join("");
+    box.querySelectorAll("[data-shared-restore]").forEach((button) => {
+      button.addEventListener("click", () => restoreSharedBackup(button.dataset.sharedRestore));
+    });
+  }
+
+  async function createSharedBackup() {
+    try {
+      await api("/api/backups", { method: "POST" });
+      await refreshSharedBackups();
+      showStatus("Created shared backup.");
+    } catch (error) {
+      showStatus(error.message || "Could not create shared backup.", true);
+    }
+  }
+
+  async function restoreSharedBackup(name) {
+    if (!name) return;
+    if (!window.confirm("Restore this shared backup? This will replace the live noticeboard for everyone.")) return;
+    try {
+      await api(`/api/backups/${encodeURIComponent(name)}/restore`, { method: "POST" });
+      board = await api("/api/noticeboard");
+      draftSlideId = board.slides[0] && board.slides[0].id;
+      showStatus("Restored shared backup.");
+      renderAdmin();
+    } catch (error) {
+      showStatus(error.message || "Could not restore shared backup.", true);
+    }
   }
 
   async function flushAutosave() {
@@ -312,6 +454,44 @@
           <button class="secondary" id="applyToVideo" data-upload-target="video" type="button">Use upload as video</button>
           <button class="danger" id="deleteSlide" type="button">Delete slide</button>
         </div>
+        <section class="shared-library-panel" aria-label="Shared media library">
+          <div class="shared-library-head">
+            <div>
+              <h3>Shared Photo and Video Library</h3>
+              <p>Everyone sees these Railway uploads. Choose where to insert one, then pick a file.</p>
+            </div>
+            <button class="secondary" id="refreshMediaLibrary" type="button">Refresh library</button>
+          </div>
+          <label class="library-target">Insert selected media into
+            <select id="mediaLibraryTarget">
+              <option value="image">Picture 1</option>
+              <option value="imageLeft">Picture 2 / split left</option>
+              <option value="imageRight">Picture 3 / split right</option>
+              <option value="image4">Picture 4</option>
+              <option value="image5">Picture 5</option>
+              <option value="image6">Picture 6</option>
+              <option value="logo">Slide logo</option>
+              <option value="background">Background</option>
+              <option value="qr">QR code</option>
+              <option value="video">Video</option>
+            </select>
+          </label>
+          <div class="media-library-grid" id="mediaLibraryGrid">
+            <p class="library-empty">Loading shared media...</p>
+          </div>
+        </section>
+        <section class="shared-library-panel" aria-label="Shared server backups">
+          <div class="shared-library-head">
+            <div>
+              <h3>Shared Server Backups</h3>
+              <p>These backups are stored on Railway, so any colleague can restore them from any computer.</p>
+            </div>
+            <button class="secondary" id="createSharedBackup" type="button">Create shared backup</button>
+          </div>
+          <div class="shared-backup-list" id="sharedBackupList">
+            <p class="library-empty">Loading shared backups...</p>
+          </div>
+        </section>
       </form>
     `;
   };
@@ -371,6 +551,10 @@
       button.dataset.pictureUploadBound = "1";
       button.addEventListener("click", () => uploadInto(slide, button.dataset.uploadTarget));
     });
+    const refreshMediaButton = document.querySelector("#refreshMediaLibrary");
+    if (refreshMediaButton) refreshMediaButton.addEventListener("click", () => refreshMediaLibrary(slide));
+    const createBackupButton = document.querySelector("#createSharedBackup");
+    if (createBackupButton) createBackupButton.addEventListener("click", createSharedBackup);
   };
 
   async function uploadFileDirect(file) {
@@ -415,19 +599,7 @@
       const saved = await uploadFileDirect(file);
       slide.fields = slide.fields || {};
       slide.fields[target] = saved.url;
-      if (target === "imageRight") slide.fields.image2 = saved.url;
-      if (target === "qr") slide.fields.qrVisible = "true";
-      if (target === "logo") {
-        Object.assign(slide.fields, {
-          logoWidth: "92px",
-          logoHeight: "92px",
-          logoX: "0px",
-          logoY: "0px",
-          logoFit: "contain",
-          logoPosX: "50%",
-          logoPosY: "50%"
-        });
-      }
+      applyTargetDefaults(slide, target);
       const label = target === "imageLeft" ? "split left photo" : target === "imageRight" ? "split right photo" : target;
       renderAdmin();
       await flushAutosave();
@@ -441,7 +613,7 @@
     const current = board.slides.find((slide) => slide.id === draftSlideId) || board.slides[0];
     draftSlideId = current && current.id;
     app.innerHTML = `
-      ${shell("ESKA Noticeboard Admin", `<a class="secondary" href="/api/backup" target="_blank">Download Backup</a><button class="secondary" id="restoreBrowserBackup" type="button">Restore Browser Backup</button><a class="secondary" href="/export">Export for USB</a><button class="primary" id="saveBoard">Save Live Screen</button>`)}
+      ${shell("ESKA Noticeboard Admin", `<a class="secondary" href="/api/backup" target="_blank">Download Backup</a><button class="secondary" id="restoreBrowserBackup" type="button">Restore This Computer Backup</button><a class="secondary" href="/export">Export for USB</a><button class="primary" id="saveBoard">Save Live Screen</button>`)}
       <main class="admin-layout">
         <aside class="slide-list">
           <button class="primary wide" id="addSlide">Add Slide</button>
@@ -481,6 +653,8 @@
       });
     });
     bindEditor(current);
+    refreshMediaLibrary(current);
+    refreshSharedBackups();
   };
 
   const originalCreateSlideFromTemplate = window.createSlideFromTemplate || createSlideFromTemplate;

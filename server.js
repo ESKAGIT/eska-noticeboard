@@ -8,6 +8,7 @@ const PUBLIC_DIR = path.join(__dirname, "public");
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, "data");
 const DATA_FILE = path.join(DATA_DIR, "noticeboard.json");
 const UPLOAD_DIR = path.join(DATA_DIR, "uploads");
+const BACKUP_DIR = path.join(DATA_DIR, "backups");
 const ADMIN_PIN = process.env.ADMIN_PIN || "";
 const MAX_BODY = 60 * 1024 * 1024;
 const MAX_UPLOAD = Number(process.env.MAX_UPLOAD_BYTES || 500 * 1024 * 1024);
@@ -30,6 +31,7 @@ const MIME = {
 function ensureData() {
   fs.mkdirSync(DATA_DIR, { recursive: true });
   fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+  fs.mkdirSync(BACKUP_DIR, { recursive: true });
   if (!fs.existsSync(DATA_FILE)) {
     const seed = fs.readFileSync(path.join(__dirname, "data", "noticeboard.json"), "utf8");
     fs.writeFileSync(DATA_FILE, seed);
@@ -82,6 +84,66 @@ function isAuthorized(req) {
 
 function safeName(name = "upload") {
   return name.toLowerCase().replace(/[^a-z0-9._-]+/g, "-").replace(/^-+|-+$/g, "") || "upload";
+}
+
+function backupStamp() {
+  return new Date().toISOString().replace(/[:.]/g, "-");
+}
+
+function safeBackupFile(name = "") {
+  const clean = path.basename(String(name));
+  if (!/^[a-z0-9._-]+\.json$/i.test(clean)) return "";
+  return clean;
+}
+
+function writeSharedBackup(reason = "manual") {
+  if (!fs.existsSync(DATA_FILE)) return null;
+  const stored = `${backupStamp()}-${safeName(reason)}.json`;
+  fs.writeFileSync(path.join(BACKUP_DIR, stored), fs.readFileSync(DATA_FILE, "utf8"));
+  fs.readdirSync(BACKUP_DIR)
+    .filter((name) => /^[a-z0-9._-]+\.json$/i.test(name))
+    .map((name) => ({ name, time: fs.statSync(path.join(BACKUP_DIR, name)).mtimeMs }))
+    .sort((a, b) => b.time - a.time)
+    .slice(120)
+    .forEach((item) => fs.rm(path.join(BACKUP_DIR, item.name), { force: true }, () => {}));
+  return stored;
+}
+
+function listSharedBackups() {
+  if (!fs.existsSync(BACKUP_DIR)) return [];
+  return fs.readdirSync(BACKUP_DIR)
+    .filter((name) => /^[a-z0-9._-]+\.json$/i.test(name))
+    .map((name) => {
+      const stat = fs.statSync(path.join(BACKUP_DIR, name));
+      return {
+        name,
+        url: `/api/backups/${encodeURIComponent(name)}`,
+        size: stat.size,
+        updatedAt: stat.mtime.toISOString()
+      };
+    })
+    .sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)))
+    .slice(0, 80);
+}
+
+function listUploadedMedia() {
+  if (!fs.existsSync(UPLOAD_DIR)) return [];
+  return fs.readdirSync(UPLOAD_DIR)
+    .filter((name) => MIME[path.extname(name).toLowerCase()])
+    .map((name) => {
+      const stat = fs.statSync(path.join(UPLOAD_DIR, name));
+      const ext = path.extname(name).toLowerCase();
+      const type = (MIME[ext] || "application/octet-stream").split(";")[0];
+      return {
+        name,
+        url: `/uploads/${encodeURIComponent(name)}`,
+        type,
+        size: stat.size,
+        updatedAt: stat.mtime.toISOString()
+      };
+    })
+    .sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)))
+    .slice(0, 240);
 }
 
 function extensionFromType(type = "") {
@@ -172,6 +234,72 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    if (req.method === "GET" && url.pathname === "/api/backups") {
+      if (!isAuthorized(req)) {
+        sendJson(res, 401, { error: "Admin PIN required." });
+        return;
+      }
+      sendJson(res, 200, { backups: listSharedBackups() });
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/backups") {
+      if (!isAuthorized(req)) {
+        sendJson(res, 401, { error: "Admin PIN required." });
+        return;
+      }
+      const name = writeSharedBackup("manual");
+      sendJson(res, 201, { ok: true, name, backups: listSharedBackups() });
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname.startsWith("/api/backups/")) {
+      if (!isAuthorized(req)) {
+        sendJson(res, 401, { error: "Admin PIN required." });
+        return;
+      }
+      const name = safeBackupFile(decodeURIComponent(url.pathname.replace("/api/backups/", "")));
+      if (!name) {
+        sendJson(res, 400, { error: "Invalid backup filename." });
+        return;
+      }
+      const filePath = path.join(BACKUP_DIR, name);
+      if (!fs.existsSync(filePath)) {
+        sendJson(res, 404, { error: "Backup not found." });
+        return;
+      }
+      sendDownload(res, name, fs.readFileSync(filePath, "utf8"));
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname.startsWith("/api/backups/") && url.pathname.endsWith("/restore")) {
+      if (!isAuthorized(req)) {
+        sendJson(res, 401, { error: "Admin PIN required." });
+        return;
+      }
+      const rawName = decodeURIComponent(url.pathname.replace("/api/backups/", "").replace(/\/restore$/, ""));
+      const name = safeBackupFile(rawName);
+      if (!name) {
+        sendJson(res, 400, { error: "Invalid backup filename." });
+        return;
+      }
+      const filePath = path.join(BACKUP_DIR, name);
+      if (!fs.existsSync(filePath)) {
+        sendJson(res, 404, { error: "Backup not found." });
+        return;
+      }
+      writeSharedBackup("before-shared-restore");
+      const parsed = JSON.parse(fs.readFileSync(filePath, "utf8"));
+      if (!parsed || !Array.isArray(parsed.slides) || !parsed.brand || !parsed.settings) {
+        sendJson(res, 400, { error: "That shared backup is not valid." });
+        return;
+      }
+      parsed.updatedAt = new Date().toISOString();
+      fs.writeFileSync(DATA_FILE, JSON.stringify(parsed, null, 2));
+      sendJson(res, 200, { ok: true, restoredFrom: name, updatedAt: parsed.updatedAt });
+      return;
+    }
+
     if (req.method === "POST" && url.pathname === "/api/restore") {
       if (!isAuthorized(req)) {
         sendJson(res, 401, { error: "Admin PIN required." });
@@ -183,6 +311,7 @@ const server = http.createServer(async (req, res) => {
         sendJson(res, 400, { error: "That backup file does not look like an ESKA noticeboard backup." });
         return;
       }
+      writeSharedBackup("before-upload-restore");
       parsed.updatedAt = new Date().toISOString();
       fs.writeFileSync(DATA_FILE, JSON.stringify(parsed, null, 2));
       sendJson(res, 200, { ok: true, updatedAt: parsed.updatedAt });
@@ -196,9 +325,19 @@ const server = http.createServer(async (req, res) => {
       }
       const body = await readBody(req);
       const parsed = JSON.parse(body);
+      writeSharedBackup("before-save");
       parsed.updatedAt = new Date().toISOString();
       fs.writeFileSync(DATA_FILE, JSON.stringify(parsed, null, 2));
       sendJson(res, 200, { ok: true, updatedAt: parsed.updatedAt });
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/media-library") {
+      if (!isAuthorized(req)) {
+        sendJson(res, 401, { error: "Admin PIN required." });
+        return;
+      }
+      sendJson(res, 200, { media: listUploadedMedia() });
       return;
     }
 
