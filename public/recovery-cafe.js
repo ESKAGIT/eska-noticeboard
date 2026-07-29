@@ -79,6 +79,57 @@
       .join("\n");
   }
 
+  function defaultCafePhotoCards() {
+    return [
+      { name: "Fresh drinks", price: "From GBP 1.50", detail: "Tea, coffee and hot chocolate for the training break" },
+      { name: "Quick snacks", price: "From GBP 1.20", detail: "Simple choices before or after class" },
+      { name: "Family friendly", price: "Ask at reception", detail: "Refreshments for parents, students and visitors" },
+      { name: "Cold drinks", price: "From GBP 1.00", detail: "Easy refreshments while you wait" },
+      { name: "After class", price: "From GBP 2.00", detail: "Grab something before heading home" },
+      { name: "Cafe favourites", price: "Today's price", detail: "Ask at reception for today's options" }
+    ];
+  }
+
+  function looksLikePrice(value = "") {
+    return /(^| )(£|gbp|from|ask|today|\d+([.,]\d{2})?)( |$)/i.test(String(value || ""));
+  }
+
+  function photoCardRow(name = "", price = "", detail = "") {
+    return { name, price, detail, 0: name, 1: price, 2: detail, length: 3 };
+  }
+
+  function parseCafePhotoCards(value = "") {
+    const defaults = defaultCafePhotoCards();
+    const rows = String(value || "")
+      .split(/\r?\n/)
+      .map((item) => item.trim())
+      .filter(Boolean)
+      .map((item, index) => {
+        const fallback = defaults[index] || { name: "", price: "", detail: "" };
+        const parts = item.split("|").map((part) => part.trim());
+        const hasThreeParts = parts.length >= 3;
+        const secondIsPrice = looksLikePrice(parts[1]);
+        const name = parts[0] || fallback.name || "";
+        const price = hasThreeParts || secondIsPrice ? (parts[1] || fallback.price || "") : (fallback.price || "");
+        const detail = hasThreeParts ? (parts[2] || fallback.detail || "") : (secondIsPrice ? (fallback.detail || "") : (parts[1] || fallback.detail || ""));
+        return photoCardRow(name, price, detail);
+      });
+    while (rows.length < 6) rows.push(defaults[rows.length] || { name: "", price: "", detail: "" });
+    return rows.slice(0, 6);
+  }
+
+  function stringifyCafePhotoCards(rows = []) {
+    return rows
+      .map((item) => ({
+        name: String(item.name || "").trim(),
+        price: String(item.price || "").trim(),
+        detail: String(item.detail || "").trim()
+      }))
+      .filter((item) => item.name || item.price || item.detail)
+      .map((item) => [item.name || "Photo card", item.price, item.detail].filter(Boolean).join(" | "))
+      .join("\n");
+  }
+
   function renderCafeMenuEditor(slide) {
     const rows = parseCafeMenuItems(field(slide, "menuItems"));
     return `
@@ -97,6 +148,30 @@
             <input data-menu-row="${index}" data-menu-field="name" value="${escapeHtml(item.name)}" placeholder="e.g. Chicken bagel">
             <input data-menu-row="${index}" data-menu-field="price" value="${escapeHtml(item.price)}" placeholder="e.g. GBP 4.50">
             <input data-menu-row="${index}" data-menu-field="detail" value="${escapeHtml(item.detail)}" placeholder="Optional">
+          </div>
+        `).join("")}
+      </section>
+    `;
+  }
+
+  function renderCafePhotoCardEditor(slide) {
+    const rows = parseCafePhotoCards(field(slide, "photoNotes"));
+    return `
+      <section class="cafe-photo-editor" aria-label="Cafe photo card text">
+        <div class="quick-text-editor-head">
+          <strong>Cafe Photo Cards</strong>
+          <span>Edit the heading, red badge, and description under each photo.</span>
+        </div>
+        <div class="cafe-photo-row cafe-photo-row-head">
+          <span>Card heading</span>
+          <span>Red price badge</span>
+          <span>Description</span>
+        </div>
+        ${rows.map((item, index) => `
+          <div class="cafe-photo-row">
+            <input data-photo-row="${index}" data-photo-field="name" value="${escapeHtml(item.name)}" placeholder="e.g. Chicken & Pesto Bagel">
+            <input data-photo-row="${index}" data-photo-field="price" value="${escapeHtml(item.price)}" placeholder="e.g. From GBP 1.50">
+            <input data-photo-row="${index}" data-photo-field="detail" value="${escapeHtml(item.detail)}" placeholder="e.g. Freshly made in the cafe">
           </div>
         `).join("")}
       </section>
@@ -155,11 +230,7 @@
     const imageLeft = field(slide, "imageLeft", image);
     const imageRight = field(slide, "imageRight", image);
     const items = parseCafeMenuItems(field(slide, "menuItems")).filter((item) => item.name || item.price || item.detail);
-    const photoNotes = field(slide, "photoNotes", "")
-      .split(/\r?\n/)
-      .map((item) => item.trim())
-      .filter(Boolean)
-      .map((item) => item.split("|").map((part) => part.trim()));
+    const photoNotes = parseCafePhotoCards(field(slide, "photoNotes"));
     const image4 = field(slide, "image4", "/assets/dojo-class.svg");
     const image5 = field(slide, "image5", "/assets/students-group.svg");
     const image6 = field(slide, "image6", "/assets/training.svg");
@@ -369,9 +440,9 @@
             <label>Subheading<input data-field="subheading" value="${escapeHtml(field(slide, "subheading"))}"></label>
             <label>Call to action<input data-field="cta" value="${escapeHtml(field(slide, "cta"))}"></label>
             <label class="span-two">Body text<textarea data-field="body" rows="3">${escapeHtml(field(slide, "body"))}</textarea></label>
-            <label class="span-two">Photo boxes<textarea data-field="photoNotes" rows="4">${escapeHtml(field(slide, "photoNotes"))}</textarea></label>
           </div>
         </section>
+        ${renderCafePhotoCardEditor(slide)}
         ${renderCafeMenuEditor(slide)}
         <div class="form-grid">
           <label>Template<select data-key="template">${options}</select></label>
@@ -382,7 +453,7 @@
         <div class="form-grid two">
           ${fields.map((key) => `
             <label class="${key === "body" || key === "menuItems" || key === "photoNotes" ? "span-two" : ""}">${labelFor(key)}
-              ${key === "body" || key === "menuItems" || key === "photoNotes" ? `<textarea data-field="${key}" ${key === "menuItems" ? "id=\"menuItemsRaw\"" : ""} rows="${key === "menuItems" ? "5" : "4"}">${escapeHtml(field(slide, key))}</textarea>` : `<input data-field="${key}" value="${escapeHtml(field(slide, key))}">`}
+              ${key === "body" || key === "menuItems" || key === "photoNotes" ? `<textarea data-field="${key}" ${key === "menuItems" ? "id=\"menuItemsRaw\"" : ""} ${key === "photoNotes" ? "id=\"photoNotesRaw\"" : ""} rows="${key === "menuItems" || key === "photoNotes" ? "5" : "4"}">${escapeHtml(field(slide, key))}</textarea>` : `<input data-field="${key}" value="${escapeHtml(field(slide, key))}">`}
             </label>
           `).join("")}
         </div>
@@ -460,6 +531,26 @@
     };
     menuInputs.forEach((input) => {
       input.addEventListener("input", updateMenuItems);
+    });
+    const photoInputs = Array.from(document.querySelectorAll("[data-photo-row][data-photo-field]"));
+    const photoRaw = document.querySelector("#photoNotesRaw");
+    const updatePhotoNotes = () => {
+      const rows = parseCafePhotoCards(field(slide, "photoNotes"));
+      photoInputs.forEach((input) => {
+        const index = Number(input.dataset.photoRow);
+        const key = input.dataset.photoField;
+        if (!rows[index]) rows[index] = photoCardRow();
+        rows[index][key] = input.value;
+        rows[index][key === "name" ? 0 : key === "price" ? 1 : 2] = input.value;
+      });
+      slide.fields.photoNotes = stringifyCafePhotoCards(rows);
+      if (photoRaw) photoRaw.value = slide.fields.photoNotes;
+      const preview = document.querySelector(".preview-wrap");
+      if (preview) preview.innerHTML = renderSlide(slide, true);
+      if (photoRaw) photoRaw.dispatchEvent(new Event("input", { bubbles: true }));
+    };
+    photoInputs.forEach((input) => {
+      input.addEventListener("input", updatePhotoNotes);
     });
     const bindPhotoButton = (id, target) => {
       const button = document.querySelector(id);
