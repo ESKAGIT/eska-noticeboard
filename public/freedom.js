@@ -2,7 +2,9 @@
   let autoSaveTimer = null;
   let autoSaveBusy = false;
   let autoSaveQueued = false;
+  let restoreBusy = false;
   let mediaLibraryItems = [];
+  let sharedBackupItems = [];
 
   function setAutosaveStatus(message, isError = false) {
     const box = document.querySelector("#status");
@@ -178,9 +180,93 @@
     showStatus(`Inserted shared media as ${target}.`);
   }
 
+  async function refreshSharedBackups() {
+    const box = document.querySelector("#sharedBackupList");
+    if (box) box.innerHTML = `<p class="library-empty">Loading restore points...</p>`;
+    try {
+      const result = await api("/api/backups");
+      sharedBackupItems = result.backups || [];
+      renderSharedBackups();
+    } catch (error) {
+      if (box) box.innerHTML = `<p class="library-empty">${escapeHtml(error.message || "Could not load restore points.")}</p>`;
+    }
+  }
+
+  function backupNameLabel(name = "") {
+    return String(name)
+      .replace(/\.json$/i, "")
+      .replace(/T/, " ")
+      .replace(/-\d{3}Z-/, " - ")
+      .replace(/-/g, ":")
+      .replace(/ : /g, " - ");
+  }
+
+  function renderSharedBackups() {
+    const box = document.querySelector("#sharedBackupList");
+    if (!box) return;
+    if (!sharedBackupItems.length) {
+      box.innerHTML = `<p class="library-empty">No server restore points yet. Press Save Live Screen after an edit to create one.</p>`;
+      return;
+    }
+    box.innerHTML = sharedBackupItems.slice(0, 8).map((item, index) => `
+      <article class="shared-backup-row">
+        <div>
+          <strong>${index === 0 ? "Most recent previous change" : "Previous change"}</strong>
+          <small>${escapeHtml(friendlyDate(item.updatedAt))} - ${escapeHtml(backupNameLabel(item.name))}</small>
+        </div>
+        <button class="secondary" type="button" data-restore-backup="${escapeHtml(item.name)}">Restore</button>
+      </article>
+    `).join("");
+    box.querySelectorAll("[data-restore-backup]").forEach((button) => {
+      button.addEventListener("click", () => restoreBackup(button.dataset.restoreBackup));
+    });
+  }
+
+  function waitForAutosaveIdle(timeout = 4000) {
+    const started = Date.now();
+    return new Promise((resolve) => {
+      const check = () => {
+        if (!autoSaveBusy || Date.now() - started > timeout) {
+          resolve();
+          return;
+        }
+        setTimeout(check, 120);
+      };
+      check();
+    });
+  }
+
+  async function restoreBackup(name) {
+    if (!name) return;
+    if (!window.confirm("Restore this server backup? This will replace the live noticeboard for everyone.")) return;
+    clearTimeout(autoSaveTimer);
+    autoSaveTimer = null;
+    autoSaveQueued = false;
+    restoreBusy = true;
+    try {
+      setAutosaveStatus("Restoring previous version...");
+      await waitForAutosaveIdle();
+      await api(`/api/backups/${encodeURIComponent(name)}/restore`, { method: "POST" });
+      board = await api("/api/noticeboard");
+      draftSlideId = board.slides[0] && board.slides[0].id;
+      showStatus("Restored the selected server backup.");
+      renderAdmin();
+    } catch (error) {
+      showStatus(error.message || "Could not restore that backup.", true);
+    } finally {
+      restoreBusy = false;
+    }
+  }
+
   async function restorePreviousChange() {
     if (!window.confirm("Restore the previous saved change? This works from any computer and will replace the live noticeboard.")) return;
+    clearTimeout(autoSaveTimer);
+    autoSaveTimer = null;
+    autoSaveQueued = false;
+    restoreBusy = true;
     try {
+      setAutosaveStatus("Restoring previous version...");
+      await waitForAutosaveIdle();
       await api("/api/backups/latest/restore", { method: "POST" });
       board = await api("/api/noticeboard");
       draftSlideId = board.slides[0] && board.slides[0].id;
@@ -188,11 +274,14 @@
       renderAdmin();
     } catch (error) {
       showStatus(error.message || "Could not restore the previous change.", true);
+    } finally {
+      restoreBusy = false;
     }
   }
 
   async function flushAutosave() {
     if (!board || route() === "/screen" || route() === "/") return;
+    if (restoreBusy) return;
     if (autoSaveBusy) {
       autoSaveQueued = true;
       return;
@@ -493,6 +582,18 @@
             <p class="library-empty">Loading shared media...</p>
           </div>
         </section>
+        <section class="shared-library-panel" aria-label="Server restore points">
+          <div class="shared-library-head">
+            <div>
+              <h3>Restore Previous Changes</h3>
+              <p>These restore points are saved on the server, so they work from any computer.</p>
+            </div>
+            <button class="secondary" id="refreshSharedBackups" type="button">Refresh restore points</button>
+          </div>
+          <div class="shared-backup-list" id="sharedBackupList">
+            <p class="library-empty">Loading restore points...</p>
+          </div>
+        </section>
       </form>
     `;
   };
@@ -554,6 +655,8 @@
     });
     const refreshMediaButton = document.querySelector("#refreshMediaLibrary");
     if (refreshMediaButton) refreshMediaButton.addEventListener("click", () => refreshMediaLibrary(slide));
+    const refreshBackupButton = document.querySelector("#refreshSharedBackups");
+    if (refreshBackupButton) refreshBackupButton.addEventListener("click", refreshSharedBackups);
   };
 
   async function uploadFileDirect(file) {
@@ -658,6 +761,7 @@
     });
     bindEditor(current);
     refreshMediaLibrary(current);
+    refreshSharedBackups();
   };
 
   const originalCreateSlideFromTemplate = window.createSlideFromTemplate || createSlideFromTemplate;
