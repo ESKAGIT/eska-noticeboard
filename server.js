@@ -126,6 +126,10 @@ function listSharedBackups() {
     .slice(0, 80);
 }
 
+function latestSharedBackup() {
+  return listSharedBackups()[0] || null;
+}
+
 function listUploadedMedia() {
   if (!fs.existsSync(UPLOAD_DIR)) return [];
   return fs.readdirSync(UPLOAD_DIR)
@@ -250,6 +254,29 @@ const server = http.createServer(async (req, res) => {
       }
       const name = writeSharedBackup("manual");
       sendJson(res, 201, { ok: true, name, backups: listSharedBackups() });
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/backups/latest/restore") {
+      if (!isAuthorized(req)) {
+        sendJson(res, 401, { error: "Admin PIN required." });
+        return;
+      }
+      const latest = latestSharedBackup();
+      if (!latest) {
+        sendJson(res, 404, { error: "No previous server change is available to restore yet." });
+        return;
+      }
+      const filePath = path.join(BACKUP_DIR, latest.name);
+      const parsed = JSON.parse(fs.readFileSync(filePath, "utf8"));
+      if (!parsed || !Array.isArray(parsed.slides) || !parsed.brand || !parsed.settings) {
+        sendJson(res, 400, { error: "The previous change backup is not valid." });
+        return;
+      }
+      writeSharedBackup("before-restore-previous");
+      parsed.updatedAt = new Date().toISOString();
+      fs.writeFileSync(DATA_FILE, JSON.stringify(parsed, null, 2));
+      sendJson(res, 200, { ok: true, restoredFrom: latest.name, updatedAt: parsed.updatedAt });
       return;
     }
 

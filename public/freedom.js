@@ -3,7 +3,6 @@
   let autoSaveBusy = false;
   let autoSaveQueued = false;
   let mediaLibraryItems = [];
-  let sharedBackupItems = [];
 
   function setAutosaveStatus(message, isError = false) {
     const box = document.querySelector("#status");
@@ -100,8 +99,8 @@
             : `<img src="${escapeHtml(item.url)}" alt="">`}
         </div>
         <strong>${escapeHtml(mediaLabel(item))} ${index + 1}</strong>
-        <small>${escapeHtml(friendlyDate(item.updatedAt))} · ${escapeHtml(compactBytes(item.size))}</small>
-        <button class="secondary" type="button" data-library-insert="${escapeHtml(item.url)}">Insert selected place</button>
+        <small>${escapeHtml(friendlyDate(item.updatedAt))} - ${escapeHtml(compactBytes(item.size))}</small>
+        <button class="secondary" type="button" data-library-insert="${escapeHtml(item.url)}">Insert into selected place</button>
       </article>
     `).join("");
     box.querySelectorAll("[data-library-insert]").forEach((button) => {
@@ -122,60 +121,16 @@
     showStatus(`Inserted shared media as ${target}.`);
   }
 
-  async function refreshSharedBackups() {
-    const box = document.querySelector("#sharedBackupList");
-    if (box) box.innerHTML = `<p class="library-empty">Loading shared backups...</p>`;
+  async function restorePreviousChange() {
+    if (!window.confirm("Restore the previous saved change? This works from any computer and will replace the live noticeboard.")) return;
     try {
-      const result = await api("/api/backups");
-      sharedBackupItems = result.backups || [];
-      renderSharedBackups();
-    } catch (error) {
-      if (box) box.innerHTML = `<p class="library-empty">${escapeHtml(error.message || "Could not load shared backups.")}</p>`;
-    }
-  }
-
-  function renderSharedBackups() {
-    const box = document.querySelector("#sharedBackupList");
-    if (!box) return;
-    if (!sharedBackupItems.length) {
-      box.innerHTML = `<p class="library-empty">No shared backups yet. Create one before making big changes.</p>`;
-      return;
-    }
-    box.innerHTML = sharedBackupItems.slice(0, 12).map((item) => `
-      <article class="shared-backup-row">
-        <div>
-          <strong>${escapeHtml(friendlyDate(item.updatedAt))}</strong>
-          <small>${escapeHtml(item.name)} · ${escapeHtml(compactBytes(item.size))}</small>
-        </div>
-        <button class="secondary" type="button" data-shared-restore="${escapeHtml(item.name)}">Restore</button>
-      </article>
-    `).join("");
-    box.querySelectorAll("[data-shared-restore]").forEach((button) => {
-      button.addEventListener("click", () => restoreSharedBackup(button.dataset.sharedRestore));
-    });
-  }
-
-  async function createSharedBackup() {
-    try {
-      await api("/api/backups", { method: "POST" });
-      await refreshSharedBackups();
-      showStatus("Created shared backup.");
-    } catch (error) {
-      showStatus(error.message || "Could not create shared backup.", true);
-    }
-  }
-
-  async function restoreSharedBackup(name) {
-    if (!name) return;
-    if (!window.confirm("Restore this shared backup? This will replace the live noticeboard for everyone.")) return;
-    try {
-      await api(`/api/backups/${encodeURIComponent(name)}/restore`, { method: "POST" });
+      await api("/api/backups/latest/restore", { method: "POST" });
       board = await api("/api/noticeboard");
       draftSlideId = board.slides[0] && board.slides[0].id;
-      showStatus("Restored shared backup.");
+      showStatus("Restored the previous saved change.");
       renderAdmin();
     } catch (error) {
-      showStatus(error.message || "Could not restore shared backup.", true);
+      showStatus(error.message || "Could not restore the previous change.", true);
     }
   }
 
@@ -452,13 +407,14 @@
           <button class="secondary" id="applyToLogo" data-upload-target="logo" type="button">Use as slide logo</button>
           <button class="secondary" id="applyToBackground" data-upload-target="background" type="button">Use as background</button>
           <button class="secondary" id="applyToVideo" data-upload-target="video" type="button">Use upload as video</button>
+          <button class="secondary" id="addToLibrary" data-upload-target="library" type="button">Add to library only</button>
           <button class="danger" id="deleteSlide" type="button">Delete slide</button>
         </div>
         <section class="shared-library-panel" aria-label="Shared media library">
           <div class="shared-library-head">
             <div>
-              <h3>Shared Photo and Video Library</h3>
-              <p>Everyone sees these Railway uploads. Choose where to insert one, then pick a file.</p>
+              <h3>Photo Library</h3>
+              <p>Photos and videos uploaded here are available to everyone editing slides.</p>
             </div>
             <button class="secondary" id="refreshMediaLibrary" type="button">Refresh library</button>
           </div>
@@ -478,18 +434,6 @@
           </label>
           <div class="media-library-grid" id="mediaLibraryGrid">
             <p class="library-empty">Loading shared media...</p>
-          </div>
-        </section>
-        <section class="shared-library-panel" aria-label="Shared server backups">
-          <div class="shared-library-head">
-            <div>
-              <h3>Shared Server Backups</h3>
-              <p>These backups are stored on Railway, so any colleague can restore them from any computer.</p>
-            </div>
-            <button class="secondary" id="createSharedBackup" type="button">Create shared backup</button>
-          </div>
-          <div class="shared-backup-list" id="sharedBackupList">
-            <p class="library-empty">Loading shared backups...</p>
           </div>
         </section>
       </form>
@@ -553,8 +497,6 @@
     });
     const refreshMediaButton = document.querySelector("#refreshMediaLibrary");
     if (refreshMediaButton) refreshMediaButton.addEventListener("click", () => refreshMediaLibrary(slide));
-    const createBackupButton = document.querySelector("#createSharedBackup");
-    if (createBackupButton) createBackupButton.addEventListener("click", createSharedBackup);
   };
 
   async function uploadFileDirect(file) {
@@ -597,6 +539,11 @@
     setAutosaveStatus(`Uploading ${file.name}...`);
     try {
       const saved = await uploadFileDirect(file);
+      if (target === "library") {
+        await refreshMediaLibrary(slide);
+        showStatus("Added to the shared photo library.");
+        return;
+      }
       slide.fields = slide.fields || {};
       slide.fields[target] = saved.url;
       applyTargetDefaults(slide, target);
@@ -613,7 +560,7 @@
     const current = board.slides.find((slide) => slide.id === draftSlideId) || board.slides[0];
     draftSlideId = current && current.id;
     app.innerHTML = `
-      ${shell("ESKA Noticeboard Admin", `<a class="secondary" href="/api/backup" target="_blank">Download Backup</a><button class="secondary" id="restoreBrowserBackup" type="button">Restore This Computer Backup</button><a class="secondary" href="/export">Export for USB</a><button class="primary" id="saveBoard">Save Live Screen</button>`)}
+      ${shell("ESKA Noticeboard Admin", `<button class="secondary restore-global" id="restorePreviousChange" type="button">Restore Previous Change</button><a class="secondary" href="/api/backup" target="_blank">Download Backup</a><a class="secondary" href="/export">Export for USB</a><button class="primary" id="saveBoard">Save Live Screen</button>`)}
       <main class="admin-layout">
         <aside class="slide-list">
           <button class="primary wide" id="addSlide">Add Slide</button>
@@ -636,8 +583,8 @@
       clearTimeout(autoSaveTimer);
       flushAutosave().catch((error) => showStatus(error.message, true));
     });
-    document.querySelector("#restoreBrowserBackup").addEventListener("click", () => {
-      restoreFromBrowserBackup().catch((error) => showStatus(error.message, true));
+    document.querySelector("#restorePreviousChange").addEventListener("click", () => {
+      restorePreviousChange().catch((error) => showStatus(error.message, true));
     });
     document.querySelector("#addSlide").addEventListener("click", () => {
       const slide = createSlideFromTemplate("notice");
@@ -654,7 +601,6 @@
     });
     bindEditor(current);
     refreshMediaLibrary(current);
-    refreshSharedBackups();
   };
 
   const originalCreateSlideFromTemplate = window.createSlideFromTemplate || createSlideFromTemplate;

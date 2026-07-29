@@ -591,6 +591,12 @@ textarea { resize: vertical; }
   margin-top: 18px;
 }
 
+.restore-global {
+  border-color: rgba(230, 31, 42, 0.45);
+  color: var(--red);
+  background: #fff7f5;
+}
+
 .shared-library-panel {
   margin-top: 18px;
   padding: 18px;
