@@ -40,6 +40,32 @@
     renderAdmin();
   }
 
+  function browserBackupInfo() {
+    try {
+      const raw = localStorage.getItem("eskaNoticeboardBackup");
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (!parsed || !parsed.board || !Array.isArray(parsed.board.slides)) return null;
+      return {
+        savedAt: parsed.savedAt || "",
+        slideCount: parsed.board.slides.length
+      };
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function downloadBrowserBackup() {
+    const raw = localStorage.getItem("eskaNoticeboardBackup");
+    if (!raw) return showStatus("No browser backup found on this computer.", true);
+    const blob = new Blob([raw], { type: "application/json" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `eska-browser-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  }
+
   function compactBytes(size = 0) {
     const value = Number(size) || 0;
     if (value > 1024 * 1024) return `${(value / 1024 / 1024).toFixed(1)} MB`;
@@ -189,6 +215,44 @@
       renderSharedBackups();
     } catch (error) {
       if (box) box.innerHTML = `<p class="library-empty">${escapeHtml(error.message || "Could not load restore points.")}</p>`;
+    }
+  }
+
+  async function refreshStorageStatus() {
+    const existing = document.querySelector("#storageStatusPanel");
+    if (existing) existing.remove();
+    try {
+      const status = await api("/api/storage-status");
+      const backup = browserBackupInfo();
+      const panel = document.createElement("section");
+      panel.id = "storageStatusPanel";
+      panel.className = `storage-status-panel${status.warning ? " danger" : ""}`;
+      panel.innerHTML = `
+        <div>
+          <strong>${status.warning ? "Storage warning: changes can disappear on deploy" : "Storage looks ready"}</strong>
+          <p>${escapeHtml(status.warning || `Using ${status.usingRailwayVolume ? "Railway Volume" : "configured storage"} for slides, uploads, and restore points.`)}</p>
+          <small>Slides: ${Number(status.noticeboard && status.noticeboard.slideCount || 0)} - Server restore points: ${Number(status.backupCount || 0)} - Library files: ${Number(status.mediaCount || 0)}</small>
+          ${backup ? `<small>Browser backup on this computer: ${escapeHtml(friendlyDate(backup.savedAt))} - ${backup.slideCount} slides</small>` : `<small>No browser backup found on this computer.</small>`}
+        </div>
+        <div class="storage-status-actions">
+          ${backup ? `<button class="primary" id="restoreEmergencyBrowserBackup" type="button">Restore Browser Backup</button><button class="secondary" id="downloadEmergencyBrowserBackup" type="button">Download Browser Backup</button>` : ""}
+          <a class="secondary" href="/api/backup" target="_blank">Download Server Backup</a>
+        </div>
+      `;
+      const layout = document.querySelector(".admin-layout");
+      if (layout) layout.before(panel);
+      const restoreButton = document.querySelector("#restoreEmergencyBrowserBackup");
+      if (restoreButton) restoreButton.addEventListener("click", () => restoreFromBrowserBackup().catch((error) => showStatus(error.message, true)));
+      const downloadButton = document.querySelector("#downloadEmergencyBrowserBackup");
+      if (downloadButton) downloadButton.addEventListener("click", downloadBrowserBackup);
+    } catch (error) {
+      const layout = document.querySelector(".admin-layout");
+      if (!layout) return;
+      const panel = document.createElement("section");
+      panel.id = "storageStatusPanel";
+      panel.className = "storage-status-panel danger";
+      panel.innerHTML = `<strong>Could not check storage safety</strong><p>${escapeHtml(error.message || "Storage status failed.")}</p>`;
+      layout.before(panel);
     }
   }
 
@@ -762,6 +826,7 @@
     bindEditor(current);
     refreshMediaLibrary(current);
     refreshSharedBackups();
+    refreshStorageStatus();
   };
 
   const originalCreateSlideFromTemplate = window.createSlideFromTemplate || createSlideFromTemplate;

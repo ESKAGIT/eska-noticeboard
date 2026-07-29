@@ -5,7 +5,8 @@ const crypto = require("node:crypto");
 
 const PORT = Number(process.env.PORT || 3000);
 const PUBLIC_DIR = path.join(__dirname, "public");
-const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, "data");
+const RAILWAY_VOLUME_MOUNT_PATH = process.env.RAILWAY_VOLUME_MOUNT_PATH || "";
+const DATA_DIR = process.env.DATA_DIR || RAILWAY_VOLUME_MOUNT_PATH || path.join(__dirname, "data");
 const DATA_FILE = path.join(DATA_DIR, "noticeboard.json");
 const UPLOAD_DIR = path.join(DATA_DIR, "uploads");
 const BACKUP_DIR = path.join(DATA_DIR, "backups");
@@ -171,6 +172,42 @@ function latestSharedBackup() {
   return listSharedBackups()[0] || null;
 }
 
+function readNoticeboardMeta() {
+  try {
+    const parsed = JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
+    return {
+      slideCount: Array.isArray(parsed.slides) ? parsed.slides.length : 0,
+      updatedAt: parsed.updatedAt || "",
+      title: parsed.brand && parsed.brand.name ? parsed.brand.name : "ESKA Noticeboard"
+    };
+  } catch (_) {
+    return { slideCount: 0, updatedAt: "", title: "ESKA Noticeboard" };
+  }
+}
+
+function storageStatus() {
+  const railwayRuntime = Boolean(process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_PROJECT_ID || process.env.RAILWAY_SERVICE_ID);
+  const usingRailwayVolume = Boolean(RAILWAY_VOLUME_MOUNT_PATH && DATA_DIR === RAILWAY_VOLUME_MOUNT_PATH);
+  const usingExplicitDataDir = Boolean(process.env.DATA_DIR);
+  const backupCount = listSharedBackups().length;
+  const mediaCount = listUploadedMedia().length;
+  const persistent = !railwayRuntime || usingRailwayVolume;
+  return {
+    dataDir: DATA_DIR,
+    railwayRuntime,
+    railwayVolumeMountPath: RAILWAY_VOLUME_MOUNT_PATH,
+    usingRailwayVolume,
+    usingExplicitDataDir,
+    persistent,
+    backupCount,
+    mediaCount,
+    noticeboard: readNoticeboardMeta(),
+    warning: persistent
+      ? ""
+      : "Railway persistent storage is not configured. Edits, uploads, and restore points can disappear when the app redeploys. Attach a Railway Volume and set DATA_DIR to the same mount path, for example /data."
+  };
+}
+
 function listUploadedMedia() {
   if (!fs.existsSync(UPLOAD_DIR)) return [];
   const meta = readMediaMeta();
@@ -287,6 +324,15 @@ const server = http.createServer(async (req, res) => {
         return;
       }
       sendJson(res, 200, { backups: listSharedBackups() });
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/storage-status") {
+      if (!isAuthorized(req)) {
+        sendJson(res, 401, { error: "Admin PIN required." });
+        return;
+      }
+      sendJson(res, 200, storageStatus());
       return;
     }
 

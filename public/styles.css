@@ -597,6 +597,53 @@ textarea { resize: vertical; }
   background: #fff7f5;
 }
 
+.storage-status-panel {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: center;
+  margin: 16px 22px 0;
+  padding: 16px 18px;
+  border: 1px solid #dfe8dc;
+  border-left: 7px solid #2f8f46;
+  border-radius: 8px;
+  background: #f7fff7;
+  box-shadow: 0 12px 34px rgba(23, 23, 23, 0.08);
+}
+
+.storage-status-panel.danger {
+  border-color: #ffd0d0;
+  border-left-color: var(--red);
+  background: #fff5f3;
+}
+
+.storage-status-panel strong {
+  display: block;
+  color: var(--ink);
+  font-size: 18px;
+}
+
+.storage-status-panel p {
+  margin: 5px 0;
+  max-width: 980px;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.storage-status-panel small {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.storage-status-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 .shared-library-panel {
   margin-top: 18px;
   padding: 18px;
