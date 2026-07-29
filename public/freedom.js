@@ -56,6 +56,13 @@
     return item && item.type && item.type.startsWith("video/") ? "Video" : "Photo";
   }
 
+  function mediaUsedBy(url) {
+    if (!url || !board || !Array.isArray(board.slides)) return [];
+    return board.slides
+      .filter((slide) => Object.values(slide.fields || {}).includes(url))
+      .map((slide) => field(slide, "heading", slide.template || "Untitled slide"));
+  }
+
   function applyTargetDefaults(slide, target) {
     if (target === "imageRight") slide.fields.image2 = slide.fields.imageRight;
     if (target === "qr") slide.fields.qrVisible = "true";
@@ -100,7 +107,10 @@
         </div>
         <strong>${escapeHtml(mediaLabel(item))} ${index + 1}</strong>
         <small>${escapeHtml(friendlyDate(item.updatedAt))} - ${escapeHtml(compactBytes(item.size))}</small>
-        <button class="secondary" type="button" data-library-insert="${escapeHtml(item.url)}">Insert into selected place</button>
+        <div class="media-library-actions">
+          <button class="secondary" type="button" data-library-insert="${escapeHtml(item.url)}">Insert into selected place</button>
+          <button class="danger" type="button" data-library-delete="${escapeHtml(item.name)}" data-library-url="${escapeHtml(item.url)}">Delete</button>
+        </div>
       </article>
     `).join("");
     box.querySelectorAll("[data-library-insert]").forEach((button) => {
@@ -109,6 +119,25 @@
         insertLibraryMedia(slide, target, button.dataset.libraryInsert);
       });
     });
+    box.querySelectorAll("[data-library-delete]").forEach((button) => {
+      button.addEventListener("click", () => deleteLibraryMedia(slide, button.dataset.libraryDelete, button.dataset.libraryUrl));
+    });
+  }
+
+  async function deleteLibraryMedia(slide, name, url) {
+    if (!name) return;
+    const usedBy = mediaUsedBy(url);
+    const warning = usedBy.length
+      ? `\n\nThis file is currently used on: ${usedBy.slice(0, 5).join(", ")}${usedBy.length > 5 ? "..." : ""}`
+      : "";
+    if (!window.confirm(`Delete this file from the shared photo library?${warning}`)) return;
+    try {
+      await api(`/api/media-library/${encodeURIComponent(name)}`, { method: "DELETE" });
+      await refreshMediaLibrary(slide);
+      showStatus("Deleted from the shared photo library.");
+    } catch (error) {
+      showStatus(error.message || "Could not delete this library file.", true);
+    }
   }
 
   function insertLibraryMedia(slide, target, url) {

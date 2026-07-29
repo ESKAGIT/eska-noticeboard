@@ -96,6 +96,12 @@ function safeBackupFile(name = "") {
   return clean;
 }
 
+function safeMediaFile(name = "") {
+  const clean = path.basename(String(name));
+  if (!/^[a-z0-9._-]+\.(png|jpe?g|webp|gif|svg|mp4|mov)$/i.test(clean)) return "";
+  return clean;
+}
+
 function writeSharedBackup(reason = "manual") {
   if (!fs.existsSync(DATA_FILE)) return null;
   const stored = `${backupStamp()}-${safeName(reason)}.json`;
@@ -365,6 +371,26 @@ const server = http.createServer(async (req, res) => {
         return;
       }
       sendJson(res, 200, { media: listUploadedMedia() });
+      return;
+    }
+
+    if (req.method === "DELETE" && url.pathname.startsWith("/api/media-library/")) {
+      if (!isAuthorized(req)) {
+        sendJson(res, 401, { error: "Admin PIN required." });
+        return;
+      }
+      const name = safeMediaFile(decodeURIComponent(url.pathname.replace("/api/media-library/", "")));
+      if (!name) {
+        sendJson(res, 400, { error: "Invalid media filename." });
+        return;
+      }
+      const filePath = path.join(UPLOAD_DIR, name);
+      if (!fs.existsSync(filePath)) {
+        sendJson(res, 404, { error: "Media file not found." });
+        return;
+      }
+      fs.rmSync(filePath, { force: true });
+      sendJson(res, 200, { ok: true, media: listUploadedMedia() });
       return;
     }
 
