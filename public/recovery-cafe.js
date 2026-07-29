@@ -126,7 +126,7 @@
         detail: String(item.detail || "").trim()
       }))
       .filter((item) => item.name || item.price || item.detail)
-      .map((item) => [item.name || "Photo card", item.price, item.detail].filter(Boolean).join(" | "))
+      .map((item) => `${item.name || "Photo card"} | ${item.price || ""} | ${item.detail || ""}`)
       .join("\n");
   }
 
@@ -235,12 +235,10 @@
     const image5 = field(slide, "image5", "/assets/students-group.svg");
     const image6 = field(slide, "image6", "/assets/training.svg");
     const photoInfo = (index, fallbackTitle, fallbackDetail, fallbackPrice = "") => {
-      const parts = photoNotes[index] || [];
-      const title = parts[0] || fallbackTitle;
-      const hasPrice = parts.length >= 3;
-      const secondLooksLikePrice = /(^| )(£|gbp|from|\d+([.,]\d{2})?)( |$)/i.test(parts[1] || "");
-      const price = hasPrice || secondLooksLikePrice ? parts[1] : fallbackPrice;
-      const detail = hasPrice ? parts[2] : (secondLooksLikePrice ? fallbackDetail : (parts[1] || fallbackDetail));
+      const parts = photoNotes[index] || photoCardRow(fallbackTitle, fallbackPrice, fallbackDetail);
+      const title = parts.name || parts[0] || fallbackTitle;
+      const price = parts.price || parts[1] || fallbackPrice;
+      const detail = parts.detail !== undefined ? parts.detail : (parts[2] || "");
       return [title, price, detail];
     };
     const photos = [
