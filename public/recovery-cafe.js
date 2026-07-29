@@ -111,7 +111,7 @@
         const secondIsPrice = looksLikePrice(parts[1]);
         const name = parts[0] || fallback.name || "";
         const price = hasThreeParts || secondIsPrice ? (parts[1] || fallback.price || "") : (fallback.price || "");
-        const detail = hasThreeParts ? (parts[2] || fallback.detail || "") : (secondIsPrice ? (fallback.detail || "") : (parts[1] || fallback.detail || ""));
+        const detail = hasThreeParts ? (parts[2] || "") : (secondIsPrice ? "" : (parts[1] || ""));
         return photoCardRow(name, price, detail);
       });
     while (rows.length < 6) rows.push(defaults[rows.length] || { name: "", price: "", detail: "" });
@@ -165,13 +165,13 @@
         <div class="cafe-photo-row cafe-photo-row-head">
           <span>Card heading</span>
           <span>Red price badge</span>
-          <span>Description</span>
+          <span>Description (optional)</span>
         </div>
         ${rows.map((item, index) => `
           <div class="cafe-photo-row">
             <input data-photo-row="${index}" data-photo-field="name" value="${escapeHtml(item.name)}" placeholder="e.g. Chicken & Pesto Bagel">
             <input data-photo-row="${index}" data-photo-field="price" value="${escapeHtml(item.price)}" placeholder="e.g. From GBP 1.50">
-            <input data-photo-row="${index}" data-photo-field="detail" value="${escapeHtml(item.detail)}" placeholder="e.g. Freshly made in the cafe">
+            <input data-photo-row="${index}" data-photo-field="detail" value="${escapeHtml(item.detail)}" placeholder="Optional">
           </div>
         `).join("")}
       </section>
@@ -271,7 +271,7 @@
               <div class="menu-photo-copy">
                 <strong>${escapeHtml(title)}</strong>
                 ${price ? `<em>${escapeHtml(price)}</em>` : ""}
-                <span>${escapeHtml(detail)}</span>
+                ${detail ? `<span>${escapeHtml(detail)}</span>` : ""}
               </div>
             </article>
           `).join("")}
