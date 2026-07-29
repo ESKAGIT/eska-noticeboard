@@ -78,7 +78,7 @@
 
   const imageFallbacks = {
     qr: { Width: 320, Height: 140 },
-    logo: { Width: 120, Height: 120 },
+    logo: { Width: 92, Height: 92 },
     image: { Width: 520, Height: 360 },
     imageLeft: { Width: 520, Height: 360 },
     imageRight: { Width: 520, Height: 360 },

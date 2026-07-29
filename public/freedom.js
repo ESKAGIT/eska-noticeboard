@@ -417,6 +417,17 @@
       slide.fields[target] = saved.url;
       if (target === "imageRight") slide.fields.image2 = saved.url;
       if (target === "qr") slide.fields.qrVisible = "true";
+      if (target === "logo") {
+        Object.assign(slide.fields, {
+          logoWidth: "92px",
+          logoHeight: "92px",
+          logoX: "0px",
+          logoY: "0px",
+          logoFit: "contain",
+          logoPosX: "50%",
+          logoPosY: "50%"
+        });
+      }
       const label = target === "imageLeft" ? "split left photo" : target === "imageRight" ? "split right photo" : target;
       renderAdmin();
       await flushAutosave();

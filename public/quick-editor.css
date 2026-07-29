@@ -58,7 +58,18 @@
 }
 
 .slide .split-copy {
-  width: min(var(--text-width, 560px), 92vw);
+  box-sizing: border-box;
+  width: min(var(--text-width, 560px), 58vw, calc(100% - 96px));
+  max-height: calc(100% - 96px);
+  overflow: hidden;
+}
+
+.slide .split-copy h1,
+.slide .split-copy h2,
+.slide .split-copy .body-copy,
+.slide .split-copy .cta {
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .slide .cafe-intro {
@@ -149,6 +160,17 @@
   width: var(--logo-w);
   height: var(--logo-h);
   translate: var(--logo-x, 0) var(--logo-y, 0);
+}
+
+.slide .corner-logo {
+  max-width: 150px;
+  max-height: 150px;
+}
+
+.slide .split-copy-logo {
+  max-width: 104px;
+  max-height: 104px;
+  flex: 0 0 auto;
 }
 
 .slide .notice-orb img,
