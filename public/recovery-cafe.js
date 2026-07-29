@@ -50,6 +50,102 @@
 
   ensureCafeTemplate();
 
+  function parseCafeMenuItems(value = "") {
+    const rows = String(value || "")
+      .split(/\r?\n/)
+      .map((item) => item.trim())
+      .filter(Boolean)
+      .map((item) => {
+        const parts = item.split("|").map((part) => part.trim());
+        return {
+          name: parts[0] || "",
+          price: parts[1] || "",
+          detail: parts[2] || ""
+        };
+      });
+    while (rows.length < 8) rows.push({ name: "", price: "", detail: "" });
+    return rows.slice(0, 12);
+  }
+
+  function stringifyCafeMenuItems(rows = []) {
+    return rows
+      .map((item) => ({
+        name: String(item.name || "").trim(),
+        price: String(item.price || "").trim(),
+        detail: String(item.detail || "").trim()
+      }))
+      .filter((item) => item.name || item.price || item.detail)
+      .map((item) => [item.name || "Menu item", item.price || "Add price", item.detail].filter(Boolean).join(" | "))
+      .join("\n");
+  }
+
+  function renderCafeMenuEditor(slide) {
+    const rows = parseCafeMenuItems(field(slide, "menuItems"));
+    return `
+      <section class="cafe-menu-editor" aria-label="Cafe food and prices">
+        <div class="quick-text-editor-head">
+          <strong>Cafe Food And Prices</strong>
+          <span>Edit these rows directly. Use the optional note only when you want extra detail.</span>
+        </div>
+        <div class="cafe-menu-row cafe-menu-row-head">
+          <span>Food / drink</span>
+          <span>Price</span>
+          <span>Optional note</span>
+        </div>
+        ${rows.map((item, index) => `
+          <div class="cafe-menu-row">
+            <input data-menu-row="${index}" data-menu-field="name" value="${escapeHtml(item.name)}" placeholder="e.g. Chicken bagel">
+            <input data-menu-row="${index}" data-menu-field="price" value="${escapeHtml(item.price)}" placeholder="e.g. GBP 4.50">
+            <input data-menu-row="${index}" data-menu-field="detail" value="${escapeHtml(item.detail)}" placeholder="Optional">
+          </div>
+        `).join("")}
+      </section>
+    `;
+  }
+
+  function renderSharedEditorPanels() {
+    return `
+      <section class="shared-library-panel" aria-label="Shared media library">
+        <div class="shared-library-head">
+          <div>
+            <h3>Photo Library</h3>
+            <p>Photos and videos uploaded here are available to everyone editing slides.</p>
+          </div>
+          <button class="secondary" id="refreshMediaLibrary" type="button">Refresh library</button>
+        </div>
+        <label class="library-target">Insert selected media into
+          <select id="mediaLibraryTarget">
+            <option value="image">Cafe photo 1</option>
+            <option value="imageLeft">Cafe photo 2</option>
+            <option value="imageRight">Cafe photo 3</option>
+            <option value="image4">Cafe photo 4</option>
+            <option value="image5">Cafe photo 5</option>
+            <option value="image6">Cafe photo 6</option>
+            <option value="logo">Slide logo</option>
+            <option value="background">Background</option>
+            <option value="qr">QR code</option>
+            <option value="video">Video</option>
+          </select>
+        </label>
+        <div class="media-library-grid" id="mediaLibraryGrid">
+          <p class="library-empty">Loading shared media...</p>
+        </div>
+      </section>
+      <section class="shared-library-panel" aria-label="Server restore points">
+        <div class="shared-library-head">
+          <div>
+            <h3>Restore Previous Changes</h3>
+            <p>These restore points are saved on the server, so they work from any computer.</p>
+          </div>
+          <button class="secondary" id="refreshSharedBackups" type="button">Refresh restore points</button>
+        </div>
+        <div class="shared-backup-list" id="sharedBackupList">
+          <p class="library-empty">Loading restore points...</p>
+        </div>
+      </section>
+    `;
+  }
+
   const baseRenderSlide = renderSlide;
   window.renderSlide = function renderSlideWithCafe(slide, preview = false) {
     if (!slide || slide.template !== "menu") return baseRenderSlide(slide, preview);
@@ -58,11 +154,7 @@
     const image = field(slide, "image", board.brand.logo);
     const imageLeft = field(slide, "imageLeft", image);
     const imageRight = field(slide, "imageRight", image);
-    const items = field(slide, "menuItems", "")
-      .split(/\r?\n/)
-      .map((item) => item.trim())
-      .filter(Boolean)
-      .map((item) => item.split("|").map((part) => part.trim()));
+    const items = parseCafeMenuItems(field(slide, "menuItems")).filter((item) => item.name || item.price || item.detail);
     const photoNotes = field(slide, "photoNotes", "")
       .split(/\r?\n/)
       .map((item) => item.trim())
@@ -122,9 +214,9 @@
             ${field(slide, "cta") ? `<div class="cta">${escapeHtml(field(slide, "cta"))}</div>` : ""}
           </div>
           <div class="menu-items">
-            ${items.map(([name = "Menu item", price = "GBP 0.00", detail = "Description"]) => `
+            ${items.map(({ name = "Menu item", price = "GBP 0.00", detail = "" }) => `
               <article>
-                <div><strong>${escapeHtml(name)}</strong><small>${escapeHtml(detail)}</small></div>
+                <div><strong>${escapeHtml(name || "Menu item")}</strong>${detail ? `<small>${escapeHtml(detail)}</small>` : ""}</div>
                 <span>${escapeHtml(price)}</span>
               </article>
             `).join("")}
@@ -240,7 +332,7 @@
 
   const baseLabelFor = labelFor;
   window.labelFor = function labelForWithCafe(key) {
-    if (key === "menuItems") return "Cafe menu, one per line: item | price | description";
+    if (key === "menuItems") return "Cafe menu backup text";
     if (key === "photoNotes") return "Photo boxes, one per line: heading | price | description";
     if (key === "image") return "Cafe photo 1";
     if (key === "imageLeft") return "Cafe photo 2";
@@ -278,9 +370,9 @@
             <label>Call to action<input data-field="cta" value="${escapeHtml(field(slide, "cta"))}"></label>
             <label class="span-two">Body text<textarea data-field="body" rows="3">${escapeHtml(field(slide, "body"))}</textarea></label>
             <label class="span-two">Photo boxes<textarea data-field="photoNotes" rows="4">${escapeHtml(field(slide, "photoNotes"))}</textarea></label>
-            <label class="span-two">Menu items<textarea data-field="menuItems" rows="4">${escapeHtml(field(slide, "menuItems"))}</textarea></label>
           </div>
         </section>
+        ${renderCafeMenuEditor(slide)}
         <div class="form-grid">
           <label>Template<select data-key="template">${options}</select></label>
           <label>Animation<select data-key="animation">${animOptions}</select></label>
@@ -290,7 +382,7 @@
         <div class="form-grid two">
           ${fields.map((key) => `
             <label class="${key === "body" || key === "menuItems" || key === "photoNotes" ? "span-two" : ""}">${labelFor(key)}
-              ${key === "body" || key === "menuItems" || key === "photoNotes" ? `<textarea data-field="${key}" rows="${key === "menuItems" ? "7" : "4"}">${escapeHtml(field(slide, key))}</textarea>` : `<input data-field="${key}" value="${escapeHtml(field(slide, key))}">`}
+              ${key === "body" || key === "menuItems" || key === "photoNotes" ? `<textarea data-field="${key}" ${key === "menuItems" ? "id=\"menuItemsRaw\"" : ""} rows="${key === "menuItems" ? "5" : "4"}">${escapeHtml(field(slide, key))}</textarea>` : `<input data-field="${key}" value="${escapeHtml(field(slide, key))}">`}
             </label>
           `).join("")}
         </div>
@@ -305,8 +397,10 @@
           <button class="secondary" id="applyToLogo" data-upload-target="logo" type="button">Use as slide logo</button>
           <button class="secondary" id="applyToBackground" data-upload-target="background" type="button">Use as background</button>
           <button class="secondary" id="applyToVideo" data-upload-target="video" type="button">Use upload as video</button>
+          <button class="secondary" id="addToLibrary" data-upload-target="library" type="button">Add to library only</button>
           <button class="danger" id="deleteSlide" type="button">Delete slide</button>
         </div>
+        ${renderSharedEditorPanels()}
       </form>
     `;
   };
@@ -348,6 +442,25 @@
   window.bindEditor = function bindEditorWithCafePhotos(slide) {
     baseBindEditor(slide);
     if (!slide || slide.template !== "menu") return;
+    const menuInputs = Array.from(document.querySelectorAll("[data-menu-row][data-menu-field]"));
+    const menuRaw = document.querySelector("#menuItemsRaw");
+    const updateMenuItems = () => {
+      const rows = parseCafeMenuItems(field(slide, "menuItems"));
+      menuInputs.forEach((input) => {
+        const index = Number(input.dataset.menuRow);
+        const key = input.dataset.menuField;
+        if (!rows[index]) rows[index] = { name: "", price: "", detail: "" };
+        rows[index][key] = input.value;
+      });
+      slide.fields.menuItems = stringifyCafeMenuItems(rows);
+      if (menuRaw) menuRaw.value = slide.fields.menuItems;
+      const preview = document.querySelector(".preview-wrap");
+      if (preview) preview.innerHTML = renderSlide(slide, true);
+      if (menuRaw) menuRaw.dispatchEvent(new Event("input", { bubbles: true }));
+    };
+    menuInputs.forEach((input) => {
+      input.addEventListener("input", updateMenuItems);
+    });
     const bindPhotoButton = (id, target) => {
       const button = document.querySelector(id);
       if (!button || button.dataset.pictureUploadBound === "1") return;

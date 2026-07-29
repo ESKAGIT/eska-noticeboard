@@ -7,6 +7,45 @@
   width: clamp(64px, 5.8vw, 96px);
 }
 
+.cafe-menu-editor {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid #eadfda;
+  border-radius: 8px;
+  background: #fffaf8;
+}
+
+.cafe-menu-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(110px, 0.36fr) minmax(180px, 0.8fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.cafe-menu-row-head {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.cafe-menu-row input {
+  min-height: 42px;
+  padding: 9px 11px;
+  border: 1px solid #e7d8d0;
+  border-radius: 7px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+}
+
+.cafe-menu-row input:focus {
+  border-color: var(--red);
+  box-shadow: 0 0 0 3px rgba(238, 28, 40, 0.14);
+  outline: none;
+}
+
 .cafe-layout {
   position: relative;
   z-index: 3;
