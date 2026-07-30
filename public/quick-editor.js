@@ -436,11 +436,28 @@
     });
   }
 
+  function previewScale() {
+    const preview = document.querySelector(".preview-wrap");
+    if (!preview) return 1;
+    const scale = preview.clientWidth / 1920;
+    return Number.isFinite(scale) && scale > 0 ? scale : 1;
+  }
+
+  function syncPreviewScale() {
+    const preview = document.querySelector(".preview-wrap");
+    if (!preview) return;
+    preview.style.setProperty("--preview-scale", String(previewScale()));
+  }
+
   function refreshPreview(slide) {
     const preview = document.querySelector(".preview-wrap");
     if (preview && typeof renderSlide === "function") {
       preview.innerHTML = renderSlide(slide, true);
-      window.setTimeout(drawPictureSelection, 0);
+      syncPreviewScale();
+      window.setTimeout(() => {
+        syncPreviewScale();
+        drawPictureSelection();
+      }, 0);
     }
   }
 
@@ -927,15 +944,17 @@
     markSelectedImage();
 
     const rect = element.getBoundingClientRect();
+    const scale = previewScale();
     const lockedFrame = element.classList.contains("split-half");
     activePictureDrag = {
       mode: lockedFrame && mode !== "move" ? "move" : mode,
       lockedFrame,
       startX: event.clientX,
       startY: event.clientY,
+      scale,
       imageName,
-      width: rect.width,
-      height: rect.height,
+      width: rect.width / scale,
+      height: rect.height / scale,
       x: parseNumber(slide, imageFieldKey("X", imageName), 0),
       y: parseNumber(slide, imageFieldKey("Y", imageName), 0)
     };
@@ -949,8 +968,9 @@
     if (!activePictureDrag) return;
     event.preventDefault();
     const drag = activePictureDrag;
-    const dx = event.clientX - drag.startX;
-    const dy = event.clientY - drag.startY;
+    const scale = drag.scale || 1;
+    const dx = (event.clientX - drag.startX) / scale;
+    const dy = (event.clientY - drag.startY) / scale;
     let nextWidth = drag.width;
     let nextHeight = drag.height;
     let nextX = drag.x;
@@ -1030,7 +1050,11 @@
     refreshImageControls();
     refreshBoxControls();
     refreshMetaBoxControls();
-    window.setTimeout(drawPictureSelection, 0);
+    syncPreviewScale();
+    window.setTimeout(() => {
+      syncPreviewScale();
+      drawPictureSelection();
+    }, 0);
 
     lastSlideId = slide.id;
   }
@@ -1059,7 +1083,10 @@
       else focusField(match.name);
     }, true);
 
-    window.addEventListener("resize", drawPictureSelection);
+    window.addEventListener("resize", () => {
+      syncPreviewScale();
+      drawPictureSelection();
+    });
 
     document.addEventListener("click", () => {
       window.setTimeout(refreshPanel, 0);

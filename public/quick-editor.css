@@ -15,7 +15,6 @@
 
 .preview-wrap {
   position: relative;
-  container-type: inline-size;
   width: min(100%, calc((100vh - 210px) * 16 / 9));
   aspect-ratio: 16 / 9;
   max-height: calc(100vh - 210px);
@@ -23,161 +22,11 @@
 }
 
 .preview-wrap .preview-slide {
-  width: 100%;
-  height: 100%;
+  width: 1920px;
+  height: 1080px;
   min-height: 0;
-  gap: clamp(24px, 4cqw, 72px);
-  padding: clamp(42px, 5cqw, 84px);
-}
-
-.preview-wrap .corner-logo {
-  top: clamp(24px, 3cqw, 44px);
-  right: clamp(24px, 3cqw, 44px);
-  width: clamp(72px, 8cqw, 130px);
-}
-
-.preview-wrap .eyebrow {
-  font-size: clamp(18px, 1.6cqw, 26px);
-}
-
-.preview-wrap h1 {
-  font-size: clamp(48px, 6.2cqw, 104px);
-}
-
-.preview-wrap h2 {
-  font-size: clamp(28px, 3cqw, 52px);
-}
-
-.preview-wrap .body-copy {
-  font-size: clamp(21px, 1.85cqw, 32px);
-}
-
-.preview-wrap .slide-image-right .photo-panel {
-  height: min(36cqw, 620px);
-}
-
-.preview-wrap .slide-image-right h1 {
-  font-size: clamp(42px, 5cqw, 76px);
-}
-
-.preview-wrap .slide-image-right .body-copy {
-  font-size: clamp(19px, 1.65cqw, 27px);
-}
-
-.preview-wrap .slide-cards h1 {
-  font-size: clamp(40px, 5cqw, 74px);
-}
-
-.preview-wrap .slide-cards h2 {
-  font-size: clamp(24px, 2.5cqw, 38px);
-}
-
-.preview-wrap .slide-cards .body-copy {
-  font-size: clamp(19px, 1.7cqw, 26px);
-}
-
-.preview-wrap .slide-dates h1 {
-  font-size: clamp(42px, 5.4cqw, 84px);
-}
-
-.preview-wrap .slide-dates h2 {
-  font-size: clamp(24px, 2.4cqw, 36px);
-}
-
-.preview-wrap .slide-dates .body-copy {
-  font-size: clamp(18px, 1.55cqw, 25px);
-}
-
-.preview-wrap .slide-menu {
-  padding: clamp(28px, 3.6cqw, 54px);
-}
-
-.preview-wrap .slide-menu .corner-logo {
-  width: clamp(64px, 5.8cqw, 96px);
-}
-
-.preview-wrap .cafe-layout {
-  gap: clamp(18px, 2.1cqw, 34px);
-}
-
-.preview-wrap .menu-gallery {
-  gap: clamp(12px, 1.1cqw, 18px);
-}
-
-.preview-wrap .cafe-photo-placeholder span {
-  font-size: clamp(12px, 1cqw, 16px);
-}
-
-.preview-wrap .cafe-photo-placeholder strong {
-  font-size: clamp(26px, 2.5cqw, 42px);
-}
-
-.preview-wrap .menu-photo-copy {
-  padding: clamp(10px, 1cqw, 15px);
-}
-
-.preview-wrap .menu-photo-copy strong {
-  font-size: clamp(18px, 1.45cqw, 27px);
-}
-
-.preview-wrap .menu-photo-copy em {
-  font-size: clamp(12px, 0.92cqw, 17px);
-}
-
-.preview-wrap .menu-photo-copy span {
-  font-size: clamp(11px, 0.84cqw, 15px);
-}
-
-.preview-wrap .menu-board {
-  padding: clamp(20px, 2cqw, 30px);
-}
-
-.preview-wrap .cafe-intro {
-  padding-right: clamp(54px, 6cqw, 100px);
-}
-
-.preview-wrap .cafe-intro h1 {
-  font-size: clamp(40px, 4.2cqw, 68px);
-}
-
-.preview-wrap .cafe-intro h2 {
-  font-size: clamp(19px, 1.7cqw, 28px);
-}
-
-.preview-wrap .cafe-intro .body-copy {
-  font-size: clamp(14px, 1.04cqw, 18px);
-}
-
-.preview-wrap .menu-items article {
-  min-height: clamp(62px, 3.77cqw, 82px);
-}
-
-.preview-wrap .menu-items strong {
-  font-size: clamp(18px, 1.35cqw, 25px);
-}
-
-.preview-wrap .menu-items small {
-  font-size: clamp(11px, 0.78cqw, 14px);
-}
-
-.preview-wrap .menu-items span {
-  font-size: clamp(15px, 1.08cqw, 21px);
-}
-
-.preview-wrap .slide-pt .copy-block {
-  padding: clamp(26px, 3cqw, 44px);
-}
-
-.preview-wrap .slide-pt h1 {
-  font-size: clamp(44px, 5cqw, 82px);
-}
-
-.preview-wrap .slide-pt h2 {
-  font-size: clamp(24px, 2.35cqw, 40px);
-}
-
-.preview-wrap .slide-pt .body-copy {
-  font-size: clamp(19px, 1.58cqw, 27px);
+  transform: scale(var(--preview-scale, 1));
+  transform-origin: top left;
 }
 
 .slide .copy-block .eyebrow,
