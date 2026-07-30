@@ -229,7 +229,6 @@
     const image = field(slide, "image", board.brand.logo);
     const imageLeft = field(slide, "imageLeft", image);
     const imageRight = field(slide, "imageRight", image);
-    const items = parseCafeMenuItems(field(slide, "menuItems")).filter((item) => item.name || item.price || item.detail);
     const photoNotes = parseCafePhotoCards(field(slide, "photoNotes"));
     const image4 = field(slide, "image4", "/assets/dojo-class.svg");
     const image5 = field(slide, "image5", "/assets/students-group.svg");
@@ -281,14 +280,6 @@
             <h2>${escapeHtml(field(slide, "subheading", "Refreshments for students and families"))}</h2>
             <p class="body-copy">${escapeHtml(field(slide, "body", ""))}</p>
             ${field(slide, "cta") ? `<div class="cta">${escapeHtml(field(slide, "cta"))}</div>` : ""}
-          </div>
-          <div class="menu-items">
-            ${items.map(({ name = "Menu item", price = "GBP 0.00", detail = "" }) => `
-              <article>
-                <div><strong>${escapeHtml(name || "Menu item")}</strong>${detail ? `<small>${escapeHtml(detail)}</small>` : ""}</div>
-                <span>${escapeHtml(price)}</span>
-              </article>
-            `).join("")}
           </div>
         </div>
       </div>
@@ -441,7 +432,6 @@
           </div>
         </section>
         ${renderCafePhotoCardEditor(slide)}
-        ${renderCafeMenuEditor(slide)}
         <div class="form-grid">
           <label>Template<select data-key="template">${options}</select></label>
           <label>Animation<select data-key="animation">${animOptions}</select></label>

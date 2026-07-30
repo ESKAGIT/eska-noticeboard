@@ -172,8 +172,7 @@
 
 .menu-board {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  align-content: stretch;
+  align-content: center;
   min-height: 0;
   padding: clamp(20px, 2vw, 30px);
 }
