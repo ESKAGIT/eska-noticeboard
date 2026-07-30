@@ -16,6 +16,7 @@
 .preview-wrap {
   position: relative;
   container-type: inline-size;
+  width: min(100%, calc((100vh - 210px) * 16 / 9));
   aspect-ratio: 16 / 9;
   max-height: calc(100vh - 210px);
   margin-inline: auto;
