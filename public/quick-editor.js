@@ -431,6 +431,7 @@
     markSelectedImage();
     refreshImageControls();
     drawPictureSelection();
+    window.setTimeout(drawPictureSelection, 0);
   }
 
   function markSelectedImage() {
@@ -937,10 +938,13 @@
   }
 
   function drawPictureSelection() {
-    if (!isAdmin()) return;
     const preview = document.querySelector(".preview-wrap");
+    if (!preview || !document.querySelector("#quickTextEditor")) {
+      if (imageOverlay) imageOverlay.remove();
+      return;
+    }
     const element = selectedImageElement();
-    if (!preview || !element) {
+    if (!element || !element.getClientRects().length) {
       if (imageOverlay) imageOverlay.remove();
       return;
     }
