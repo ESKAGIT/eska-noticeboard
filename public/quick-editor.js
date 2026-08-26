@@ -456,11 +456,13 @@
 
   function schedulePictureSelection() {
     if (pictureSelectionFrame) return;
-    pictureSelectionFrame = window.requestAnimationFrame(() => {
+    const redraw = () => {
       pictureSelectionFrame = 0;
       syncPreviewScale();
       drawPictureSelection();
-    });
+    };
+    if (typeof window.requestAnimationFrame === "function") pictureSelectionFrame = window.requestAnimationFrame(redraw);
+    else pictureSelectionFrame = window.setTimeout(redraw, 16);
   }
 
   function ensurePreviewObserver() {
@@ -471,6 +473,9 @@
     observedPreview = preview;
     previewObserver = new MutationObserver(() => schedulePictureSelection());
     previewObserver.observe(preview, { childList: true, subtree: true });
+    preview.addEventListener("load", schedulePictureSelection, true);
+    preview.addEventListener("animationend", schedulePictureSelection, true);
+    preview.addEventListener("transitionend", schedulePictureSelection, true);
     if (typeof ResizeObserver === "function") {
       previewResizeObserver = new ResizeObserver(() => schedulePictureSelection());
       previewResizeObserver.observe(preview);
@@ -1083,6 +1088,9 @@
     ensurePreviewObserver();
     syncPreviewScale();
     schedulePictureSelection();
+    window.setTimeout(drawPictureSelection, 400);
+    window.setTimeout(drawPictureSelection, 900);
+    window.setTimeout(drawPictureSelection, 1600);
 
     lastSlideId = slide.id;
   }
