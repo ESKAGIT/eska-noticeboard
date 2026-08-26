@@ -140,6 +140,7 @@
   let previewResizeObserver = null;
   let observedPreview = null;
   let pictureSelectionFrame = 0;
+  let mediaWatchTimer = null;
   let installed = false;
 
   function isAdmin() {
@@ -427,11 +428,14 @@
   }
 
   function selectImage(name) {
+    if (selectedImage === name && !imageOverlay?.parentElement) selectedImage = "__unselected__";
     selectedImage = name;
     markSelectedImage();
     refreshImageControls();
     drawPictureSelection();
     window.setTimeout(drawPictureSelection, 0);
+    window.setTimeout(drawPictureSelection, 60);
+    window.setTimeout(drawPictureSelection, 240);
   }
 
   function markSelectedImage() {
@@ -477,10 +481,33 @@
     preview.addEventListener("animationend", schedulePictureSelection, true);
     preview.addEventListener("transitionend", schedulePictureSelection, true);
     if (typeof ResizeObserver === "function") {
-      previewResizeObserver = new ResizeObserver(() => schedulePictureSelection());
+    previewResizeObserver = new ResizeObserver(() => schedulePictureSelection());
       previewResizeObserver.observe(preview);
     }
+    bindPreviewMediaTargets();
     schedulePictureSelection();
+  }
+
+  function bindPreviewMediaTargets() {
+    const preview = document.querySelector(".preview-wrap");
+    if (!preview) return;
+    let firstTargetName = "";
+    imageTargets.forEach(([selector, name]) => {
+      preview.querySelectorAll(selector).forEach((element) => {
+        if (!firstTargetName && element.getClientRects().length) firstTargetName = name;
+        if (element.dataset.quickMediaBound === "1") return;
+        element.dataset.quickMediaBound = "1";
+        element.addEventListener("click", (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          selectImage(name);
+        }, true);
+      });
+    });
+    if (firstTargetName && imageOverlay?.parentElement !== preview) {
+      selectedImage = "__unselected__";
+      selectImage(firstTargetName);
+    }
   }
 
   function refreshPreview(slide) {
@@ -488,6 +515,7 @@
     if (preview && typeof renderSlide === "function") {
       preview.innerHTML = renderSlide(slide, true);
       ensurePreviewObserver();
+      bindPreviewMediaTargets();
       syncPreviewScale();
       schedulePictureSelection();
     }
@@ -942,19 +970,32 @@
     return null;
   }
 
+  function firstPreviewMediaTarget() {
+    const preview = document.querySelector(".preview-wrap");
+    if (!preview) return null;
+    for (const [selector, name] of imageTargets) {
+      const element = preview.querySelector(selector);
+      if (element && element.getClientRects().length) {
+        selectedImage = name;
+        return element;
+      }
+    }
+    return null;
+  }
+
   function drawPictureSelection() {
     const preview = document.querySelector(".preview-wrap");
     if (!preview || !document.querySelector("#quickTextEditor")) {
       if (imageOverlay) imageOverlay.remove();
       return;
     }
-    const element = selectedImageElement();
+    const element = selectedImageElement() || firstPreviewMediaTarget();
     if (!element || !element.getClientRects().length) {
       if (imageOverlay) imageOverlay.remove();
       return;
     }
     const overlay = ensureImageOverlay();
-    if (!overlay.parentElement) preview.appendChild(overlay);
+    if (overlay.parentElement !== preview) preview.appendChild(overlay);
     const previewRect = preview.getBoundingClientRect();
     const rect = element.getBoundingClientRect();
     overlay.style.left = `${rect.left - previewRect.left}px`;
@@ -1120,6 +1161,14 @@
       else focusField(match.name);
     }, true);
 
+    document.addEventListener("click", (event) => {
+      if (event.target.closest("#quickTextEditor")) return;
+      const imageMatch = matchPreviewImage(event.target);
+      if (!imageMatch) return;
+      selectImage(imageMatch.name);
+      window.setTimeout(drawPictureSelection, 0);
+    }, true);
+
     window.addEventListener("resize", () => {
       ensurePreviewObserver();
       syncPreviewScale();
@@ -1136,6 +1185,14 @@
     ensurePreviewObserver();
     refreshPanel();
     watchAdmin();
+    if (!mediaWatchTimer) {
+      mediaWatchTimer = window.setInterval(() => {
+        if (!isAdmin()) return;
+        ensurePreviewObserver();
+        bindPreviewMediaTargets();
+        if (imageOverlay?.parentElement !== document.querySelector(".preview-wrap")) schedulePictureSelection();
+      }, 500);
+    }
   }
 
   window.addEventListener("load", boot);
