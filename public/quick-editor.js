@@ -136,6 +136,10 @@
   let selectedImage = "image";
   let imageOverlay = null;
   let activePictureDrag = null;
+  let previewObserver = null;
+  let previewResizeObserver = null;
+  let observedPreview = null;
+  let pictureSelectionFrame = 0;
   let installed = false;
 
   function isAdmin() {
@@ -449,15 +453,37 @@
     preview.style.setProperty("--preview-scale", String(previewScale()));
   }
 
+  function schedulePictureSelection() {
+    if (pictureSelectionFrame) return;
+    pictureSelectionFrame = window.requestAnimationFrame(() => {
+      pictureSelectionFrame = 0;
+      syncPreviewScale();
+      drawPictureSelection();
+    });
+  }
+
+  function ensurePreviewObserver() {
+    const preview = document.querySelector(".preview-wrap");
+    if (!preview || preview === observedPreview) return;
+    if (previewObserver) previewObserver.disconnect();
+    if (previewResizeObserver) previewResizeObserver.disconnect();
+    observedPreview = preview;
+    previewObserver = new MutationObserver(() => schedulePictureSelection());
+    previewObserver.observe(preview, { childList: true, subtree: true });
+    if (typeof ResizeObserver === "function") {
+      previewResizeObserver = new ResizeObserver(() => schedulePictureSelection());
+      previewResizeObserver.observe(preview);
+    }
+    schedulePictureSelection();
+  }
+
   function refreshPreview(slide) {
     const preview = document.querySelector(".preview-wrap");
     if (preview && typeof renderSlide === "function") {
       preview.innerHTML = renderSlide(slide, true);
+      ensurePreviewObserver();
       syncPreviewScale();
-      window.setTimeout(() => {
-        syncPreviewScale();
-        drawPictureSelection();
-      }, 0);
+      schedulePictureSelection();
     }
   }
 
@@ -1050,11 +1076,9 @@
     refreshImageControls();
     refreshBoxControls();
     refreshMetaBoxControls();
+    ensurePreviewObserver();
     syncPreviewScale();
-    window.setTimeout(() => {
-      syncPreviewScale();
-      drawPictureSelection();
-    }, 0);
+    schedulePictureSelection();
 
     lastSlideId = slide.id;
   }
@@ -1064,6 +1088,7 @@
     installed = true;
 
     const observer = new MutationObserver(() => {
+      ensurePreviewObserver();
       const slide = currentSlide();
       if (!slide || slide.id !== lastSlideId) refreshPanel();
     });
@@ -1084,6 +1109,7 @@
     }, true);
 
     window.addEventListener("resize", () => {
+      ensurePreviewObserver();
       syncPreviewScale();
       drawPictureSelection();
     });
@@ -1095,6 +1121,7 @@
 
   function boot() {
     if (!isAdmin()) return;
+    ensurePreviewObserver();
     refreshPanel();
     watchAdmin();
   }

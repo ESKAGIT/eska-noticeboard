@@ -1,4 +1,5 @@
 .qr-layer {
+  box-sizing: border-box;
   position: absolute;
   right: clamp(28px, 4vw, 64px);
   bottom: clamp(26px, 3vw, 52px);
@@ -19,6 +20,7 @@
 }
 
 .qr-code-frame {
+  box-sizing: border-box;
   flex: 0 0 auto;
   height: 100%;
   aspect-ratio: 1 / 1;
@@ -51,7 +53,10 @@
 }
 
 .qr-layer.no-text .qr-code-frame {
+  width: 100%;
   height: 100%;
+  aspect-ratio: auto;
+  flex: 1 1 auto;
 }
 
 .qr-admin-panel {
