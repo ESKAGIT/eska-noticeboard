@@ -8,7 +8,9 @@ const templates = [
   { id: "dates", name: "Important Dates", category: "Events", description: "Clear date list for gradings, courses, closures, and reminders." },
   { id: "course", name: "Karate Course Split", category: "Karate courses", description: "Premium split image reveal." },
   { id: "media", name: "Photo and Video", category: "Karate courses", description: "Picture plus video placeholder." },
-  { id: "gallery", name: "Achievement Gallery", category: "Student achievements", description: "Photo-led congratulations slide." }
+  { id: "gallery", name: "Achievement Gallery", category: "Student achievements", description: "Photo-led congratulations slide." },
+  { id: "collage", name: "Photo Collage", category: "General notice", description: "Up to six photos in an editable collage." },
+  { id: "carousel", name: "Photo Carousel", category: "General notice", description: "Up to six photos shown one after another before the next slide." }
 ];
 
 const animations = [
@@ -249,10 +251,17 @@ async function screenView() {
     stage.innerHTML = renderSlide(slide);
     startSlideMedia();
     clearTimeout(screenTimer);
+    const carousel = stage.querySelector("[data-gallery-carousel]");
+    const carouselCount = carousel ? Number(carousel.dataset.galleryCount || 0) : 0;
+    const carouselInterval = carousel ? Number(carousel.dataset.galleryInterval || 6000) : 0;
+    const slideDuration = Math.max(
+      Number(slide.duration || board.settings.defaultDuration || 10000),
+      carouselCount > 1 ? carouselCount * carouselInterval + 500 : 0
+    );
     screenTimer = setTimeout(() => {
       activeSlide = (activeSlide + 1) % slides.length;
       draw();
-    }, Number(slide.duration || board.settings.defaultDuration || 10000));
+    }, slideDuration);
   };
 
   draw();
@@ -463,6 +472,10 @@ function createSlideFromTemplate(templateId) {
       image: "/assets/eska-logo-exact.svg",
       imageLeft: "",
       imageRight: "",
+      image4: "",
+      image5: "",
+      image6: "",
+      galleryInterval: "6000",
       video: ""
     }
   };

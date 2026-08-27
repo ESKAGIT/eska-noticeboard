@@ -11,7 +11,8 @@
     ["dateList", "Dates / timetable list", "textarea"],
     ["menuItems", "Menu items", "textarea"],
     ["photoNotes", "Photo boxes", "textarea"],
-    ["qrText", "QR text", "input"]
+    ["qrText", "QR text", "input"],
+    ["galleryInterval", "Carousel time per photo (ms)", "input"]
   ];
 
   const sizeFields = [
@@ -94,6 +95,18 @@
     [".notice-orb", "logo"],
     [".photo-panel", "image"],
     [".gallery-photo", "image"],
+    [".photo-collage-item:nth-child(1)", "image"],
+    [".photo-collage-item:nth-child(2)", "imageLeft"],
+    [".photo-collage-item:nth-child(3)", "imageRight"],
+    [".photo-collage-item:nth-child(4)", "image4"],
+    [".photo-collage-item:nth-child(5)", "image5"],
+    [".photo-collage-item:nth-child(6)", "image6"],
+    [".photo-carousel-item:nth-child(1)", "image"],
+    [".photo-carousel-item:nth-child(2)", "imageLeft"],
+    [".photo-carousel-item:nth-child(3)", "imageRight"],
+    [".photo-carousel-item:nth-child(4)", "image4"],
+    [".photo-carousel-item:nth-child(5)", "image5"],
+    [".photo-carousel-item:nth-child(6)", "image6"],
     [".pt-photo", "image"],
     [".menu-photo-card:nth-child(1) .menu-photo", "image"],
     [".menu-photo-card:nth-child(2) .menu-photo", "imageLeft"],

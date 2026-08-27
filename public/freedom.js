@@ -554,6 +554,27 @@
       `;
     } else if (slide.template === "gallery") {
       content = `<div class="gallery-photo">${mediaTag(image, field(slide, "heading"))}</div>${copyBlock(slide)}`;
+    } else if (slide.template === "collage" || slide.template === "carousel") {
+      const galleryImages = [
+        [image, "image"],
+        [field(slide, "imageLeft", ""), "imageLeft"],
+        [field(slide, "imageRight", ""), "imageRight"],
+        [field(slide, "image4", ""), "image4"],
+        [field(slide, "image5", ""), "image5"],
+        [field(slide, "image6", ""), "image6"]
+      ].filter(([src]) => src);
+      const isCarousel = slide.template === "carousel";
+      const galleryItems = galleryImages.map(([src, key], index) => `
+        <figure class="${isCarousel ? "photo-carousel-item" : "photo-collage-item"}${isCarousel && index === 0 ? " is-active" : ""}" data-image-key="${key}">
+          ${mediaTag(src, field(slide, "heading"))}
+        </figure>
+      `).join("");
+      content = `
+        <div class="${isCarousel ? "photo-carousel" : "photo-collage"}"${isCarousel ? ` data-gallery-carousel data-gallery-count="${galleryImages.length}" data-gallery-interval="${Number(field(slide, "galleryInterval", 6000)) || 6000}"` : ""}>
+          ${galleryItems || `<div class="gallery-empty">Add photos 1-6 in the editor</div>`}
+        </div>
+        ${copyBlock(slide)}
+      `;
     } else {
       content = copyBlock(slide);
     }
@@ -564,7 +585,7 @@
   window.editorForm = function editorForm(slide) {
     const options = templates.map((item) => `<option value="${item.id}" ${slide.template === item.id ? "selected" : ""}>${item.name}</option>`).join("");
     const animOptions = animations.map(([id, label]) => `<option value="${id}" ${slide.animation === id ? "selected" : ""}>${label}</option>`).join("");
-    const fields = ["eyebrow", "heading", "subheading", "body", "dateList", "menuItems", "date", "time", "location", "cta", "image", "imageLeft", "imageRight", "image4", "image5", "image6", "video", "logo", "background", "accent", "textColor", "panelColor", "textX", "textY", "textWidth", "headingSize", "subheadingSize", "bodySize"];
+    const fields = ["eyebrow", "heading", "subheading", "body", "dateList", "menuItems", "date", "time", "location", "cta", "galleryInterval", "image", "imageLeft", "imageRight", "image4", "image5", "image6", "video", "logo", "background", "accent", "textColor", "panelColor", "textX", "textY", "textWidth", "headingSize", "subheadingSize", "bodySize"];
     const splitUploadControls = slide.template === "course" ? `
         <section class="split-upload-panel" aria-label="Split reveal photo controls">
           <h3>Split reveal photos</h3>
@@ -682,7 +703,8 @@
       textWidth: "Text box width, e.g. 720 or 45%",
       headingSize: "Heading size, e.g. 72",
       subheadingSize: "Subheading size, e.g. 34",
-      bodySize: "Body text size, e.g. 24"
+      bodySize: "Body text size, e.g. 24",
+      galleryInterval: "Carousel time per photo in milliseconds"
     })[key] || originalLabelFor(key);
   };
 
