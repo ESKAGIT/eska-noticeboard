@@ -14,7 +14,7 @@
       gallery.dataset.galleryReady = "true";
       let index = items.findIndex((item) => item.classList.contains("is-active"));
       if (index < 0) index = 0;
-      const interval = Math.max(2500, Number(gallery.dataset.galleryInterval || 6000));
+      const interval = Math.max(2000, Number(gallery.dataset.galleryInterval || 4000));
       const show = (next) => items.forEach((item, itemIndex) => item.classList.toggle("is-active", itemIndex === next));
       show(index);
       liveGalleries.add(gallery);

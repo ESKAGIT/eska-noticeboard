@@ -570,7 +570,7 @@
         </figure>
       `).join("");
       content = `
-        <div class="${isCarousel ? "photo-carousel" : "photo-collage"}"${isCarousel ? ` data-gallery-carousel data-gallery-count="${galleryImages.length}" data-gallery-interval="${Number(field(slide, "galleryInterval", 6000)) || 6000}"` : ""}>
+        <div class="${isCarousel ? "photo-carousel" : "photo-collage"}"${isCarousel ? ` data-gallery-carousel data-gallery-count="${galleryImages.length}" data-gallery-interval="${Number(field(slide, "galleryInterval", 4000)) || 4000}"` : ""}>
           ${galleryItems || `<div class="gallery-empty">Add photos 1-6 in the editor</div>`}
         </div>
         ${copyBlock(slide)}
@@ -628,7 +628,7 @@
         </div>
         ${splitUploadControls}
         <div class="upload-row">
-          <label>Upload image/video<input id="mediaUpload" type="file" accept="image/*,video/mp4,video/quicktime"><small>For Apple TV, use MP4 video where possible.</small></label>
+          <label>Upload image/video<input id="mediaUpload" type="file" accept="image/*,video/mp4,video/quicktime" ${slide.template === "collage" || slide.template === "carousel" ? "multiple" : ""}><small>${slide.template === "collage" || slide.template === "carousel" ? "Select several photos together. They fill picture 1-6 in order." : "For Apple TV, use MP4 video where possible."}</small></label>
           <button class="secondary" id="applyToImage" data-upload-target="image" type="button">Use as picture 1</button>
           <button class="secondary" id="applyToLeftImage" data-upload-target="imageLeft" type="button">Use as picture 2</button>
           <button class="secondary" id="applyToRightImage" data-upload-target="imageRight" type="button">Use as picture 3</button>
@@ -780,23 +780,32 @@
   }
 
   window.uploadInto = async function uploadInto(slide, target) {
-    const file = document.querySelector("#mediaUpload").files[0];
-    if (!file) return showStatus("Choose a file first.", true);
-    setAutosaveStatus(`Uploading ${file.name}...`);
+    const input = document.querySelector("#mediaUpload");
+    const files = Array.from(input ? input.files : []);
+    if (!files.length) return showStatus("Choose a file first.", true);
+    const imageTargets = ["image", "imageLeft", "imageRight", "image4", "image5", "image6"];
+    const startIndex = imageTargets.indexOf(target);
+    const targets = startIndex >= 0 && files.length > 1 && (slide.template === "collage" || slide.template === "carousel")
+      ? files.slice(0, imageTargets.length - startIndex).map((_, index) => imageTargets[startIndex + index])
+      : [target];
+    setAutosaveStatus(`Uploading ${files.length} photo${files.length === 1 ? "" : "s"}...`);
     try {
-      const saved = await uploadFileDirect(file);
       if (target === "library") {
+        for (const file of files) await uploadFileDirect(file);
         await refreshMediaLibrary(slide);
-        showStatus("Added to the shared photo library.");
+        showStatus(`Added ${files.length} item${files.length === 1 ? "" : "s"} to the shared photo library.`);
         return;
       }
       slide.fields = slide.fields || {};
-      slide.fields[target] = saved.url;
-      applyTargetDefaults(slide, target);
-      const label = target === "imageLeft" ? "split left photo" : target === "imageRight" ? "split right photo" : target;
+      for (let index = 0; index < targets.length; index += 1) {
+        const saved = await uploadFileDirect(files[index]);
+        slide.fields[targets[index]] = saved.url;
+        applyTargetDefaults(slide, targets[index]);
+      }
+      const label = targets.length > 1 ? `${targets.length} carousel/collage photos` : target === "imageLeft" ? "split left photo" : target === "imageRight" ? "split right photo" : target;
       renderAdmin();
       await flushAutosave();
-      showStatus(`Uploaded and saved as ${label}.`);
+      showStatus(`Uploaded and saved ${label}.`);
     } catch (error) {
       showStatus(error.message || "Upload failed.", true);
     }

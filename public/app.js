@@ -475,7 +475,7 @@ function createSlideFromTemplate(templateId) {
       image4: "",
       image5: "",
       image6: "",
-      galleryInterval: "6000",
+      galleryInterval: "4000",
       video: ""
     }
   };
