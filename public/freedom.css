@@ -443,6 +443,26 @@
   text-align: center;
 }
 
+/* Keep carousel media editable per slot in the admin preview. */
+.preview-wrap .photo-carousel-item[data-image-key="image"] { width: var(--image-w, 100%); height: var(--image-h, 100%); transform: translate(var(--image-x, 0), var(--image-y, 0)) scale(1); }
+.preview-wrap .photo-carousel-item[data-image-key="imageLeft"] { width: var(--image-left-w, 100%); height: var(--image-left-h, 100%); transform: translate(var(--image-left-x, 0), var(--image-left-y, 0)) scale(1); }
+.preview-wrap .photo-carousel-item[data-image-key="imageRight"] { width: var(--image-right-w, 100%); height: var(--image-right-h, 100%); transform: translate(var(--image-right-x, 0), var(--image-right-y, 0)) scale(1); }
+.preview-wrap .photo-carousel-item[data-image-key="image4"] { width: var(--image-4-w, 100%); height: var(--image-4-h, 100%); transform: translate(var(--image-4-x, 0), var(--image-4-y, 0)) scale(1); }
+.preview-wrap .photo-carousel-item[data-image-key="image5"] { width: var(--image-5-w, 100%); height: var(--image-5-h, 100%); transform: translate(var(--image-5-x, 0), var(--image-5-y, 0)) scale(1); }
+.preview-wrap .photo-carousel-item[data-image-key="image6"] { width: var(--image-6-w, 100%); height: var(--image-6-h, 100%); transform: translate(var(--image-6-x, 0), var(--image-6-y, 0)) scale(1); }
+.preview-wrap .photo-carousel-item[data-image-key="image"] img,
+.preview-wrap .photo-carousel-item[data-image-key="image"] video { object-fit: var(--image-fit, cover); object-position: var(--image-pos-x, 50%) var(--image-pos-y, 50%); }
+.preview-wrap .photo-carousel-item[data-image-key="imageLeft"] img,
+.preview-wrap .photo-carousel-item[data-image-key="imageLeft"] video { object-fit: var(--image-left-fit, cover); object-position: var(--image-left-pos-x, 50%) var(--image-left-pos-y, 50%); }
+.preview-wrap .photo-carousel-item[data-image-key="imageRight"] img,
+.preview-wrap .photo-carousel-item[data-image-key="imageRight"] video { object-fit: var(--image-right-fit, cover); object-position: var(--image-right-pos-x, 50%) var(--image-right-pos-y, 50%); }
+.preview-wrap .photo-carousel-item[data-image-key="image4"] img,
+.preview-wrap .photo-carousel-item[data-image-key="image4"] video { object-fit: var(--image-4-fit, cover); object-position: var(--image-4-pos-x, 50%) var(--image-4-pos-y, 50%); }
+.preview-wrap .photo-carousel-item[data-image-key="image5"] img,
+.preview-wrap .photo-carousel-item[data-image-key="image5"] video { object-fit: var(--image-5-fit, cover); object-position: var(--image-5-pos-x, 50%) var(--image-5-pos-y, 50%); }
+.preview-wrap .photo-carousel-item[data-image-key="image6"] img,
+.preview-wrap .photo-carousel-item[data-image-key="image6"] video { object-fit: var(--image-6-fit, cover); object-position: var(--image-6-pos-x, 50%) var(--image-6-pos-y, 50%); }
+
 @media (max-width: 900px) {
   .photo-collage,
   .photo-carousel {
