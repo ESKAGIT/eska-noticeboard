@@ -19,6 +19,7 @@
       show(index);
       liveGalleries.add(gallery);
       if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      if (gallery.dataset.galleryEditing === "true") return;
       gallery._galleryTimer = window.setInterval(() => {
         if (index >= items.length - 1) {
           window.clearInterval(gallery._galleryTimer);

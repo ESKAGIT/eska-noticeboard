@@ -254,6 +254,7 @@
         <div class="quick-image-picks">
           ${imageFields.map(([name, label]) => `<button type="button" data-image-pick="${name}">${label}</button>`).join("")}
         </div>
+        <p class="quick-image-help">Choose a photo above. It will appear in the preview so you can drag the whole photo, use the red handles, or adjust its crop below.</p>
         <label class="quick-size-row">
           <span data-selected-image-label>Selected picture</span>
           <small>Small</small>
@@ -443,6 +444,18 @@
   function selectImage(name) {
     if (selectedImage === name && !imageOverlay?.parentElement) selectedImage = "__unselected__";
     selectedImage = name;
+    const carousel = document.querySelector(".preview-wrap .photo-carousel");
+    if (carousel) {
+      const selectedItem = carousel.querySelector(`[data-image-key="${name}"]`);
+      if (selectedItem) {
+        carousel.dataset.galleryEditing = "true";
+        if (carousel._galleryTimer) {
+          window.clearInterval(carousel._galleryTimer);
+          carousel._galleryTimer = 0;
+        }
+        carousel.querySelectorAll(".photo-carousel-item").forEach((item) => item.classList.toggle("is-active", item === selectedItem));
+      }
+    }
     markSelectedImage();
     refreshImageControls();
     drawPictureSelection();
