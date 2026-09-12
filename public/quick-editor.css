@@ -506,6 +506,21 @@
   display: none;
 }
 
+.slide .photo-carousel,
+.slide .photo-collage {
+  width: var(--gallery-w, 58%);
+  height: var(--gallery-h, 74%);
+  translate: var(--gallery-x, 0) var(--gallery-y, 0);
+}
+
+@media (max-width: 900px) {
+  .slide .photo-carousel,
+  .slide .photo-collage {
+    width: 100%;
+    height: min(46vh, 420px);
+  }
+}
+
 @media (max-width: 900px) {
   .quick-editor {
     left: 12px;

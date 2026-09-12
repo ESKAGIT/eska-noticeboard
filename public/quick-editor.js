@@ -77,6 +77,13 @@
     ["textWidth", "Text block width", 260, 1200, 780, "--text-width"]
   ];
 
+  const galleryPositionFields = [
+    ["galleryWidth", "Whole carousel width", 400, 1700, 1110, "--gallery-w"],
+    ["galleryHeight", "Whole carousel height", 260, 900, 700, "--gallery-h"],
+    ["galleryX", "Move whole carousel left/right", -900, 900, 0, "--gallery-x"],
+    ["galleryY", "Move whole carousel up/down", -500, 500, 0, "--gallery-y"]
+  ];
+
   const imageFallbacks = {
     qr: { Width: 320, Height: 140 },
     logo: { Width: 92, Height: 92 },
@@ -255,6 +262,21 @@
           ${imageFields.map(([name, label]) => `<button type="button" data-image-pick="${name}">${label}</button>`).join("")}
         </div>
         <p class="quick-image-help">Choose a photo above. It will appear in the preview so you can drag the whole photo, use the red handles, or adjust its crop below.</p>
+        <div class="quick-gallery-tools" aria-label="Whole carousel tools">
+          <div class="quick-size-head">
+            <strong>Whole carousel</strong>
+            <button type="button" data-gallery-reset>Reset position</button>
+          </div>
+          <p class="quick-image-help">Move or resize the entire photo area together.</p>
+          ${galleryPositionFields.map(([name, label]) => `
+            <label class="quick-size-row">
+              <span>${label}</span>
+              <small>Less</small>
+              <input data-gallery-control="${name}" type="range" step="5">
+              <small>More</small>
+            </label>
+          `).join("")}
+        </div>
         <label class="quick-size-row">
           <span data-selected-image-label>Selected picture</span>
           <small>Small</small>
@@ -306,6 +328,7 @@
       const boxControl = event.target.closest("[data-box-control]");
       const metaBoxControl = event.target.closest("[data-meta-box-control]");
       const textControl = event.target.closest("[data-text-control]");
+      const galleryControl = event.target.closest("[data-gallery-control]");
       if (control) {
         selectedField = control.dataset.quickField;
         markSelectedField();
@@ -316,6 +339,7 @@
       if (boxControl) updateBoxValue(boxControl.dataset.boxControl, boxControl.value);
       if (metaBoxControl) updateMetaBoxValue(metaBoxControl.dataset.metaBoxControl, metaBoxControl.value);
       if (textControl) updateTextPositionValue(textControl.dataset.textControl, textControl.value);
+      if (galleryControl) updateGalleryValue(galleryControl.dataset.galleryControl, galleryControl.value);
     });
 
     panel.addEventListener("click", (event) => {
@@ -356,6 +380,8 @@
     panel.querySelector("[data-meta-box-reset]").addEventListener("click", () => {
       resetMetaBoxes();
     });
+
+    panel.querySelector("[data-gallery-reset]").addEventListener("click", resetGalleryPosition);
 
     return panel;
   }
@@ -691,6 +717,15 @@
       .filter(Boolean);
   }
 
+  function galleryVars(slide) {
+    return galleryPositionFields
+      .map(([name, , , , , variable]) => {
+        const value = cssLengthValue(fieldValue(slide, name));
+        return value ? `${variable}: ${value}` : "";
+      })
+      .filter(Boolean);
+  }
+
   function applyImageToPreview(imageName = selectedImage) {
     const slide = currentSlide();
     const slideEl = document.querySelector(".preview-wrap .preview-slide");
@@ -718,7 +753,7 @@
   const baseSlideStyle = window.slideStyle || slideStyle;
   window.slideStyle = function slideStyleWithQuickEditorSizes(slide) {
     const original = baseSlideStyle(slide);
-    const extra = [...sizeVars(slide), ...imageVars(slide), ...boxVars(slide), ...metaBoxVars(slide), ...textPositionVars(slide)];
+    const extra = [...sizeVars(slide), ...imageVars(slide), ...boxVars(slide), ...metaBoxVars(slide), ...textPositionVars(slide), ...galleryVars(slide)];
     if (!extra.length) return original;
     const extraText = extra.join("; ");
     if (!original) return ` style="${escapeHtml(extraText)}"`;
@@ -930,6 +965,49 @@
     });
     refreshPreview(slide);
     refreshTextPositionControls();
+    saveSoon();
+  }
+
+  function refreshGalleryControls() {
+    if (!panel) return;
+    const slide = currentSlide();
+    if (!slide) return;
+    galleryPositionFields.forEach(([name, , min, max, fallback]) => {
+      const control = panel.querySelector(`[data-gallery-control="${name}"]`);
+      if (!control) return;
+      control.min = min;
+      control.max = max;
+      if (document.activeElement !== control) control.value = parseNumber(slide, name, fallback);
+    });
+  }
+
+  function applyGalleryToPreview() {
+    const slide = currentSlide();
+    const slideEl = document.querySelector(".preview-wrap .preview-slide");
+    if (!slide || !slideEl) return;
+    galleryPositionFields.forEach(([name, , , , , variable]) => {
+      const value = cssLengthValue(fieldValue(slide, name));
+      if (value) slideEl.style.setProperty(variable, value);
+      else slideEl.style.removeProperty(variable);
+    });
+  }
+
+  function updateGalleryValue(name, rawValue) {
+    const slide = currentSlide();
+    if (!slide) return;
+    slide.fields = slide.fields || {};
+    slide.fields[name] = `${rawValue}px`;
+    applyGalleryToPreview();
+    saveSoon();
+  }
+
+  function resetGalleryPosition() {
+    const slide = currentSlide();
+    if (!slide) return;
+    slide.fields = slide.fields || {};
+    galleryPositionFields.forEach(([name]) => delete slide.fields[name]);
+    refreshPreview(slide);
+    refreshGalleryControls();
     saveSoon();
   }
 
@@ -1152,6 +1230,7 @@
     refreshImageControls();
     refreshBoxControls();
     refreshMetaBoxControls();
+    refreshGalleryControls();
     ensurePreviewObserver();
     syncPreviewScale();
     schedulePictureSelection();
