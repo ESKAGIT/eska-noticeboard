@@ -10,7 +10,12 @@ const templates = [
   { id: "media", name: "Photo and Video", category: "Karate courses", description: "Picture plus video placeholder." },
   { id: "gallery", name: "Achievement Gallery", category: "Student achievements", description: "Photo-led congratulations slide." },
   { id: "collage", name: "Photo Collage", category: "General notice", description: "Up to six photos in an editable collage." },
-  { id: "carousel", name: "Photo Carousel", category: "General notice", description: "Up to six photos shown one after another before the next slide." }
+  { id: "carousel", name: "Photo Carousel", category: "General notice", description: "Up to six photos shown one after another before the next slide." },
+  { id: "results", name: "Competition Results", category: "Competitions", description: "Podium-style medal and result reveal." },
+  { id: "achievement", name: "Student Achievement", category: "Student achievements", description: "A spotlight moment for a student success." },
+  { id: "launch", name: "New Class Launch", category: "New class launches", description: "A strong introduction for a new class or programme." },
+  { id: "countdown", name: "Event Countdown", category: "Events", description: "A bold countdown to a grading, course, or event." },
+  { id: "today", name: "Live Today", category: "General notice", description: "A high-priority notice for something happening today." }
 ];
 
 const animations = [

@@ -554,6 +554,52 @@
       `;
     } else if (slide.template === "gallery") {
       content = `<div class="gallery-photo">${mediaTag(image, field(slide, "heading"))}</div>${copyBlock(slide)}`;
+    } else if (slide.template === "results") {
+      const results = dateItems(slide).slice(0, 3);
+      content = `
+        <div class="results-copy">
+          <p class="eyebrow">${escapeHtml(field(slide, "eyebrow", "Competition results"))}</p>
+          <h1>${escapeHtml(field(slide, "heading", "Results"))}</h1>
+          <p class="body-copy">${escapeHtml(field(slide, "body", "Celebrating the team."))}</p>
+        </div>
+        <div class="result-podium">
+          ${results.map(([medal = "Medal", name = "Name", detail = "Result"], index) => `
+            <article class="result-place result-place-${index + 1}">
+              <span>${escapeHtml(medal)}</span>
+              <strong>${escapeHtml(name)}</strong>
+              <small>${escapeHtml(detail)}</small>
+            </article>
+          `).join("")}
+        </div>
+      `;
+    } else if (slide.template === "achievement") {
+      content = `
+        <div class="achievement-photo">${mediaTag(image, field(slide, "heading"))}</div>
+        <div class="achievement-copy">${copyBlock(slide)}<div class="achievement-mark">Well done</div></div>
+      `;
+    } else if (slide.template === "launch") {
+      content = `
+        <div class="launch-photo">${mediaTag(image, field(slide, "heading"))}</div>
+        <div class="launch-copy">${copyBlock(slide)}
+          <div class="launch-details"><span>${escapeHtml(field(slide, "date", "Date"))}</span><span>${escapeHtml(field(slide, "time", "Time"))}</span><span>${escapeHtml(field(slide, "location", "Location"))}</span></div>
+        </div>
+      `;
+    } else if (slide.template === "countdown") {
+      content = `
+        <div class="countdown-copy">
+          <p class="eyebrow">${escapeHtml(field(slide, "eyebrow", "Coming soon"))}</p>
+          <h1>${escapeHtml(field(slide, "heading", "Event countdown"))}</h1>
+          <h2>${escapeHtml(field(slide, "subheading", "Save the date"))}</h2>
+          <p class="body-copy">${escapeHtml(field(slide, "body", "Details from reception."))}</p>
+        </div>
+        <div class="countdown-display"><strong>${escapeHtml(field(slide, "cta", "10 DAYS"))}</strong><span>${escapeHtml(field(slide, "date", "Event date"))}</span></div>
+      `;
+    } else if (slide.template === "today") {
+      content = `
+        <div class="today-flag">Today</div>
+        <div class="today-copy">${copyBlock(slide)}</div>
+        <div class="today-details"><strong>${escapeHtml(field(slide, "time", "Time"))}</strong><span>${escapeHtml(field(slide, "location", "Location"))}</span></div>
+      `;
     } else if (slide.template === "collage" || slide.template === "carousel") {
       const galleryImages = [
         [image, "image"],
@@ -887,6 +933,57 @@
       slide.fields.menuItems = "Tea | GBP 1.50 | Freshly brewed cup\nCoffee | GBP 2.00 | Americano or white coffee\nHot chocolate | GBP 2.20 | Warm and sweet\nWater | GBP 1.00 | Still bottled water\nSnack bar | GBP 1.20 | Quick pre-class snack";
       slide.fields.accent = "#e61f2a";
       slide.fields.panelColor = "rgba(255, 255, 255, 0.96)";
+    }
+    if (templateId === "results") {
+      slide.animation = "stagger";
+      slide.duration = 14000;
+      slide.fields.eyebrow = "Competition results";
+      slide.fields.heading = "Proud of Team ESKA";
+      slide.fields.body = "Celebrating a great day of karate.";
+      slide.fields.dateList = "Gold | Student name | Kata\nSilver | Student name | Kumite\nBronze | Student name | Great effort";
+    }
+    if (templateId === "achievement") {
+      slide.animation = "zoom-in";
+      slide.duration = 13000;
+      slide.fields.eyebrow = "Student achievement";
+      slide.fields.heading = "A brilliant achievement";
+      slide.fields.subheading = "Hard work deserves recognition";
+      slide.fields.body = "Congratulations from everyone at ESKA.";
+      slide.fields.image = "/assets/dojo-class.svg";
+    }
+    if (templateId === "launch") {
+      slide.animation = "slide-left";
+      slide.duration = 14000;
+      slide.fields.eyebrow = "New class";
+      slide.fields.heading = "New class launching";
+      slide.fields.subheading = "Start your karate journey";
+      slide.fields.body = "A welcoming class for new and returning students.";
+      slide.fields.date = "Starting soon";
+      slide.fields.time = "Ask reception";
+      slide.fields.location = "The Dojo Norwich";
+      slide.fields.cta = "Book your place";
+      slide.fields.image = "/assets/dojo-class.svg";
+    }
+    if (templateId === "countdown") {
+      slide.animation = "zoom-in";
+      slide.duration = 12000;
+      slide.fields.eyebrow = "Coming soon";
+      slide.fields.heading = "Next grading";
+      slide.fields.subheading = "Keep training";
+      slide.fields.body = "Speak to your instructor if you need help preparing.";
+      slide.fields.cta = "14 DAYS";
+      slide.fields.date = "Saturday 24 October";
+    }
+    if (templateId === "today") {
+      slide.animation = "ticker";
+      slide.duration = 12000;
+      slide.fields.eyebrow = "Live today";
+      slide.fields.heading = "Important today";
+      slide.fields.subheading = "Please take note";
+      slide.fields.body = "Check in with reception when you arrive.";
+      slide.fields.time = "From 5:00pm";
+      slide.fields.location = "The Dojo Norwich";
+      slide.fields.cta = "Ask reception";
     }
     slide.fields.imageLeft = slide.fields.imageLeft || "";
     slide.fields.imageRight = slide.fields.imageRight || "";

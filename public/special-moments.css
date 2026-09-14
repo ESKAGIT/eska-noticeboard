@@ -1,0 +1,135 @@
+.slide-results,
+.slide-achievement,
+.slide-launch,
+.slide-countdown,
+.slide-today {
+  overflow: hidden;
+}
+
+.slide-results {
+  grid-template-columns: minmax(0, .88fr) minmax(620px, 1.12fr);
+  background: linear-gradient(135deg, #fff 0%, #fff7ef 100%);
+}
+
+.results-copy,
+.achievement-copy,
+.launch-copy,
+.countdown-copy,
+.today-copy { z-index: 3; }
+
+.results-copy h1,
+.countdown-copy h1,
+.today-copy h1 { max-width: 10ch; }
+
+.result-podium {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+  gap: 16px;
+  align-self: end;
+  z-index: 3;
+}
+
+.result-place {
+  display: grid;
+  gap: 9px;
+  min-height: 270px;
+  padding: 30px 24px;
+  border-radius: 8px 8px 0 0;
+  color: #171717;
+  background: #fff;
+  border-top: 10px solid var(--red);
+  box-shadow: 0 18px 44px rgba(23, 23, 23, .12);
+  animation: resultPodiumRise 850ms cubic-bezier(.2,.8,.2,1) both;
+}
+
+.result-place span { color: var(--red); font-size: clamp(20px, 1.7vw, 30px); font-weight: 950; text-transform: uppercase; }
+.result-place strong { font-size: clamp(26px, 2.35vw, 44px); line-height: 1; }
+.result-place small { color: var(--muted); font-size: clamp(17px, 1.25vw, 22px); font-weight: 800; }
+.result-place-1 { min-height: 380px; order: 2; border-top-color: var(--gold); animation-delay: 340ms; }
+.result-place-2 { min-height: 320px; order: 1; animation-delay: 160ms; }
+.result-place-3 { min-height: 290px; order: 3; animation-delay: 500ms; }
+
+.slide-achievement {
+  grid-template-columns: minmax(360px, .9fr) minmax(0, 1.1fr);
+}
+
+.achievement-photo,
+.launch-photo {
+  height: min(70vh, 700px);
+  overflow: hidden;
+  border-radius: 8px;
+  background: #eee8e5;
+  box-shadow: var(--shadow);
+}
+
+.achievement-photo img,
+.achievement-photo video,
+.launch-photo img,
+.launch-photo video { width: 100%; height: 100%; object-fit: cover; }
+
+.achievement-copy {
+  position: relative;
+  padding: clamp(30px, 4vw, 64px);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, .95);
+  box-shadow: 0 18px 54px rgba(23, 23, 23, .1);
+}
+
+.achievement-mark {
+  display: inline-flex;
+  margin-top: 30px;
+  padding: 10px 16px;
+  border-radius: 6px;
+  color: #fff;
+  background: var(--red);
+  font-size: clamp(19px, 1.55vw, 28px);
+  font-weight: 950;
+  animation: achievementPulse 3.6s 1.4s ease-in-out infinite;
+}
+
+.slide-launch { grid-template-columns: minmax(400px, .96fr) minmax(0, 1.04fr); }
+.launch-copy { padding: clamp(28px, 3.6vw, 58px); border-radius: 8px; background: rgba(255,255,255,.96); box-shadow: 0 18px 54px rgba(23,23,23,.1); }
+.launch-details { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+.launch-details span { padding: 12px 16px; border: 1px solid var(--line); border-radius: 6px; font-size: clamp(17px, 1.35vw, 24px); font-weight: 900; }
+
+.slide-countdown {
+  grid-template-columns: minmax(0, 1fr) minmax(380px, .72fr);
+  background: linear-gradient(135deg, #2a0709 0%, #8b1119 55%, #e61f2a 100%);
+  color: #fff;
+}
+
+.slide-countdown h2,
+.slide-countdown .body-copy { color: rgba(255,255,255,.9); }
+.slide-countdown .eyebrow { color: #ffe38a; }
+.countdown-display { display: grid; place-content: center; gap: 18px; min-height: 440px; border: 2px solid rgba(255,255,255,.35); border-radius: 8px; text-align: center; background: rgba(0,0,0,.12); box-shadow: inset 0 0 0 14px rgba(255,255,255,.04); }
+.countdown-display strong { color: #fff; font-size: clamp(64px, 9vw, 154px); line-height: .86; letter-spacing: 0; animation: countdownPunch 1s 280ms cubic-bezier(.2,.8,.2,1) both; }
+.countdown-display span { color: #ffe38a; font-size: clamp(21px, 2vw, 34px); font-weight: 950; }
+
+.slide-today {
+  grid-template-columns: minmax(0, 1.1fr) minmax(360px, .9fr);
+  background: linear-gradient(135deg, #fff 0%, #fff6f3 100%);
+}
+
+.today-flag { position: absolute; top: 0; left: 0; z-index: 5; padding: 18px 40px; color: #fff; background: var(--red); font-size: clamp(21px, 2vw, 34px); font-weight: 950; text-transform: uppercase; animation: todayFlagIn 720ms cubic-bezier(.2,.8,.2,1) both; }
+.today-copy { margin-top: 36px; }
+.today-details { display: grid; align-content: center; gap: 16px; padding: 40px; border-left: 10px solid var(--red); border-radius: 8px; background: #fff; box-shadow: 0 18px 48px rgba(23,23,23,.1); }
+.today-details strong { color: var(--red); font-size: clamp(36px, 4vw, 70px); line-height: .94; }
+.today-details span { color: #333; font-size: clamp(22px, 2.1vw, 34px); font-weight: 900; }
+
+@keyframes resultPodiumRise { from { opacity: 0; transform: translateY(80px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes achievementPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+@keyframes countdownPunch { from { opacity: 0; transform: scale(.72); } to { opacity: 1; transform: scale(1); } }
+@keyframes todayFlagIn { from { transform: translateX(-110%); } to { transform: translateX(0); } }
+
+@media (max-width: 900px) {
+  .slide-results, .slide-achievement, .slide-launch, .slide-countdown, .slide-today { grid-template-columns: 1fr; }
+  .result-podium { min-height: 0; }
+  .result-place, .result-place-1, .result-place-2, .result-place-3 { min-height: 180px; order: initial; }
+  .achievement-photo, .launch-photo { height: min(44vh, 420px); }
+  .countdown-display { min-height: 280px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .result-place, .achievement-mark, .countdown-display strong, .today-flag { animation: none !important; }
+}
