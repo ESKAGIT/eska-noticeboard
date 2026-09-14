@@ -66,14 +66,24 @@
       if (activeSlide >= slides.length) activeSlide = 0;
       const slide = slides[activeSlide];
       stage.innerHTML = renderSlide(slide);
+      stage.classList.remove("dojo-stage-enter");
+      void stage.offsetWidth;
+      stage.classList.add("dojo-stage-enter");
       startSlideMedia();
       clearTimeout(screenTimer);
+      const carousel = stage.querySelector("[data-gallery-carousel]");
+      const carouselCount = carousel ? Number(carousel.dataset.galleryCount || 0) : 0;
+      const carouselInterval = carousel ? Number(carousel.dataset.galleryInterval || 4000) : 0;
+      const slideDuration = Math.max(
+        Number(slide.duration || board.settings.defaultDuration || 10000),
+        carouselCount > 1 ? carouselCount * carouselInterval + 600 : 0
+      );
       screenTimer = addTimer(() => {
         if (!isCurrentRun(token)) return;
         const latestSlides = visibleSlides();
         activeSlide = latestSlides.length ? (activeSlide + 1) % latestSlides.length : 0;
         draw();
-      }, Number(slide.duration || board.settings.defaultDuration || 10000));
+      }, slideDuration);
     }
 
     draw();
