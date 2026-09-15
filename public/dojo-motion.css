@@ -92,6 +92,83 @@
   animation: dojoCarouselIn 700ms cubic-bezier(.2,.8,.2,1) both;
 }
 
+/* USB exports keep short one-off transitions, but avoid continuous motion. */
+.screen-shell.usb-recording-mode #screenStage {
+  position: relative;
+  overflow: hidden;
+}
+
+.screen-shell.usb-recording-mode #screenStage::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 -30%;
+  z-index: 80;
+  width: 28%;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(90deg, transparent, rgba(230, 31, 42, .46), #fff, rgba(230, 31, 42, .46), transparent);
+  transform: skewX(-18deg) translateX(-220%);
+}
+
+.screen-shell.usb-recording-mode #screenStage.dojo-stage-enter::before {
+  animation: dojoBeltSweep 720ms cubic-bezier(.2,.8,.2,1) both !important;
+}
+
+.screen-shell.usb-recording-mode .slide {
+  animation: dojoSlideSettle 480ms cubic-bezier(.2,.8,.2,1) both !important;
+}
+
+.screen-shell.usb-recording-mode .corner-logo,
+.screen-shell.usb-recording-mode .split-copy-logo {
+  animation: dojoLogoArrival 520ms 100ms cubic-bezier(.2,.8,.2,1) both !important;
+}
+
+.screen-shell.usb-recording-mode .copy-block > *,
+.screen-shell.usb-recording-mode .split-copy > * {
+  animation: dojoTextRise 440ms cubic-bezier(.2,.8,.2,1) both !important;
+}
+
+.screen-shell.usb-recording-mode .copy-block > :nth-child(1),
+.screen-shell.usb-recording-mode .split-copy > :nth-child(1) { animation-delay: 100ms !important; }
+.screen-shell.usb-recording-mode .copy-block > :nth-child(2),
+.screen-shell.usb-recording-mode .split-copy > :nth-child(2) { animation-delay: 200ms !important; }
+.screen-shell.usb-recording-mode .copy-block > :nth-child(3),
+.screen-shell.usb-recording-mode .split-copy > :nth-child(3) { animation-delay: 300ms !important; }
+.screen-shell.usb-recording-mode .copy-block > :nth-child(4),
+.screen-shell.usb-recording-mode .split-copy > :nth-child(4) { animation-delay: 400ms !important; }
+.screen-shell.usb-recording-mode .copy-block > :nth-child(5),
+.screen-shell.usb-recording-mode .split-copy > :nth-child(5) { animation-delay: 500ms !important; }
+
+.screen-shell.usb-recording-mode .date-board article,
+.screen-shell.usb-recording-mode .info-cards article,
+.screen-shell.usb-recording-mode .menu-items article {
+  animation: dojoCardRise 460ms cubic-bezier(.2,.8,.2,1) both !important;
+}
+
+.screen-shell.usb-recording-mode .date-board article:nth-child(1),
+.screen-shell.usb-recording-mode .info-cards article:nth-child(1),
+.screen-shell.usb-recording-mode .menu-items article:nth-child(1) { animation-delay: 180ms !important; }
+.screen-shell.usb-recording-mode .date-board article:nth-child(2),
+.screen-shell.usb-recording-mode .info-cards article:nth-child(2),
+.screen-shell.usb-recording-mode .menu-items article:nth-child(2) { animation-delay: 290ms !important; }
+.screen-shell.usb-recording-mode .date-board article:nth-child(3),
+.screen-shell.usb-recording-mode .info-cards article:nth-child(3),
+.screen-shell.usb-recording-mode .menu-items article:nth-child(3) { animation-delay: 400ms !important; }
+.screen-shell.usb-recording-mode .date-board article:nth-child(n + 4),
+.screen-shell.usb-recording-mode .menu-items article:nth-child(n + 4) { animation-delay: 510ms !important; }
+
+.screen-shell.usb-recording-mode .qr-layer {
+  animation: dojoQrArrival 520ms 620ms cubic-bezier(.2,.8,.2,1) both !important;
+}
+
+.screen-shell.usb-recording-mode .photo-carousel-item {
+  transition: opacity 420ms ease, transform 640ms ease !important;
+}
+
+.screen-shell.usb-recording-mode .photo-carousel-item.is-active {
+  animation: dojoCarouselIn 460ms cubic-bezier(.2,.8,.2,1) both !important;
+}
+
 @keyframes dojoBeltSweep {
   0% { opacity: 0; transform: skewX(-18deg) translateX(-220%); }
   18% { opacity: .75; }
