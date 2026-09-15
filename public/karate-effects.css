@@ -1,0 +1,200 @@
+/* Optional, one-time karate-themed effects selected in the Admin editor. */
+.karate-belt-knot,
+.karate-belt-progress,
+.karate-photo-shutter {
+  pointer-events: none;
+  position: absolute;
+  z-index: 70;
+}
+
+.karate-belt-knot {
+  top: 50%;
+  left: 50%;
+  width: min(760px, 66vw);
+  height: 78px;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+}
+
+.karate-belt-end {
+  position: absolute;
+  top: 18px;
+  width: calc(50% - 30px);
+  height: 42px;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #fa3944, #d90f1c 60%, #af0c15);
+  box-shadow: 0 10px 20px rgba(117, 10, 16, .28);
+}
+
+.karate-belt-end::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 25px;
+  background: inherit;
+}
+
+.karate-belt-end-left { left: 0; transform-origin: right center; }
+.karate-belt-end-left::after { right: -16px; clip-path: polygon(0 0, 100% 50%, 0 100%); }
+.karate-belt-end-right { right: 0; transform-origin: left center; }
+.karate-belt-end-right::after { left: -16px; clip-path: polygon(100% 0, 0 50%, 100% 100%); }
+
+.karate-belt-knot-centre {
+  position: absolute;
+  top: 3px;
+  left: 50%;
+  width: 68px;
+  height: 72px;
+  border-radius: 44% 48% 46% 42%;
+  opacity: 0;
+  background: linear-gradient(135deg, #ff4a52, #cf0e1a 60%, #950a13);
+  box-shadow: 0 12px 26px rgba(117, 10, 16, .3);
+  transform: translateX(-50%) scale(.4) rotate(-18deg);
+}
+
+.karate-belt-progress {
+  display: flex;
+  gap: 6px;
+  bottom: clamp(27px, 2.7vw, 50px);
+  left: clamp(34px, 4vw, 80px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.karate-belt-progress li {
+  width: clamp(22px, 2vw, 42px);
+  height: clamp(8px, .7vw, 14px);
+  border: 1px solid rgba(23, 23, 23, .28);
+  border-radius: 2px;
+  box-shadow: 0 2px 8px rgba(23, 23, 23, .16);
+  opacity: 0;
+  transform: scaleX(.2);
+  transform-origin: left center;
+}
+
+.belt-white { background: #fff; }
+.belt-yellow { background: #f5d938; }
+.belt-orange { background: #ef8f25; }
+.belt-green { background: #278545; }
+.belt-blue { background: #2863ba; }
+.belt-purple { background: #7047a1; }
+.belt-brown { background: #73472c; }
+.belt-black { background: #1b1b1b; }
+
+.karate-photo-shutter {
+  inset: 0;
+  z-index: 75;
+  opacity: 0;
+  background: #fff;
+  mix-blend-mode: screen;
+}
+
+.karate-photo-shutter::before,
+.karate-photo-shutter::after {
+  content: "";
+  position: absolute;
+  border: 3px solid rgba(255, 255, 255, .82);
+}
+
+.karate-photo-shutter::before { inset: 7%; }
+.karate-photo-shutter::after { inset: 13%; border-color: rgba(230, 31, 42, .52); }
+
+.screen-shell .karate-belt-knot,
+.preview-wrap .karate-belt-knot { animation: beltKnotStage 1.18s cubic-bezier(.2,.8,.2,1) both; }
+.screen-shell .karate-belt-end-left,
+.preview-wrap .karate-belt-end-left { animation: beltKnotLeft 760ms cubic-bezier(.2,.8,.2,1) both; }
+.screen-shell .karate-belt-end-right,
+.preview-wrap .karate-belt-end-right { animation: beltKnotRight 760ms cubic-bezier(.2,.8,.2,1) both; }
+.screen-shell .karate-belt-knot-centre,
+.preview-wrap .karate-belt-knot-centre { animation: beltKnotCentre 460ms 520ms cubic-bezier(.2,.8,.2,1) both; }
+
+.screen-shell .karate-belt-progress li,
+.preview-wrap .karate-belt-progress li { animation: beltProgressIn 340ms cubic-bezier(.2,.8,.2,1) both; }
+.screen-shell .karate-belt-progress li:nth-child(1), .preview-wrap .karate-belt-progress li:nth-child(1) { animation-delay: 420ms; }
+.screen-shell .karate-belt-progress li:nth-child(2), .preview-wrap .karate-belt-progress li:nth-child(2) { animation-delay: 500ms; }
+.screen-shell .karate-belt-progress li:nth-child(3), .preview-wrap .karate-belt-progress li:nth-child(3) { animation-delay: 580ms; }
+.screen-shell .karate-belt-progress li:nth-child(4), .preview-wrap .karate-belt-progress li:nth-child(4) { animation-delay: 660ms; }
+.screen-shell .karate-belt-progress li:nth-child(5), .preview-wrap .karate-belt-progress li:nth-child(5) { animation-delay: 740ms; }
+.screen-shell .karate-belt-progress li:nth-child(6), .preview-wrap .karate-belt-progress li:nth-child(6) { animation-delay: 820ms; }
+.screen-shell .karate-belt-progress li:nth-child(7), .preview-wrap .karate-belt-progress li:nth-child(7) { animation-delay: 900ms; }
+.screen-shell .karate-belt-progress li:nth-child(8), .preview-wrap .karate-belt-progress li:nth-child(8) { animation-delay: 980ms; }
+
+.screen-shell .karate-photo-shutter,
+.preview-wrap .karate-photo-shutter { animation: photoShutterFlash 600ms 160ms ease-out both; }
+
+.screen-shell.usb-recording-mode .karate-belt-knot,
+.screen-shell.usb-recording-mode .karate-belt-end,
+.screen-shell.usb-recording-mode .karate-belt-knot-centre,
+.screen-shell.usb-recording-mode .karate-belt-progress li,
+.screen-shell.usb-recording-mode .karate-photo-shutter { animation-play-state: running !important; }
+
+@keyframes beltKnotStage {
+  0%, 8% { opacity: 1; }
+  82% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes beltKnotLeft {
+  from { transform: translateX(-130%) rotate(-5deg); }
+  72%, to { transform: translateX(0) rotate(0); }
+}
+
+@keyframes beltKnotRight {
+  from { transform: translateX(130%) rotate(5deg); }
+  72%, to { transform: translateX(0) rotate(0); }
+}
+
+@keyframes beltKnotCentre {
+  from { opacity: 0; transform: translateX(-50%) scale(.4) rotate(-18deg); }
+  to { opacity: 1; transform: translateX(-50%) scale(1) rotate(0); }
+}
+
+@keyframes beltProgressIn {
+  from { opacity: 0; transform: scaleX(.2); }
+  to { opacity: 1; transform: scaleX(1); }
+}
+
+@keyframes photoShutterFlash {
+  0% { opacity: 0; }
+  20% { opacity: .92; }
+  48% { opacity: .26; }
+  100% { opacity: 0; }
+}
+
+.karate-effects-panel {
+  margin: 18px 0;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-left: 6px solid var(--red);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.karate-effects-head,
+.karate-effects-options {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.karate-effects-head h3 { margin: 0; }
+.karate-effects-head p { margin: 4px 0 0; color: var(--muted); }
+.karate-effects-options { justify-content: flex-start; flex-wrap: wrap; margin-top: 14px; }
+
+@media (max-width: 760px) {
+  .karate-effects-head { align-items: flex-start; flex-direction: column; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .karate-belt-knot,
+  .karate-belt-end,
+  .karate-belt-knot-centre,
+  .karate-belt-progress li,
+  .karate-photo-shutter { animation: none !important; }
+  .karate-belt-progress li { opacity: 1; transform: none; }
+  .karate-belt-knot,
+  .karate-photo-shutter { display: none; }
+}
