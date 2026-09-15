@@ -53,7 +53,7 @@
           <button class="secondary" id="replayKarateEffects" type="button">Replay effects</button>
         </div>
         <div class="karate-effects-options">
-          <label class="check-row"><input data-karate-effect="effectBeltKnot" type="checkbox" ${enabled(slide, "effectBeltKnot") ? "checked" : ""}> Belt knot reveal</label>
+          <label class="check-row"><input data-karate-effect="effectBeltKnot" type="checkbox" ${enabled(slide, "effectBeltKnot") ? "checked" : ""}> Belt tie reveal</label>
           <label class="check-row"><input data-karate-effect="effectBeltProgress" type="checkbox" ${enabled(slide, "effectBeltProgress") ? "checked" : ""}> Belt colour progress</label>
           <label class="check-row"><input data-karate-effect="effectPhotoShutter" type="checkbox" ${enabled(slide, "effectPhotoShutter") ? "checked" : ""}> Photo shutter</label>
         </div>

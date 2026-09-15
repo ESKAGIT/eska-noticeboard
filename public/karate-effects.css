@@ -8,22 +8,22 @@
 }
 
 .karate-belt-knot {
-  top: 50%;
+  bottom: clamp(42px, 4.4vw, 78px);
   left: 50%;
-  width: min(760px, 66vw);
-  height: 78px;
-  transform: translate(-50%, -50%);
-  opacity: 0;
+  width: min(590px, 42vw);
+  height: 34px;
+  transform: translateX(-50%);
+  opacity: 1;
 }
 
 .karate-belt-end {
   position: absolute;
-  top: 18px;
-  width: calc(50% - 30px);
-  height: 42px;
-  border-radius: 4px;
-  background: linear-gradient(180deg, #fa3944, #d90f1c 60%, #af0c15);
-  box-shadow: 0 10px 20px rgba(117, 10, 16, .28);
+  top: 9px;
+  width: calc(50% - 18px);
+  height: 17px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #fb4a54, #d80d1a 58%, #a80a13);
+  box-shadow: 0 5px 13px rgba(117, 10, 16, .22);
 }
 
 .karate-belt-end::after {
@@ -31,26 +31,26 @@
   position: absolute;
   top: 0;
   bottom: 0;
-  width: 25px;
+  width: 16px;
   background: inherit;
 }
 
 .karate-belt-end-left { left: 0; transform-origin: right center; }
-.karate-belt-end-left::after { right: -16px; clip-path: polygon(0 0, 100% 50%, 0 100%); }
+.karate-belt-end-left::after { right: -10px; clip-path: polygon(0 0, 100% 50%, 0 100%); }
 .karate-belt-end-right { right: 0; transform-origin: left center; }
-.karate-belt-end-right::after { left: -16px; clip-path: polygon(100% 0, 0 50%, 100% 100%); }
+.karate-belt-end-right::after { left: -10px; clip-path: polygon(100% 0, 0 50%, 100% 100%); }
 
 .karate-belt-knot-centre {
   position: absolute;
-  top: 3px;
+  top: 1px;
   left: 50%;
-  width: 68px;
-  height: 72px;
-  border-radius: 44% 48% 46% 42%;
+  width: 32px;
+  height: 32px;
+  border-radius: 3px;
   opacity: 0;
-  background: linear-gradient(135deg, #ff4a52, #cf0e1a 60%, #950a13);
-  box-shadow: 0 12px 26px rgba(117, 10, 16, .3);
-  transform: translateX(-50%) scale(.4) rotate(-18deg);
+  background: linear-gradient(135deg, #ff525c, #cc0d18 60%, #920913);
+  box-shadow: 0 6px 15px rgba(117, 10, 16, .25);
+  transform: translateX(-50%) scale(.5) rotate(45deg);
 }
 
 .karate-belt-progress {
@@ -101,14 +101,12 @@
 .karate-photo-shutter::before { inset: 7%; }
 .karate-photo-shutter::after { inset: 13%; border-color: rgba(230, 31, 42, .52); }
 
-.screen-shell .karate-belt-knot,
-.preview-wrap .karate-belt-knot { animation: beltKnotStage 1.18s cubic-bezier(.2,.8,.2,1) both; }
 .screen-shell .karate-belt-end-left,
-.preview-wrap .karate-belt-end-left { animation: beltKnotLeft 760ms cubic-bezier(.2,.8,.2,1) both; }
+.preview-wrap .karate-belt-end-left { animation: beltTieLeft 720ms cubic-bezier(.2,.8,.2,1) both; }
 .screen-shell .karate-belt-end-right,
-.preview-wrap .karate-belt-end-right { animation: beltKnotRight 760ms cubic-bezier(.2,.8,.2,1) both; }
+.preview-wrap .karate-belt-end-right { animation: beltTieRight 720ms cubic-bezier(.2,.8,.2,1) both; }
 .screen-shell .karate-belt-knot-centre,
-.preview-wrap .karate-belt-knot-centre { animation: beltKnotCentre 460ms 520ms cubic-bezier(.2,.8,.2,1) both; }
+.preview-wrap .karate-belt-knot-centre { animation: beltTieCentre 380ms 500ms cubic-bezier(.2,.8,.2,1) both; }
 
 .screen-shell .karate-belt-progress li,
 .preview-wrap .karate-belt-progress li { animation: beltProgressIn 340ms cubic-bezier(.2,.8,.2,1) both; }
@@ -130,25 +128,21 @@
 .screen-shell.usb-recording-mode .karate-belt-progress li,
 .screen-shell.usb-recording-mode .karate-photo-shutter { animation-play-state: running !important; }
 
-@keyframes beltKnotStage {
-  0%, 8% { opacity: 1; }
-  82% { opacity: 1; }
-  100% { opacity: 0; }
+@keyframes beltTieLeft {
+  from { opacity: 0; transform: translateX(-130%) rotate(-3deg); }
+  22% { opacity: 1; }
+  72%, to { opacity: 1; transform: translateX(0) rotate(0); }
 }
 
-@keyframes beltKnotLeft {
-  from { transform: translateX(-130%) rotate(-5deg); }
-  72%, to { transform: translateX(0) rotate(0); }
+@keyframes beltTieRight {
+  from { opacity: 0; transform: translateX(130%) rotate(3deg); }
+  22% { opacity: 1; }
+  72%, to { opacity: 1; transform: translateX(0) rotate(0); }
 }
 
-@keyframes beltKnotRight {
-  from { transform: translateX(130%) rotate(5deg); }
-  72%, to { transform: translateX(0) rotate(0); }
-}
-
-@keyframes beltKnotCentre {
-  from { opacity: 0; transform: translateX(-50%) scale(.4) rotate(-18deg); }
-  to { opacity: 1; transform: translateX(-50%) scale(1) rotate(0); }
+@keyframes beltTieCentre {
+  from { opacity: 0; transform: translateX(-50%) scale(.5) rotate(45deg); }
+  to { opacity: 1; transform: translateX(-50%) scale(1) rotate(45deg); }
 }
 
 @keyframes beltProgressIn {
