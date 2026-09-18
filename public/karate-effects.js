@@ -15,9 +15,7 @@
     if (enabled(slide, "effectBeltKnot")) {
       effects.push(`
         <div class="karate-belt-knot" aria-hidden="true">
-          <span class="karate-belt-end karate-belt-end-left"></span>
-          <span class="karate-belt-knot-centre"></span>
-          <span class="karate-belt-end karate-belt-end-right"></span>
+          <img src="/assets/karate-tied-belt.png" alt="">
         </div>
       `);
     }
@@ -28,7 +26,7 @@
       ];
       effects.push(`
         <ol class="karate-belt-progress" aria-label="Karate belt progress animation">
-          ${belts.map((belt) => `<li class="${belt}"><span class="belt-ribbon"></span><span class="belt-centre-knot"></span></li>`).join("")}
+          ${belts.map((belt) => `<li class="${belt}"><img src="/assets/karate-tied-belt.png" alt=""><span class="belt-rank-stripes"></span></li>`).join("")}
         </ol>
       `);
     }
@@ -136,3 +134,4 @@
     if ((route() === "/admin" || route() === "/templates") && board && typeof renderAdmin === "function") renderAdmin();
   }, 0);
 })();
+

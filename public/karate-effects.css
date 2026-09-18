@@ -8,61 +8,43 @@
 }
 
 .karate-belt-knot {
-  bottom: clamp(42px, 4.4vw, 78px);
+  bottom: clamp(26px, 2.5vw, 46px);
   left: 50%;
-  width: min(590px, 42vw);
-  height: 34px;
+  width: min(620px, 48vw);
   transform: translateX(-50%);
   opacity: 1;
 }
 
-.karate-belt-end {
-  position: absolute;
-  top: 9px;
-  width: calc(50% - 18px);
-  height: 17px;
-  border-radius: 2px;
-  background: linear-gradient(180deg, #fb4a54, #d80d1a 58%, #a80a13);
-  box-shadow: 0 5px 13px rgba(117, 10, 16, .22);
+.karate-belt-knot img {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 12px 18px rgba(0, 0, 0, .23));
 }
 
-.karate-belt-end::after {
+.karate-belt-knot::before {
   content: "";
   position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 16px;
-  background: inherit;
-}
-
-.karate-belt-end-left { left: 0; transform-origin: right center; }
-.karate-belt-end-left::after { right: -10px; clip-path: polygon(0 0, 100% 50%, 0 100%); }
-.karate-belt-end-right { right: 0; transform-origin: left center; }
-.karate-belt-end-right::after { left: -10px; clip-path: polygon(100% 0, 0 50%, 100% 100%); }
-
-.karate-belt-knot-centre {
-  position: absolute;
-  top: 1px;
-  left: 50%;
-  width: 32px;
-  height: 32px;
-  border-radius: 3px;
-  opacity: 0;
-  background: linear-gradient(135deg, #ff525c, #cc0d18 60%, #920913);
-  box-shadow: 0 6px 15px rgba(117, 10, 16, .25);
-  transform: translateX(-50%) scale(.5) rotate(45deg);
+  inset: 0;
+  z-index: 2;
+  background: #171719;
+  pointer-events: none;
+  -webkit-mask: url("/assets/karate-tied-belt.png") center / contain no-repeat;
+  mask: url("/assets/karate-tied-belt.png") center / contain no-repeat;
+  mix-blend-mode: multiply;
 }
 
 .karate-belt-progress {
   display: flex;
-  gap: clamp(5px, .5vw, 11px);
+  gap: clamp(8px, .75vw, 16px);
   right: auto;
-  bottom: clamp(18px, 2.3vw, 42px);
+  bottom: clamp(12px, 1.25vw, 24px);
   left: 50%;
-  width: min(96%, 1840px);
-  height: clamp(34px, 4vw, 68px);
+  width: min(96%, 1900px);
   margin: 0;
-  padding: 0 clamp(20px, 2.4vw, 48px);
+  padding: 0 clamp(18px, 2vw, 40px);
   list-style: none;
   transform: translate(calc(-50% + var(--belt-progress-x, 0px)), var(--belt-progress-y, 0px)) scale(var(--belt-progress-scale, 1));
   transform-origin: center bottom;
@@ -73,85 +55,60 @@
   min-width: 0;
   position: relative;
   align-self: center;
-  height: 100%;
+  aspect-ratio: 2.2 / 1;
   overflow: visible;
-  background: none;
-  clip-path: none;
-  filter: none;
-  box-shadow: none;
   opacity: 0;
-  transform: scaleX(.2);
-  transform-origin: left center;
+  transform: translateY(14px) scale(.8);
+  transform-origin: center bottom;
 }
 
-.belt-ribbon {
-  position: absolute;
-  inset: 16% 0;
+.karate-belt-progress img {
+  position: relative;
+  z-index: 1;
   display: block;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, .32), transparent 20%, transparent 75%, rgba(0, 0, 0, .22)),
-    repeating-linear-gradient(90deg, rgba(255, 255, 255, .08) 0 1px, transparent 1px 8px),
-    var(--belt-colour);
-  clip-path: polygon(0 12%, 87% 12%, 100% 50%, 87% 88%, 0 88%, 5% 50%);
-  filter: drop-shadow(0 4px 5px rgba(23, 23, 23, .25));
-  box-shadow: inset 0 1px rgba(255, 255, 255, .35), inset 0 -2px rgba(0, 0, 0, .24);
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 5px 7px rgba(0, 0, 0, .24));
 }
 
-.belt-ribbon::before {
+.karate-belt-progress li::before {
   content: "";
   position: absolute;
-  top: 50%;
-  right: 20%;
-  left: 7%;
-  height: 1px;
-  background: rgba(255, 255, 255, .32);
-  box-shadow: 0 1px rgba(0, 0, 0, .18);
-}
-
-.belt-ribbon::after {
-  content: "";
-  position: absolute;
-  top: 16%;
-  right: 12%;
-  bottom: 16%;
-  width: 1px;
-  background: rgba(0, 0, 0, .18);
-}
-
-.belt-centre-knot {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: clamp(18px, 1.9vw, 36px);
-  aspect-ratio: 1;
-  display: block;
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, .35), transparent 34%, rgba(0, 0, 0, .24)),
-    var(--belt-colour);
-  clip-path: polygon(22% 0, 78% 0, 100% 32%, 79% 100%, 21% 100%, 0 32%);
-  box-shadow: 0 5px 10px rgba(23, 23, 23, .24);
-  transform: translate(-50%, -50%) rotate(45deg);
+  inset: 0;
+  pointer-events: none;
+  background: var(--belt-colour);
+  -webkit-mask: url("/assets/karate-tied-belt.png") center / contain no-repeat;
+  mask: url("/assets/karate-tied-belt.png") center / contain no-repeat;
+  mix-blend-mode: multiply;
   z-index: 2;
 }
 
-.belt-centre-knot::after {
-  content: "";
+.belt-rank-stripes {
   position: absolute;
-  inset: 27%;
-  border: 1px solid rgba(255, 255, 255, .35);
-  border-radius: 50%;
+  inset: 0;
+  display: none;
+  pointer-events: none;
+  background: var(--belt-stripes);
+  -webkit-mask: url("/assets/karate-tied-belt.png") center / contain no-repeat;
+  mask: url("/assets/karate-tied-belt.png") center / contain no-repeat;
+  mix-blend-mode: screen;
+  z-index: 3;
 }
 
-.belt-red { --belt-colour: #d8101c; }
-.belt-orange { --belt-colour: #ef8f25; }
-.belt-yellow { --belt-colour: #f5d938; }
-.belt-green { --belt-colour: #278545; }
-.belt-purple { --belt-colour: #7047a1; }
-.belt-purple-white { --belt-colour: linear-gradient(90deg, #7047a1 0 36%, #fff 36% 64%, #7047a1 64%); }
-.belt-brown { --belt-colour: #73472c; }
-.belt-brown-white { --belt-colour: linear-gradient(90deg, #73472c 0 36%, #fff 36% 64%, #73472c 64%); }
-.belt-brown-double-white { --belt-colour: linear-gradient(90deg, #73472c 0 22%, #fff 22% 33%, #73472c 33% 67%, #fff 67% 78%, #73472c 78%); }
-.belt-black { --belt-colour: #1b1b1b; }
+.belt-red { --belt-colour: #df1b2b; }
+.belt-orange { --belt-colour: #ef7e22; }
+.belt-yellow { --belt-colour: #f3d418; }
+.belt-green { --belt-colour: #238848; }
+.belt-purple { --belt-colour: #744699; }
+.belt-purple-white { --belt-colour: #744699; --belt-stripes: linear-gradient(90deg, transparent 0 42%, rgba(255,255,255,.98) 42% 58%, transparent 58%); }
+.belt-brown { --belt-colour: #71462f; }
+.belt-brown-white { --belt-colour: #71462f; --belt-stripes: linear-gradient(90deg, transparent 0 42%, rgba(255,255,255,.98) 42% 58%, transparent 58%); }
+.belt-brown-double-white { --belt-colour: #71462f; --belt-stripes: linear-gradient(90deg, transparent 0 28%, rgba(255,255,255,.98) 28% 38%, transparent 38% 62%, rgba(255,255,255,.98) 62% 72%, transparent 72%); }
+.belt-black { --belt-colour: #171719; }
+.belt-purple-white .belt-rank-stripes,
+.belt-brown-white .belt-rank-stripes,
+.belt-brown-double-white .belt-rank-stripes { display: block; }
 
 .karate-photo-shutter {
   inset: 0;
@@ -171,12 +128,8 @@
 .karate-photo-shutter::before { inset: 7%; }
 .karate-photo-shutter::after { inset: 13%; border-color: rgba(230, 31, 42, .52); }
 
-.screen-shell .karate-belt-end-left,
-.preview-wrap .karate-belt-end-left { animation: beltTieLeft 720ms cubic-bezier(.2,.8,.2,1) both; }
-.screen-shell .karate-belt-end-right,
-.preview-wrap .karate-belt-end-right { animation: beltTieRight 720ms cubic-bezier(.2,.8,.2,1) both; }
-.screen-shell .karate-belt-knot-centre,
-.preview-wrap .karate-belt-knot-centre { animation: beltTieCentre 380ms 500ms cubic-bezier(.2,.8,.2,1) both; }
+.screen-shell .karate-belt-knot img,
+.preview-wrap .karate-belt-knot img { animation: beltTieIn 760ms cubic-bezier(.2,.8,.2,1) both; }
 
 .screen-shell .karate-belt-progress li,
 .preview-wrap .karate-belt-progress li { animation: beltProgressIn 340ms cubic-bezier(.2,.8,.2,1) both; }
@@ -194,32 +147,19 @@
 .screen-shell .karate-photo-shutter,
 .preview-wrap .karate-photo-shutter { animation: photoShutterFlash 600ms 160ms ease-out both; }
 
-.screen-shell.usb-recording-mode .karate-belt-knot,
-.screen-shell.usb-recording-mode .karate-belt-end,
-.screen-shell.usb-recording-mode .karate-belt-knot-centre,
+.screen-shell.usb-recording-mode .karate-belt-knot img,
 .screen-shell.usb-recording-mode .karate-belt-progress li,
 .screen-shell.usb-recording-mode .karate-photo-shutter { animation-play-state: running !important; }
 
-@keyframes beltTieLeft {
-  from { opacity: 0; transform: translateX(-130%) rotate(-3deg); }
-  22% { opacity: 1; }
-  72%, to { opacity: 1; transform: translateX(0) rotate(0); }
-}
-
-@keyframes beltTieRight {
-  from { opacity: 0; transform: translateX(130%) rotate(3deg); }
-  22% { opacity: 1; }
-  72%, to { opacity: 1; transform: translateX(0) rotate(0); }
-}
-
-@keyframes beltTieCentre {
-  from { opacity: 0; transform: translateX(-50%) scale(.5) rotate(45deg); }
-  to { opacity: 1; transform: translateX(-50%) scale(1) rotate(45deg); }
+@keyframes beltTieIn {
+  from { opacity: 0; transform: translateY(-18px) scale(.92); }
+  70% { opacity: 1; transform: translateY(3px) scale(1.02); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 @keyframes beltProgressIn {
-  from { opacity: 0; transform: scaleX(.2); }
-  to { opacity: 1; transform: scaleX(1); }
+  from { opacity: 0; transform: translateY(14px) scale(.8); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 @keyframes photoShutterFlash {
@@ -285,11 +225,10 @@
 
 @media (prefers-reduced-motion: reduce) {
   .karate-belt-knot,
-  .karate-belt-end,
-  .karate-belt-knot-centre,
   .karate-belt-progress li,
   .karate-photo-shutter { animation: none !important; }
   .karate-belt-progress li { opacity: 1; transform: none; }
   .karate-belt-knot,
   .karate-photo-shutter { display: none; }
 }
+
