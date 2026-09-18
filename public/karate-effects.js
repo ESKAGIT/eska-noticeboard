@@ -5,6 +5,11 @@
     return field(slide, key, "") === "true";
   }
 
+  function sliderValue(slide, key, fallback, min, max) {
+    const value = Number(field(slide, key, fallback));
+    return Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : fallback;
+  }
+
   function effectsMarkup(slide) {
     const effects = [];
     if (enabled(slide, "effectBeltKnot")) {
@@ -17,11 +22,13 @@
       `);
     }
     if (enabled(slide, "effectBeltProgress")) {
+      const belts = [
+        "belt-red", "belt-orange", "belt-yellow", "belt-green", "belt-purple",
+        "belt-purple-white", "belt-brown", "belt-brown-white", "belt-brown-double-white", "belt-black"
+      ];
       effects.push(`
         <ol class="karate-belt-progress" aria-label="Karate belt progress animation">
-          <li class="belt-red"></li><li class="belt-orange"></li><li class="belt-yellow"></li><li class="belt-green"></li>
-          <li class="belt-purple"></li><li class="belt-purple-white"></li><li class="belt-brown"></li><li class="belt-brown-white"></li>
-          <li class="belt-brown-double-white"></li><li class="belt-black"></li>
+          ${belts.map((belt) => `<li class="${belt}"><span class="belt-ribbon"></span><span class="belt-centre-knot"></span></li>`).join("")}
         </ol>
       `);
     }
@@ -44,6 +51,9 @@
   }
 
   function controls(slide) {
+    const beltSize = sliderValue(slide, "beltProgressSize", 100, 45, 160);
+    const beltX = sliderValue(slide, "beltProgressX", 0, -800, 800);
+    const beltY = sliderValue(slide, "beltProgressY", 0, -500, 500);
     return `
       <section class="karate-effects-panel" aria-label="Karate screen effects">
         <div class="karate-effects-head">
@@ -58,9 +68,27 @@
           <label class="check-row"><input data-karate-effect="effectBeltProgress" type="checkbox" ${enabled(slide, "effectBeltProgress") ? "checked" : ""}> Belt colour progress</label>
           <label class="check-row"><input data-karate-effect="effectPhotoShutter" type="checkbox" ${enabled(slide, "effectPhotoShutter") ? "checked" : ""}> Photo shutter</label>
         </div>
+        <div class="belt-group-controls">
+          <strong>Whole belt group</strong>
+          <label>Size <span>Small</span><input data-belt-control="beltProgressSize" type="range" min="45" max="160" value="${beltSize}"><span>Large</span></label>
+          <label>Move left/right <span>Left</span><input data-belt-control="beltProgressX" type="range" min="-800" max="800" value="${beltX}"><span>Right</span></label>
+          <label>Move up/down <span>Up</span><input data-belt-control="beltProgressY" type="range" min="-500" max="500" value="${beltY}"><span>Down</span></label>
+        </div>
       </section>
     `;
   }
+
+  const baseSlideStyle = window.slideStyle || slideStyle;
+  window.slideStyle = function slideStyleWithBeltControls(slide) {
+    const original = baseSlideStyle(slide);
+    const beltSize = sliderValue(slide, "beltProgressSize", 100, 45, 160);
+    const beltX = sliderValue(slide, "beltProgressX", 0, -800, 800);
+    const beltY = sliderValue(slide, "beltProgressY", 0, -500, 500);
+    const variables = `--belt-progress-scale: ${beltSize / 100}; --belt-progress-x: ${beltX}px; --belt-progress-y: ${beltY}px`;
+    if (!original) return ` style="${variables}"`;
+    return original.replace(/"$/, `; ${variables}"`);
+  };
+  slideStyle = window.slideStyle;
 
   const baseRenderSlide = window.renderSlide || renderSlide;
   window.renderSlide = function renderSlideWithKarateEffects(slide, preview = false) {
@@ -86,6 +114,14 @@
     document.querySelectorAll("[data-karate-effect]").forEach((input) => {
       input.addEventListener("change", () => {
         slide.fields[input.dataset.karateEffect] = input.checked ? "true" : "";
+        refreshPreview(slide);
+        saveSoon();
+      });
+    });
+
+    document.querySelectorAll("[data-belt-control]").forEach((input) => {
+      input.addEventListener("input", () => {
+        slide.fields[input.dataset.beltControl] = input.value;
         refreshPreview(slide);
         saveSoon();
       });
