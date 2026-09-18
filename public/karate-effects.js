@@ -19,8 +19,9 @@
     if (enabled(slide, "effectBeltProgress")) {
       effects.push(`
         <ol class="karate-belt-progress" aria-label="Karate belt progress animation">
-          <li class="belt-white"></li><li class="belt-yellow"></li><li class="belt-orange"></li><li class="belt-green"></li>
-          <li class="belt-blue"></li><li class="belt-purple"></li><li class="belt-brown"></li><li class="belt-black"></li>
+          <li class="belt-red"></li><li class="belt-orange"></li><li class="belt-yellow"></li><li class="belt-green"></li>
+          <li class="belt-purple"></li><li class="belt-purple-white"></li><li class="belt-brown"></li><li class="belt-brown-white"></li>
+          <li class="belt-brown-double-white"></li><li class="belt-black"></li>
         </ol>
       `);
     }

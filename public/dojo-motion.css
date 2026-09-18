@@ -85,11 +85,13 @@
 }
 
 .screen-shell:not(.usb-recording-mode) .photo-carousel-item {
-  transition: opacity 680ms ease, transform 1100ms ease;
+  transition: opacity 420ms ease-in-out;
+  transform: none;
 }
 
 .screen-shell:not(.usb-recording-mode) .photo-carousel-item.is-active {
-  animation: dojoCarouselIn 700ms cubic-bezier(.2,.8,.2,1) both;
+  animation: none;
+  transform: none;
 }
 
 /* USB exports keep short one-off transitions, but avoid continuous motion. */
@@ -162,11 +164,13 @@
 }
 
 .screen-shell.usb-recording-mode .photo-carousel-item {
-  transition: opacity 420ms ease, transform 640ms ease !important;
+  transition: opacity 420ms ease-in-out !important;
+  transform: none !important;
 }
 
 .screen-shell.usb-recording-mode .photo-carousel-item.is-active {
-  animation: dojoCarouselIn 460ms cubic-bezier(.2,.8,.2,1) both !important;
+  animation: none !important;
+  transform: none !important;
 }
 
 @keyframes dojoBeltSweep {

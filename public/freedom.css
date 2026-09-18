@@ -416,20 +416,21 @@
   margin: auto 0 auto auto;
   overflow: hidden;
   border-radius: 12px;
-  background: #eee8e5;
+  background: #171717;
 }
 
 .photo-carousel-item {
   position: absolute;
   inset: 0;
   opacity: 0;
-  transform: scale(1.025);
-  transition: opacity 700ms ease, transform 1200ms ease;
+  transform: none;
+  transition: opacity 420ms ease-in-out;
+  will-change: opacity;
 }
 
 .photo-carousel-item.is-active {
   opacity: 1;
-  transform: scale(1);
+  transform: none;
   z-index: 1;
 }
 
