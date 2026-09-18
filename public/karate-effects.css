@@ -55,40 +55,67 @@
 
 .karate-belt-progress {
   display: flex;
-  gap: 3px;
+  gap: clamp(5px, .5vw, 11px);
   right: 0;
-  bottom: 10px;
+  bottom: clamp(18px, 2.3vw, 42px);
   left: 0;
   width: 100%;
-  height: clamp(20px, 2.2vw, 38px);
+  height: clamp(34px, 4vw, 68px);
   margin: 0;
-  padding: 0;
+  padding: 0 clamp(20px, 2.4vw, 48px);
   list-style: none;
-  background: rgba(23, 23, 23, .1);
 }
 
 .karate-belt-progress li {
   flex: 1 1 0;
   min-width: 0;
-  height: 100%;
-  border: 0;
-  border-radius: 0;
-  box-shadow: inset 0 1px rgba(255, 255, 255, .35), 0 2px 8px rgba(23, 23, 23, .16);
+  position: relative;
+  align-self: center;
+  height: 82%;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .32), transparent 20%, transparent 75%, rgba(0, 0, 0, .22)),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, .08) 0 1px, transparent 1px 8px),
+    var(--belt-colour);
+  clip-path: polygon(0 12%, 80% 12%, 88% 0, 100% 0, 96% 50%, 100% 100%, 88% 100%, 80% 88%, 0 88%, 5% 50%);
+  filter: drop-shadow(0 4px 5px rgba(23, 23, 23, .25));
+  box-shadow: inset 0 1px rgba(255, 255, 255, .35), inset 0 -2px rgba(0, 0, 0, .24);
   opacity: 0;
   transform: scaleX(.2);
   transform-origin: left center;
 }
 
-.belt-red { background: #d8101c; }
-.belt-orange { background: #ef8f25; }
-.belt-yellow { background: #f5d938; }
-.belt-green { background: #278545; }
-.belt-purple { background: #7047a1; }
-.belt-purple-white { background: linear-gradient(90deg, #7047a1 0 36%, #fff 36% 64%, #7047a1 64%); }
-.belt-brown { background: #73472c; }
-.belt-brown-white { background: linear-gradient(90deg, #73472c 0 36%, #fff 36% 64%, #73472c 64%); }
-.belt-brown-double-white { background: linear-gradient(90deg, #73472c 0 22%, #fff 22% 33%, #73472c 33% 67%, #fff 67% 78%, #73472c 78%); }
-.belt-black { background: #1b1b1b; }
+.karate-belt-progress li::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 20%;
+  left: 7%;
+  height: 1px;
+  background: rgba(255, 255, 255, .32);
+  box-shadow: 0 1px rgba(0, 0, 0, .18);
+}
+
+.karate-belt-progress li::after {
+  content: "";
+  position: absolute;
+  top: 16%;
+  right: 12%;
+  bottom: 16%;
+  width: 1px;
+  background: rgba(0, 0, 0, .18);
+}
+
+.belt-red { --belt-colour: #d8101c; }
+.belt-orange { --belt-colour: #ef8f25; }
+.belt-yellow { --belt-colour: #f5d938; }
+.belt-green { --belt-colour: #278545; }
+.belt-purple { --belt-colour: #7047a1; }
+.belt-purple-white { --belt-colour: linear-gradient(90deg, #7047a1 0 36%, #fff 36% 64%, #7047a1 64%); }
+.belt-brown { --belt-colour: #73472c; }
+.belt-brown-white { --belt-colour: linear-gradient(90deg, #73472c 0 36%, #fff 36% 64%, #73472c 64%); }
+.belt-brown-double-white { --belt-colour: linear-gradient(90deg, #73472c 0 22%, #fff 22% 33%, #73472c 33% 67%, #fff 67% 78%, #73472c 78%); }
+.belt-black { --belt-colour: #1b1b1b; }
 
 .karate-photo-shutter {
   inset: 0;
