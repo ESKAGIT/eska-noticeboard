@@ -610,13 +610,20 @@
         [field(slide, "image6", ""), "image6"]
       ].filter(([src]) => src);
       const isCarousel = slide.template === "carousel";
+      const carouselMediaTag = (src, alt) => {
+        if (/\.(mp4|mov)$/i.test(src)) {
+          return `<video class="carousel-video" src="${escapeHtml(src)}" muted playsinline webkit-playsinline preload="metadata"></video>`;
+        }
+        return mediaTag(src, alt);
+      };
+      const carouselHasVideo = galleryImages.some(([src]) => /\.(mp4|mov)$/i.test(src));
       const galleryItems = galleryImages.map(([src, key], index) => `
         <figure class="${isCarousel ? "photo-carousel-item" : "photo-collage-item"}${isCarousel && index === 0 ? " is-active" : ""}" data-image-key="${key}">
-          ${mediaTag(src, field(slide, "heading"))}
+          ${isCarousel ? carouselMediaTag(src, field(slide, "heading")) : mediaTag(src, field(slide, "heading"))}
         </figure>
       `).join("");
       content = `
-        <div class="${isCarousel ? "photo-carousel" : "photo-collage"}"${isCarousel ? ` data-gallery-carousel data-gallery-count="${galleryImages.length}" data-gallery-interval="${Number(field(slide, "galleryInterval", 4000)) || 4000}"` : ""}>
+        <div class="${isCarousel ? "photo-carousel" : "photo-collage"}"${isCarousel ? ` data-gallery-carousel data-gallery-count="${galleryImages.length}" data-gallery-interval="${Number(field(slide, "galleryInterval", 4000)) || 4000}" data-gallery-has-video="${carouselHasVideo}"` : ""}>
           ${galleryItems || `<div class="gallery-empty">Add photos 1-6 in the editor</div>`}
         </div>
         ${copyBlock(slide)}
@@ -674,13 +681,13 @@
         </div>
         ${splitUploadControls}
         <div class="upload-row">
-          <label>Upload image/video<input id="mediaUpload" type="file" accept="image/*,video/mp4,video/quicktime" ${slide.template === "collage" || slide.template === "carousel" ? "multiple" : ""}><small>${slide.template === "collage" || slide.template === "carousel" ? "Select several photos together. They fill picture 1-6 in order." : "For Apple TV, use MP4 video where possible."}</small></label>
-          <button class="secondary" id="applyToImage" data-upload-target="image" type="button">Use as picture 1</button>
-          <button class="secondary" id="applyToLeftImage" data-upload-target="imageLeft" type="button">Use as picture 2</button>
-          <button class="secondary" id="applyToRightImage" data-upload-target="imageRight" type="button">Use as picture 3</button>
-          <button class="secondary" id="applyToImage4" data-upload-target="image4" type="button">Use as picture 4</button>
-          <button class="secondary" id="applyToImage5" data-upload-target="image5" type="button">Use as picture 5</button>
-          <button class="secondary" id="applyToImage6" data-upload-target="image6" type="button">Use as picture 6</button>
+          <label>Upload image/video<input id="mediaUpload" type="file" accept="image/*,video/mp4,video/quicktime" ${slide.template === "collage" || slide.template === "carousel" ? "multiple" : ""}><small>${slide.template === "carousel" ? "Select photos and MP4/MOV videos together. They fill media 1-6 in order. Photos use the carousel time; each video plays once, then the next item appears." : slide.template === "collage" ? "Select several photos together. They fill picture 1-6 in order." : "For Apple TV, use MP4 video where possible."}</small></label>
+          <button class="secondary" id="applyToImage" data-upload-target="image" type="button">Use as ${slide.template === "carousel" ? "media 1" : "picture 1"}</button>
+          <button class="secondary" id="applyToLeftImage" data-upload-target="imageLeft" type="button">Use as ${slide.template === "carousel" ? "media 2" : "picture 2"}</button>
+          <button class="secondary" id="applyToRightImage" data-upload-target="imageRight" type="button">Use as ${slide.template === "carousel" ? "media 3" : "picture 3"}</button>
+          <button class="secondary" id="applyToImage4" data-upload-target="image4" type="button">Use as ${slide.template === "carousel" ? "media 4" : "picture 4"}</button>
+          <button class="secondary" id="applyToImage5" data-upload-target="image5" type="button">Use as ${slide.template === "carousel" ? "media 5" : "picture 5"}</button>
+          <button class="secondary" id="applyToImage6" data-upload-target="image6" type="button">Use as ${slide.template === "carousel" ? "media 6" : "picture 6"}</button>
           <button class="secondary" id="applyToLogo" data-upload-target="logo" type="button">Use as slide logo</button>
           <button class="secondary" id="applyToBackground" data-upload-target="background" type="button">Use as background</button>
           <button class="secondary" id="applyToVideo" data-upload-target="video" type="button">Use upload as video</button>
@@ -834,7 +841,7 @@
     const targets = startIndex >= 0 && files.length > 1 && (slide.template === "collage" || slide.template === "carousel")
       ? files.slice(0, imageTargets.length - startIndex).map((_, index) => imageTargets[startIndex + index])
       : [target];
-    setAutosaveStatus(`Uploading ${files.length} photo${files.length === 1 ? "" : "s"}...`);
+    setAutosaveStatus(`Uploading ${files.length} media item${files.length === 1 ? "" : "s"}...`);
     try {
       if (target === "library") {
         for (const file of files) await uploadFileDirect(file);
@@ -848,7 +855,7 @@
         slide.fields[targets[index]] = saved.url;
         applyTargetDefaults(slide, targets[index]);
       }
-      const label = targets.length > 1 ? `${targets.length} carousel/collage photos` : target === "imageLeft" ? "split left photo" : target === "imageRight" ? "split right photo" : target;
+      const label = targets.length > 1 ? `${targets.length} carousel/collage media items` : target === "imageLeft" ? "split left photo" : target === "imageRight" ? "split right photo" : target;
       renderAdmin();
       await flushAutosave();
       showStatus(`Uploaded and saved ${label}.`);

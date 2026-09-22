@@ -42,6 +42,7 @@
 
     function startSlideMedia() {
       document.querySelectorAll("video").forEach((video) => {
+        if (video.closest("[data-gallery-carousel]") && !video.closest(".photo-carousel-item")?.classList.contains("is-active")) return;
         video.muted = true;
         video.playsInline = true;
         video.setAttribute("playsinline", "");
@@ -74,10 +75,20 @@
       const carousel = stage.querySelector("[data-gallery-carousel]");
       const carouselCount = carousel ? Number(carousel.dataset.galleryCount || 0) : 0;
       const carouselInterval = carousel ? Number(carousel.dataset.galleryInterval || 4000) : 0;
+      const carouselHasVideo = carousel && carousel.dataset.galleryHasVideo === "true";
       const slideDuration = Math.max(
         Number(slide.duration || board.settings.defaultDuration || 10000),
-        carouselCount > 1 ? carouselCount * carouselInterval + 600 : 0
+        carouselHasVideo ? 10 * 60 * 1000 : (carouselCount > 1 ? carouselCount * carouselInterval + 600 : 0)
       );
+      if (carousel) {
+        addListener(carousel, "eska:carousel-complete", () => {
+          if (!isCurrentRun(token)) return;
+          clearTimeout(screenTimer);
+          const latestSlides = visibleSlides();
+          activeSlide = latestSlides.length ? (activeSlide + 1) % latestSlides.length : 0;
+          draw();
+        });
+      }
       screenTimer = addTimer(() => {
         if (!isCurrentRun(token)) return;
         const latestSlides = visibleSlides();

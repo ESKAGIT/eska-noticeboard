@@ -15,7 +15,29 @@
       let index = items.findIndex((item) => item.classList.contains("is-active"));
       if (index < 0) index = 0;
       const interval = Math.max(2000, Number(gallery.dataset.galleryInterval || 4000));
-      const show = (next) => items.forEach((item, itemIndex) => item.classList.toggle("is-active", itemIndex === next));
+      let advanceTimer = null;
+      const activeMedia = () => items[index] && items[index].querySelector("img, video");
+      const stopInactiveVideo = (activeIndex) => {
+        items.forEach((item, itemIndex) => {
+          const video = item.querySelector("video");
+          if (video && itemIndex !== activeIndex) video.pause();
+        });
+      };
+      const show = (next, restartVideo = false) => {
+        items.forEach((item, itemIndex) => item.classList.toggle("is-active", itemIndex === next));
+        stopInactiveVideo(next);
+        const video = items[next] && items[next].querySelector("video");
+        if (!video) return;
+        video.muted = true;
+        video.playsInline = true;
+        video.setAttribute("playsinline", "");
+        video.setAttribute("webkit-playsinline", "");
+        if (restartVideo) {
+          try { video.currentTime = 0; } catch (_) {}
+        }
+        const play = video.play && video.play();
+        if (play && play.catch) play.catch(() => video.setAttribute("data-playback", "blocked"));
+      };
       const waitForMedia = (item) => new Promise((resolve) => {
         const media = item.querySelector("img, video");
         if (!media) return resolve();
@@ -37,20 +59,43 @@
         media.addEventListener("error", finish, { once: true });
         fallback = window.setTimeout(finish, 5000);
       });
-      show(index);
-      liveGalleries.add(gallery);
-      if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-      if (gallery.dataset.galleryEditing === "true") return;
+      const complete = () => {
+        gallery.dispatchEvent(new CustomEvent("eska:carousel-complete", { bubbles: true }));
+      };
+      const scheduleAdvance = () => {
+        if (!document.contains(gallery)) return;
+        if (advanceTimer) window.clearTimeout(advanceTimer);
+        const media = activeMedia();
+        if (media && media.tagName === "VIDEO") return;
+        advanceTimer = window.setTimeout(advance, interval);
+        gallery._galleryTimer = advanceTimer;
+      };
       const advance = async () => {
-        if (index >= items.length - 1) return;
+        if (!document.contains(gallery)) return;
+        if (index >= items.length - 1) return complete();
         const next = index + 1;
         await waitForMedia(items[next]);
         if (!document.contains(gallery)) return;
         index = next;
-        show(index);
-        if (index < items.length - 1) gallery._galleryTimer = window.setTimeout(advance, interval);
+        show(index, true);
+        scheduleAdvance();
       };
-      gallery._galleryTimer = window.setTimeout(advance, interval);
+      items.forEach((item, itemIndex) => {
+        const video = item.querySelector("video");
+        if (!video) return;
+        video.loop = false;
+        video.addEventListener("ended", () => {
+          if (itemIndex === index) advance();
+        });
+        video.addEventListener("error", () => {
+          if (itemIndex === index) advance();
+        });
+      });
+      show(index, true);
+      liveGalleries.add(gallery);
+      if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      if (gallery.dataset.galleryEditing === "true") return;
+      scheduleAdvance();
     });
   }
   const observer = new MutationObserver(() => init(document));
