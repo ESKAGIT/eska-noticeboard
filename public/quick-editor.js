@@ -42,6 +42,15 @@
     qrText: "qrTextSize"
   };
 
+  // Keep this list in one place so adding another approved display font is straightforward.
+  const AVAILABLE_FONTS = [
+    { value: "", label: "Slide Default", stack: "", weights: [] },
+    { value: "eska-default", label: "Existing/default ESKA font", stack: "", weights: [] },
+    { value: "bebas-neue", label: "Bebas Neue", stack: "'Bebas Neue', Impact, sans-serif", weights: [["400", "Regular"]] },
+    { value: "montserrat", label: "Montserrat", stack: "'Montserrat', Arial, sans-serif", weights: [["400", "Regular"], ["500", "Medium"], ["600", "Semi Bold"], ["700", "Bold"]] },
+    { value: "oswald", label: "Oswald", stack: "'Oswald', Arial, sans-serif", weights: [["400", "Regular"], ["500", "Medium"], ["600", "Semi Bold"], ["700", "Bold"]] }
+  ];
+
   const imageFields = [
     ["image", "Picture 1", "--image"],
     ["imageLeft", "Picture 2", "--image-left"],
@@ -211,6 +220,22 @@
           <small>Large</small>
         </label>
       </div>
+      <div class="quick-font-tools" aria-label="Text font tools">
+        <div class="quick-size-head">
+          <strong>Font</strong>
+          <span data-selected-font-label>Selected text</span>
+        </div>
+        <div class="quick-font-grid">
+          <label>Font
+            <select data-font-family>
+              ${AVAILABLE_FONTS.map((font) => `<option value="${font.value}" style="font-family: ${font.stack || "inherit"}">${font.label}</option>`).join("")}
+            </select>
+          </label>
+          <label>Weight
+            <select data-font-weight></select>
+          </label>
+        </div>
+      </div>
       <div class="quick-text-position-tools" aria-label="Text position tools">
         <div class="quick-size-head">
           <strong>Text Position Tools</strong>
@@ -329,6 +354,8 @@
       const metaBoxControl = event.target.closest("[data-meta-box-control]");
       const textControl = event.target.closest("[data-text-control]");
       const galleryControl = event.target.closest("[data-gallery-control]");
+      const fontFamily = event.target.closest("[data-font-family]");
+      const fontWeight = event.target.closest("[data-font-weight]");
       if (control) {
         selectedField = control.dataset.quickField;
         markSelectedField();
@@ -340,6 +367,8 @@
       if (metaBoxControl) updateMetaBoxValue(metaBoxControl.dataset.metaBoxControl, metaBoxControl.value);
       if (textControl) updateTextPositionValue(textControl.dataset.textControl, textControl.value);
       if (galleryControl) updateGalleryValue(galleryControl.dataset.galleryControl, galleryControl.value);
+      if (fontFamily) updateSelectedFont(fontFamily.value);
+      if (fontWeight) updateSelectedFontWeight(fontWeight.value);
     });
 
     panel.addEventListener("click", (event) => {
@@ -660,6 +689,89 @@
     return /^(cover|contain|scale-down|none)$/i.test(clean) ? clean : "";
   }
 
+  function fontInfo(value) {
+    return AVAILABLE_FONTS.find((font) => font.value === value) || AVAILABLE_FONTS[0];
+  }
+
+  function fontFieldKey(name = selectedField) {
+    return `${name}FontFamily`;
+  }
+
+  function fontWeightFieldKey(name = selectedField) {
+    return `${name}FontWeight`;
+  }
+
+  function fontVars(slide) {
+    return Object.keys(fieldSizes).flatMap((name) => {
+      const font = fontInfo(fieldValue(slide, fontFieldKey(name)));
+      const weight = String(fieldValue(slide, fontWeightFieldKey(name)) || "");
+      const supportedWeight = font.weights.some(([value]) => value === weight);
+      const values = [];
+      if (font.stack) values.push(`--${name}-font-family: ${font.stack}`);
+      if (supportedWeight) values.push(`--${name}-font-weight: ${weight}`);
+      return values;
+    });
+  }
+
+  function applyFontToPreview() {
+    const slide = currentSlide();
+    const slideEl = document.querySelector(".preview-wrap .preview-slide");
+    if (!slide || !slideEl) return;
+    Object.keys(fieldSizes).forEach((name) => {
+      slideEl.style.removeProperty(`--${name}-font-family`);
+      slideEl.style.removeProperty(`--${name}-font-weight`);
+    });
+    fontVars(slide).forEach((variable) => {
+      const separator = variable.indexOf(":");
+      slideEl.style.setProperty(variable.slice(0, separator), variable.slice(separator + 1).trim());
+    });
+  }
+
+  function refreshFontControls() {
+    if (!panel) return;
+    const slide = currentSlide();
+    if (!slide) return;
+    const familyControl = panel.querySelector("[data-font-family]");
+    const weightControl = panel.querySelector("[data-font-weight]");
+    const label = panel.querySelector("[data-selected-font-label]");
+    const currentFamily = fieldValue(slide, fontFieldKey());
+    const font = fontInfo(currentFamily);
+    if (label) label.textContent = `Selected: ${selectedField}`;
+    if (familyControl && document.activeElement !== familyControl) familyControl.value = font.value;
+    if (!weightControl) return;
+    const currentWeight = fieldValue(slide, fontWeightFieldKey());
+    const weights = font.weights.length ? font.weights : [["", "Default"]];
+    weightControl.innerHTML = weights.map(([value, text]) => `<option value="${value}">${text}</option>`).join("");
+    weightControl.disabled = !font.weights.length;
+    if (document.activeElement !== weightControl) weightControl.value = font.weights.some(([value]) => value === currentWeight) ? currentWeight : weights[0][0];
+  }
+
+  function updateSelectedFont(value) {
+    const slide = currentSlide();
+    if (!slide) return;
+    slide.fields = slide.fields || {};
+    if (value) slide.fields[fontFieldKey()] = value;
+    else delete slide.fields[fontFieldKey()];
+    const font = fontInfo(value);
+    const weightKey = fontWeightFieldKey();
+    if (!font.weights.length) delete slide.fields[weightKey];
+    else if (!font.weights.some(([weight]) => weight === slide.fields[weightKey])) slide.fields[weightKey] = font.weights[0][0];
+    applyFontToPreview();
+    refreshFontControls();
+    saveSoon();
+  }
+
+  function updateSelectedFontWeight(value) {
+    const slide = currentSlide();
+    if (!slide) return;
+    const font = fontInfo(fieldValue(slide, fontFieldKey()));
+    if (!font.weights.some(([weight]) => weight === value)) return;
+    slide.fields = slide.fields || {};
+    slide.fields[fontWeightFieldKey()] = value;
+    applyFontToPreview();
+    saveSoon();
+  }
+
   function sizeVars(slide) {
     return sizeFields
       .map(([name, , , , , variable]) => {
@@ -753,7 +865,7 @@
   const baseSlideStyle = window.slideStyle || slideStyle;
   window.slideStyle = function slideStyleWithQuickEditorSizes(slide) {
     const original = baseSlideStyle(slide);
-    const extra = [...sizeVars(slide), ...imageVars(slide), ...boxVars(slide), ...metaBoxVars(slide), ...textPositionVars(slide), ...galleryVars(slide)];
+    const extra = [...sizeVars(slide), ...fontVars(slide), ...imageVars(slide), ...boxVars(slide), ...metaBoxVars(slide), ...textPositionVars(slide), ...galleryVars(slide)];
     if (!extra.length) return original;
     const extraText = extra.join("; ");
     if (!original) return ` style="${escapeHtml(extraText)}"`;
@@ -1226,6 +1338,7 @@
     markSelectedField();
 
     refreshSizeControls();
+    refreshFontControls();
     refreshTextPositionControls();
     refreshImageControls();
     refreshBoxControls();
@@ -1240,6 +1353,30 @@
 
     lastSlideId = slide.id;
   }
+
+  const baseCreateSlideFromTemplate = window.createSlideFromTemplate || createSlideFromTemplate;
+  window.createSlideFromTemplate = function createSlideWithFontDefaults(templateId) {
+    const slide = baseCreateSlideFromTemplate(templateId);
+    slide.fields = slide.fields || {};
+    Object.assign(slide.fields, {
+      headingFontFamily: "bebas-neue",
+      headingFontWeight: "400",
+      subheadingFontFamily: "montserrat",
+      subheadingFontWeight: "700",
+      bodyFontFamily: "montserrat",
+      bodyFontWeight: "400",
+      dateFontFamily: "montserrat",
+      dateFontWeight: "600",
+      timeFontFamily: "montserrat",
+      timeFontWeight: "600",
+      locationFontFamily: "montserrat",
+      locationFontWeight: "600",
+      dateListFontFamily: "montserrat",
+      dateListFontWeight: "600"
+    });
+    return slide;
+  };
+  createSlideFromTemplate = window.createSlideFromTemplate;
 
   function watchAdmin() {
     if (installed) return;
@@ -1304,3 +1441,4 @@
   window.addEventListener("popstate", boot);
   window.setTimeout(boot, 0);
 })();
+

@@ -116,8 +116,10 @@ function slideStyle(slide) {
 }
 
 function meta(slide) {
-  const bits = ["date", "time", "location"].map((key) => field(slide, key)).filter(Boolean);
-  return bits.length ? `<div class="meta-row">${bits.map((bit) => `<span>${escapeHtml(bit)}</span>`).join("")}</div>` : "";
+  const bits = ["date", "time", "location"]
+    .map((key) => [key, field(slide, key)])
+    .filter(([, value]) => Boolean(value));
+  return bits.length ? `<div class="meta-row">${bits.map(([key, value]) => `<span class="meta-${key}">${escapeHtml(value)}</span>`).join("")}</div>` : "";
 }
 
 function copyBlock(slide) {
@@ -615,3 +617,4 @@ if (route() === "/screen" || route() === "/") {
 } else {
   boot();
 }
+
