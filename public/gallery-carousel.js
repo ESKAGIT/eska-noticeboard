@@ -10,33 +10,59 @@
     (root || document).querySelectorAll("[data-gallery-carousel]").forEach((gallery) => {
       if (gallery.dataset.galleryReady === "true") return;
       const items = Array.from(gallery.querySelectorAll(".photo-carousel-item"));
-      if (items.length < 2) return;
+      if (!items.length) return;
       gallery.dataset.galleryReady = "true";
       let index = items.findIndex((item) => item.classList.contains("is-active"));
       if (index < 0) index = 0;
       const interval = Math.max(2000, Number(gallery.dataset.galleryInterval || 4000));
       let advanceTimer = null;
+      let advancing = false;
       const activeMedia = () => items[index] && items[index].querySelector("img, video");
+      const number = (value, fallback = 0) => {
+        const parsed = Number(value);
+        return Number.isFinite(parsed) ? parsed : fallback;
+      };
+      const trimFor = (item, video) => {
+        const duration = Math.max(0, number(video.duration));
+        const start = Math.min(duration || Infinity, Math.max(0, number(item.dataset.videoStart)));
+        const requestedEnd = number(item.dataset.videoEnd);
+        const end = requestedEnd > start ? Math.min(duration || requestedEnd, requestedEnd) : duration;
+        const rate = [0.75, 1, 1.25, 1.5].includes(number(item.dataset.videoRate, 1)) ? number(item.dataset.videoRate, 1) : 1;
+        return { start, end, rate };
+      };
       const stopInactiveVideo = (activeIndex) => {
         items.forEach((item, itemIndex) => {
           const video = item.querySelector("video");
           if (video && itemIndex !== activeIndex) video.pause();
         });
       };
+      const startVideo = (video, item, restartVideo) => {
+        const play = () => {
+          const trim = trimFor(item, video);
+          video.playbackRate = trim.rate;
+          if (restartVideo) {
+            try { video.currentTime = trim.start; } catch (_) {}
+          }
+          const playback = video.play && video.play();
+          if (playback && playback.catch) playback.catch(() => {
+            video.setAttribute("data-playback", "blocked");
+            advance();
+          });
+        };
+        if (video.readyState >= 1) play();
+        else video.addEventListener("loadedmetadata", play, { once: true });
+      };
       const show = (next, restartVideo = false) => {
         items.forEach((item, itemIndex) => item.classList.toggle("is-active", itemIndex === next));
         stopInactiveVideo(next);
-        const video = items[next] && items[next].querySelector("video");
+        const item = items[next];
+        const video = item && item.querySelector("video");
         if (!video) return;
         video.muted = true;
         video.playsInline = true;
         video.setAttribute("playsinline", "");
         video.setAttribute("webkit-playsinline", "");
-        if (restartVideo) {
-          try { video.currentTime = 0; } catch (_) {}
-        }
-        const play = video.play && video.play();
-        if (play && play.catch) play.catch(() => video.setAttribute("data-playback", "blocked"));
+        startVideo(video, item, restartVideo);
       };
       const waitForMedia = (item) => new Promise((resolve) => {
         const media = item.querySelector("img, video");
@@ -67,18 +93,25 @@
         if (advanceTimer) window.clearTimeout(advanceTimer);
         const media = activeMedia();
         if (media && media.tagName === "VIDEO") return;
-        advanceTimer = window.setTimeout(advance, interval);
+        const activeItem = items[index];
+        const itemDuration = Math.max(2000, number(activeItem && activeItem.dataset.mediaDuration, interval));
+        advanceTimer = window.setTimeout(advance, itemDuration);
         gallery._galleryTimer = advanceTimer;
       };
       const advance = async () => {
-        if (!document.contains(gallery)) return;
-        if (index >= items.length - 1) return complete();
+        if (!document.contains(gallery) || advancing) return;
+        advancing = true;
+        if (index >= items.length - 1) {
+          complete();
+          return;
+        }
         const next = index + 1;
         await waitForMedia(items[next]);
         if (!document.contains(gallery)) return;
         index = next;
         show(index, true);
         scheduleAdvance();
+        advancing = false;
       };
       items.forEach((item, itemIndex) => {
         const video = item.querySelector("video");
@@ -86,6 +119,11 @@
         video.loop = false;
         video.addEventListener("ended", () => {
           if (itemIndex === index) advance();
+        });
+        video.addEventListener("timeupdate", () => {
+          if (itemIndex !== index) return;
+          const trim = trimFor(item, video);
+          if (trim.end > trim.start && video.currentTime >= trim.end - 0.08) advance();
         });
         video.addEventListener("error", () => {
           if (itemIndex === index) advance();

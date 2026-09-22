@@ -434,6 +434,101 @@
   z-index: 1;
 }
 
+.carousel-media-editor {
+  margin: 18px 0;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.carousel-media-editor-head h3 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.carousel-media-editor-head p {
+  max-width: 760px;
+  margin: 7px 0 16px;
+  color: #5d5652;
+}
+
+.carousel-media-slot-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.carousel-media-slot {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+  min-height: 150px;
+  padding: 14px;
+  border: 1px solid #eadfda;
+  border-radius: 8px;
+  background: #fffaf8;
+}
+
+.carousel-media-slot-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+}
+
+.carousel-media-slot-head strong { font-size: 16px; }
+
+.carousel-media-slot-head span {
+  padding: 3px 7px;
+  border-radius: 5px;
+  color: var(--red);
+  background: #fff0ee;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.carousel-media-slot label {
+  display: grid;
+  gap: 5px;
+  color: #37312e;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.carousel-media-slot input,
+.carousel-media-slot select {
+  width: 100%;
+  min-width: 0;
+}
+
+.carousel-media-slot small { color: #716966; line-height: 1.35; }
+
+.carousel-trim-preview {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 6px;
+  background: #171717;
+  object-fit: contain;
+}
+
+.carousel-video-length { color: var(--red) !important; font-weight: 800; }
+
+.carousel-trim-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.carousel-trim-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.carousel-trim-actions button { padding: 7px 9px; font-size: 12px; }
+
 .gallery-empty {
   display: grid;
   place-items: center;
@@ -472,6 +567,8 @@
     margin: 0;
   }
   .photo-collage { gap: 8px; }
+  .carousel-media-slot-grid { grid-template-columns: 1fr; }
+  .carousel-trim-grid { grid-template-columns: 1fr; }
 }
 
 @media (prefers-reduced-motion: reduce) {

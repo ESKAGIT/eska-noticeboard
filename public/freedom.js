@@ -610,6 +610,10 @@
         [field(slide, "image6", ""), "image6"]
       ].filter(([src]) => src);
       const isCarousel = slide.template === "carousel";
+      const carouselSetting = (key, name, fallback = "") => {
+        const value = field(slide, `carousel${key.charAt(0).toUpperCase()}${key.slice(1)}${name}`, fallback);
+        return String(value).replace(/[^0-9.]/g, "");
+      };
       const carouselMediaTag = (src, alt) => {
         if (/\.(mp4|mov)$/i.test(src)) {
           return `<video class="carousel-video" src="${escapeHtml(src)}" muted playsinline webkit-playsinline preload="metadata"></video>`;
@@ -618,7 +622,7 @@
       };
       const carouselHasVideo = galleryImages.some(([src]) => /\.(mp4|mov)$/i.test(src));
       const galleryItems = galleryImages.map(([src, key], index) => `
-        <figure class="${isCarousel ? "photo-carousel-item" : "photo-collage-item"}${isCarousel && index === 0 ? " is-active" : ""}" data-image-key="${key}">
+        <figure class="${isCarousel ? "photo-carousel-item" : "photo-collage-item"}${isCarousel && index === 0 ? " is-active" : ""}" data-image-key="${key}"${isCarousel ? ` data-media-duration="${carouselSetting(key, "Duration", field(slide, "galleryInterval", "4000"))}" data-video-start="${carouselSetting(key, "Start")}" data-video-end="${carouselSetting(key, "End")}" data-video-rate="${carouselSetting(key, "Rate", "1")}"` : ""}>
           ${isCarousel ? carouselMediaTag(src, field(slide, "heading")) : mediaTag(src, field(slide, "heading"))}
         </figure>
       `).join("");
@@ -647,7 +651,51 @@
             <button class="secondary" data-upload-target="imageLeft" type="button">Use as split left photo</button>
             <button class="secondary" data-upload-target="imageRight" type="button">Use as split right photo</button>
           </div>
-        </section>
+      </section>
+    ` : "";
+    const carouselFields = [
+      ["image", "Media 1"],
+      ["imageLeft", "Media 2"],
+      ["imageRight", "Media 3"],
+      ["image4", "Media 4"],
+      ["image5", "Media 5"],
+      ["image6", "Media 6"]
+    ];
+    const carouselFieldName = (key, name) => `carousel${key.charAt(0).toUpperCase()}${key.slice(1)}${name}`;
+    const carouselMediaControls = slide.template === "carousel" ? `
+      <section class="carousel-media-editor" aria-label="Carousel media timing and video trim">
+        <div class="carousel-media-editor-head">
+          <div><h3>Carousel Media Timing</h3><p>Photos use their own display time. Videos play once from the trim start to the trim end, then the carousel moves on.</p></div>
+        </div>
+        <div class="carousel-media-slot-grid">
+          ${carouselFields.map(([key, label]) => {
+            const source = field(slide, key, "");
+            const isVideo = /\.(mp4|mov)(?:[?#]|$)/i.test(source);
+            const photoDuration = Math.max(2, Number(field(slide, carouselFieldName(key, "Duration"), field(slide, "galleryInterval", "4000"))) / 1000 || 4);
+            const start = field(slide, carouselFieldName(key, "Start"), "");
+            const end = field(slide, carouselFieldName(key, "End"), "");
+            const rate = Number(field(slide, carouselFieldName(key, "Rate"), "1")) || 1;
+            return `
+              <article class="carousel-media-slot" data-carousel-slot="${key}">
+                <div class="carousel-media-slot-head"><strong>${label}</strong><span>${isVideo ? "Video" : source ? "Photo" : "Empty"}</span></div>
+                ${isVideo ? `
+                  <video class="carousel-trim-preview" src="${escapeHtml(source)}" controls muted playsinline preload="metadata"></video>
+                  <small class="carousel-video-length" data-carousel-video-length="${key}">Loading video length...</small>
+                  <div class="carousel-trim-grid">
+                    <label>Start (seconds)<input data-carousel-control="${key}:Start" type="number" min="0" step="0.1" value="${escapeHtml(start)}"></label>
+                    <label>End (seconds)<input data-carousel-control="${key}:End" type="number" min="0" step="0.1" placeholder="Video end" value="${escapeHtml(end)}"></label>
+                    <label>Speed<select data-carousel-control="${key}:Rate"><option value="0.75" ${rate === 0.75 ? "selected" : ""}>0.75x</option><option value="1" ${rate === 1 ? "selected" : ""}>Normal</option><option value="1.25" ${rate === 1.25 ? "selected" : ""}>1.25x</option><option value="1.5" ${rate === 1.5 ? "selected" : ""}>1.5x</option></select></label>
+                  </div>
+                  <div class="carousel-trim-actions"><button class="secondary" data-carousel-mark="${key}:Start" type="button">Set start to preview frame</button><button class="secondary" data-carousel-mark="${key}:End" type="button">Set end to preview frame</button><button class="secondary" data-carousel-clear-trim="${key}" type="button">Use full video</button></div>
+                ` : `
+                  <label>Photo screen time (seconds)<input data-carousel-control="${key}:Duration" type="number" min="2" max="120" step="0.5" value="${photoDuration}"></label>
+                  <small>${source ? "This photo can have a different display time from the other photos." : "Upload a photo or video into this slot."}</small>
+                `}
+              </article>
+            `;
+          }).join("")}
+        </div>
+      </section>
     ` : "";
     return `
       <form class="edit-form">
@@ -680,6 +728,7 @@
           `).join("")}
         </div>
         ${splitUploadControls}
+        ${carouselMediaControls}
         <div class="upload-row">
           <label>Upload image/video<input id="mediaUpload" type="file" accept="image/*,video/mp4,video/quicktime" ${slide.template === "collage" || slide.template === "carousel" ? "multiple" : ""}><small>${slide.template === "carousel" ? "Select photos and MP4/MOV videos together. They fill media 1-6 in order. Photos use the carousel time; each video plays once, then the next item appears." : slide.template === "collage" ? "Select several photos together. They fill picture 1-6 in order." : "For Apple TV, use MP4 video where possible."}</small></label>
           <button class="secondary" id="applyToImage" data-upload-target="image" type="button">Use as ${slide.template === "carousel" ? "media 1" : "picture 1"}</button>
@@ -778,6 +827,70 @@
         else slide[input.dataset.key] = input.value;
         scheduleAutosave(250);
         renderAdmin();
+      });
+    });
+    const carouselFieldName = (key, name) => `carousel${key.charAt(0).toUpperCase()}${key.slice(1)}${name}`;
+    const refreshCarouselPreview = () => {
+      const preview = document.querySelector(".preview-wrap");
+      if (preview) preview.innerHTML = renderSlide(slide, true);
+      scheduleAutosave(250);
+    };
+    document.querySelectorAll("[data-carousel-control]").forEach((input) => {
+      const saveCarouselControl = () => {
+        const [key, name] = input.dataset.carouselControl.split(":");
+        const raw = String(input.value || "").trim();
+        if (name === "Duration") {
+          const seconds = Math.max(2, Math.min(120, Number(raw) || 4));
+          slide.fields[carouselFieldName(key, name)] = String(Math.round(seconds * 1000));
+        } else if (name === "Rate") {
+          slide.fields[carouselFieldName(key, name)] = ["0.75", "1", "1.25", "1.5"].includes(raw) ? raw : "1";
+        } else {
+          slide.fields[carouselFieldName(key, name)] = raw && Number(raw) >= 0 ? raw : "";
+        }
+        refreshCarouselPreview();
+      };
+      input.addEventListener("input", saveCarouselControl);
+      input.addEventListener("change", saveCarouselControl);
+    });
+    document.querySelectorAll("[data-carousel-slot]").forEach((slot) => {
+      const key = slot.dataset.carouselSlot;
+      const video = slot.querySelector(".carousel-trim-preview");
+      const length = slot.querySelector("[data-carousel-video-length]");
+      if (!video || !length) return;
+      const showLength = () => {
+        const seconds = Number(video.duration || 0);
+        if (!Number.isFinite(seconds) || seconds <= 0) return;
+        length.textContent = `Video length: ${seconds.toFixed(1)} seconds`;
+        slot.querySelectorAll(`[data-carousel-control="${key}:Start"], [data-carousel-control="${key}:End"]`).forEach((input) => {
+          input.max = seconds.toFixed(1);
+        });
+      };
+      video.addEventListener("loadedmetadata", showLength, { once: true });
+      if (video.readyState >= 1) showLength();
+    });
+    document.querySelectorAll("[data-carousel-mark]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const [key, name] = button.dataset.carouselMark.split(":");
+        const slot = button.closest("[data-carousel-slot]");
+        const video = slot && slot.querySelector(".carousel-trim-preview");
+        if (!video || !Number.isFinite(video.currentTime)) return;
+        const value = video.currentTime.toFixed(1);
+        slide.fields[carouselFieldName(key, name)] = value;
+        const input = slot.querySelector(`[data-carousel-control="${key}:${name}"]`);
+        if (input) input.value = value;
+        refreshCarouselPreview();
+      });
+    });
+    document.querySelectorAll("[data-carousel-clear-trim]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const key = button.dataset.carouselClearTrim;
+        slide.fields[carouselFieldName(key, "Start")] = "";
+        slide.fields[carouselFieldName(key, "End")] = "";
+        const slot = button.closest("[data-carousel-slot]");
+        if (slot) slot.querySelectorAll("[data-carousel-control]").forEach((input) => {
+          if (input.dataset.carouselControl.endsWith(":Start") || input.dataset.carouselControl.endsWith(":End")) input.value = "";
+        });
+        refreshCarouselPreview();
       });
     });
     document.querySelector("#deleteSlide").addEventListener("click", () => {
