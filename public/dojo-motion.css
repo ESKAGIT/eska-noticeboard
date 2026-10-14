@@ -245,3 +245,16 @@
     transition: none !important;
   }
 }
+
+
+/* Keep live photos still; slide and carousel transitions remain active. */
+.screen-shell .photo-panel img,
+.screen-shell .gallery-photo img,
+.screen-shell .pt-photo img,
+.screen-shell .menu-photo-card img {
+  animation: none !important;
+}
+
+.screen-shell .photo-carousel-item.is-active {
+  animation: none !important;
+}
