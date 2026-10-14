@@ -25,7 +25,7 @@ const animations = [
   ["zoom-in", "Zoom in"],
   ["stagger", "Staggered text"],
   ["split-reveal", "Split reveal"],
-  ["pan-zoom", "Slow photo zoom"],
+  
   ["ticker", "Ticker bar"]
 ];
 
