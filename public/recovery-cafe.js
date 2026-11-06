@@ -220,6 +220,7 @@
       </section>
     `;
   }
+  window.renderSharedEditorPanels = renderSharedEditorPanels;
 
   const baseRenderSlide = renderSlide;
   window.renderSlide = function renderSlideWithCafe(slide, preview = false) {

@@ -130,6 +130,12 @@
     [".menu-photo-card:nth-child(4) .menu-photo", "image4"],
     [".menu-photo-card:nth-child(5) .menu-photo", "image5"],
     [".menu-photo-card:nth-child(6) .menu-photo", "image6"],
+    [".shop-product-image[data-image-key=\"image\"]", "image"],
+    [".shop-product-image[data-image-key=\"imageLeft\"]", "imageLeft"],
+    [".shop-product-image[data-image-key=\"imageRight\"]", "imageRight"],
+    [".shop-product-image[data-image-key=\"image4\"]", "image4"],
+    [".shop-product-image[data-image-key=\"image5\"]", "image5"],
+    [".shop-product-image[data-image-key=\"image6\"]", "image6"],
     [".qr-layer", "qr"],
     [".split-left", "imageLeft"],
     [".split-right", "imageRight"]
@@ -149,6 +155,10 @@
     [".cafe-intro h2", "subheading"],
     [".cafe-intro .body-copy", "body"],
     [".cafe-intro .cta", "cta"],
+    [".shop-heading .eyebrow", "eyebrow"],
+    [".shop-heading h1", "heading"],
+    [".shop-heading h2", "subheading"],
+    [".shop-heading .body-copy", "body"],
     [".split-copy h1", "heading"],
     [".split-copy h2", "subheading"],
     [".split-copy .body-copy", "body"],
@@ -898,6 +908,11 @@
   }
 
   function imageFallback(control) {
+    const slide = currentSlide();
+    if (slide && slide.template === "shop") {
+      const shopDefaults = { Width: 320, Height: 220, X: 0, Y: 0, PosX: 50, PosY: 50 };
+      if (Object.prototype.hasOwnProperty.call(shopDefaults, control)) return shopDefaults[control];
+    }
     const defaults = imageFallbacks[selectedImage] || imageFallbacks.image;
     return defaults[control] || (control === "PosX" || control === "PosY" ? 50 : 0);
   }
