@@ -48,7 +48,7 @@
       `--shop-name-size:${numeric(fields, "shopNameSize", 22, 12, 48)}px`,
       `--shop-price-size:${numeric(fields, "shopPriceSize", 18, 10, 38)}px`,
       `--shop-description-size:${numeric(fields, "shopDescriptionSize", 16, 10, 32)}px`,
-      `--shop-image-fit:${fields.shopImageFit === "contain" ? "contain" : "cover"}`,
+      `--shop-image-fit:${slide.template === "stock-carousel" ? (fields.stockPhotoFit === "cover" ? "cover" : "contain") : (fields.shopImageFit === "contain" ? "contain" : "cover")}`,
       `--stock-image-width:${numeric(fields, "stockImageWidth", 56, 30, 75)}%`,
       `--stock-heading-size:${numeric(fields, "stockHeadingSize", 68, 28, 120)}px`,
       `--stock-detail-size:${numeric(fields, "stockDetailSize", 26, 14, 52)}px`
@@ -137,6 +137,7 @@
         shopPriceSize: 18,
         shopDescriptionSize: 16,
         shopImageFit: "cover",
+        stockPhotoFit: "contain",
         stockInterval: 6000,
         stockTransition: "fade",
         stockImageWidth: 56,
@@ -199,7 +200,7 @@
             <label>Product name size <output>${numeric(fields, "shopNameSize", 22, 12, 48)}px</output><input type="range" min="12" max="48" step="1" data-field="shopNameSize" value="${numeric(fields, "shopNameSize", 22, 12, 48)}"></label>
             <label>Price size <output>${numeric(fields, "shopPriceSize", 18, 10, 38)}px</output><input type="range" min="10" max="38" step="1" data-field="shopPriceSize" value="${numeric(fields, "shopPriceSize", 18, 10, 38)}"></label>
             <label>Description size <output>${numeric(fields, "shopDescriptionSize", 16, 10, 32)}px</output><input type="range" min="10" max="32" step="1" data-field="shopDescriptionSize" value="${numeric(fields, "shopDescriptionSize", 16, 10, 32)}"></label>
-            <label>Photo crop<select data-field="shopImageFit"><option value="cover" ${fields.shopImageFit !== "contain" ? "selected" : ""}>Fill frame</option><option value="contain" ${fields.shopImageFit === "contain" ? "selected" : ""}>Show whole image</option></select></label>
+            <label>Photo fit<select data-field="stockPhotoFit"><option value="contain" ${fields.stockPhotoFit !== "cover" ? "selected" : ""}>Show whole portrait photo</option><option value="cover" ${fields.stockPhotoFit === "cover" ? "selected" : ""}>Crop to fill frame</option></select></label>
             <label>Transition<select data-field="stockTransition">${carouselTransitions.map(([key, label]) => `<option value="${key}" ${fields.stockTransition === key ? "selected" : ""}>${label}</option>`).join("")}</label>
           ` : `
             <label>Grid columns <output>${numeric(fields, "shopColumns", 3, 1, 3)}</output><input type="range" min="1" max="3" step="1" data-field="shopColumns" value="${numeric(fields, "shopColumns", 3, 1, 3)}"></label>
