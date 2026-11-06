@@ -56,18 +56,29 @@
     return ` style="${escapeHtml(vars.join(";"))}"`;
   }
 
+  function productPhotos(fields, imageKey, number) {
+    const saved = fields[`product${number}Images`];
+    const photos = Array.isArray(saved) ? [...saved] : [];
+    const legacyPhoto = fields[imageKey];
+    if (legacyPhoto && !photos.includes(legacyPhoto)) photos.push(legacyPhoto);
+    return photos.filter((source) => typeof source === "string" && source.trim());
+  }
+
   function productCards(slide, carousel) {
     const fields = slide.fields || {};
-    const count = Math.round(numeric(fields, "productCount", 6, 1, 6));
+    const count = carousel ? 6 : Math.round(numeric(fields, "productCount", 6, 1, 6));
     return imageKeys.slice(0, count).map((imageKey, index) => {
       const number = index + 1;
-      const source = fields[imageKey] || "";
+      const photos = carousel ? productPhotos(fields, imageKey, number) : [fields[imageKey] || ""].filter(Boolean);
       const name = fields[`product${number}Name`] || `Product ${number}`;
       const price = fields[`product${number}Price`] || "Ask at reception";
       const description = fields[`product${number}Description`] || "";
-      const image = source
-        ? `<div class="shop-product-image" data-image-key="${imageKey}">${mediaTag(source, name)}</div>`
-        : `<div class="shop-product-image shop-image-empty" data-image-key="${imageKey}"><span>Add product photo</span></div>`;
+      const source = photos[0] || "";
+      const image = carousel
+        ? `<div class="shop-product-image${source ? "" : " shop-image-empty"}" data-image-key="${imageKey}" data-shop-photo-carousel data-photo-sources="${escapeHtml(JSON.stringify(photos))}" data-photo-interval="${numeric(fields, "stockInterval", 6000, 2000, 30000)}" data-photo-transition="${carouselTransitions.some(([key]) => key === fields.stockTransition) ? fields.stockTransition : "fade"}">${source ? `${mediaTag(source, name)}<span class="shop-photo-count">1 / ${photos.length}</span>` : "<span>Add product photos</span>"}</div>`
+        : source
+          ? `<div class="shop-product-image" data-image-key="${imageKey}">${mediaTag(source, name)}</div>`
+          : `<div class="shop-product-image shop-image-empty" data-image-key="${imageKey}"><span>Add product photo</span></div>`;
       return `<article class="shop-product-card${carousel && index === 0 ? " is-active" : ""}" data-stock-item="${index}">
         ${image}<div class="shop-product-copy"><strong>${escapeHtml(name)}</strong>
         ${description ? `<span class="shop-product-description">${escapeHtml(description)}</span>` : ""}
@@ -87,14 +98,12 @@
     const fields = slide.fields || {};
     const carousel = slide.template === "stock-carousel";
     const cards = productCards(slide, carousel);
-    const stage = carousel
-      ? `<div class="stock-carousel-stage" data-stock-interval="${numeric(fields, "stockInterval", 6000, 2000, 30000)}" data-stock-transition="${carouselTransitions.some(([key]) => key === fields.stockTransition) ? fields.stockTransition : "fade"}">${cards}<div class="stock-carousel-count" aria-live="polite"></div></div>`
-      : `<div class="shop-products">${cards}</div>`;
+    const stage = `<div class="shop-products">${cards}</div>`;
     return `
       <section class="slide slide-shop${carousel ? " slide-stock-carousel" : ""} anim-${animation}${preview ? " preview-slide" : ""}" data-slide-id="${escapeHtml(slide.id)}"${slideStyle(slide)}>
         ${brandHeader(slide)}
         <div class="shop-layout"${shopStyle(slide)}>
-          ${stage}${headingMarkup(fields)}
+          ${carousel ? `${headingMarkup(fields)}${stage}` : `${stage}${headingMarkup(fields)}`}
         </div>
       </section>
     `;
@@ -112,7 +121,7 @@
       id: uid(),
       template: templateId,
       animation: "anime-stagger",
-      duration: carousel ? 37000 : 16000,
+      duration: 16000,
       visible: false,
       fields: {
         eyebrow: "ESKA Club Shop",
@@ -163,12 +172,17 @@
     const imageKeys = ["image", "imageLeft", "imageRight", "image4", "image5", "image6"];
     const products = imageKeys.map((imageKey, index) => {
       const number = index + 1;
+      const photos = productPhotos(fields, imageKey, number);
+      const photoEditor = carousel
+        ? `<label class="shop-file-pick">Add photos (${photos.length})<input type="file" accept="image/*" multiple data-shop-image="${imageKey}"></label>
+          <div class="shop-carousel-photo-list">${photos.length ? photos.map((source, photoIndex) => `<button type="button" data-remove-shop-photo="${imageKey}" data-photo-index="${photoIndex}" aria-label="Remove photo ${photoIndex + 1} from product ${number}" title="Remove photo ${photoIndex + 1}"><img src="${escapeHtml(source)}" alt=""><span>x</span></button>`).join("") : "<span>No photos added yet</span>"}</div>`
+        : `<label class="shop-file-pick">Photo<input type="file" accept="image/*" data-shop-image="${imageKey}"></label>`;
       return `
         <div class="shop-edit-row">
           <span class="shop-edit-number">${number}</span>
           <label>Product name<input data-field="product${number}Name" value="${escapeHtml(fields[`product${number}Name`] || `Product ${number}`)}"></label>
           <label>Price<input data-field="product${number}Price" value="${escapeHtml(fields[`product${number}Price`] || "")}" placeholder="Add price"></label>
-          <label class="shop-file-pick">Photo<input type="file" accept="image/*" data-shop-image="${imageKey}"></label>
+          ${photoEditor}
           <label class="shop-product-desc">Description<input data-field="product${number}Description" value="${escapeHtml(fields[`product${number}Description`] || "")}" placeholder="Optional details"></label>
         </div>
       `;
@@ -177,12 +191,15 @@
       <details class="shop-edit-section">
         <summary>Layout and sizes</summary>
         <div class="shop-sizing-grid">
-          <label>Products shown <output>${numeric(fields, "productCount", 6, 1, 6)}</output><input type="range" min="1" max="6" step="1" data-field="productCount" value="${numeric(fields, "productCount", 6, 1, 6)}"></label>
+          ${carousel ? "" : `<label>Products shown <output>${numeric(fields, "productCount", 6, 1, 6)}</output><input type="range" min="1" max="6" step="1" data-field="productCount" value="${numeric(fields, "productCount", 6, 1, 6)}"></label>`}
           ${carousel ? `
             <label>Carousel interval <output>${numeric(fields, "stockInterval", 6000, 2000, 30000) / 1000}s</output><input type="range" min="2000" max="30000" step="1000" data-field="stockInterval" value="${numeric(fields, "stockInterval", 6000, 2000, 30000)}"></label>
-            <label>Product image width <output>${numeric(fields, "stockImageWidth", 56, 30, 75)}%</output><input type="range" min="30" max="75" step="1" data-field="stockImageWidth" value="${numeric(fields, "stockImageWidth", 56, 30, 75)}"></label>
-            <label>Product name size <output>${numeric(fields, "stockHeadingSize", 68, 28, 120)}px</output><input type="range" min="28" max="120" step="1" data-field="stockHeadingSize" value="${numeric(fields, "stockHeadingSize", 68, 28, 120)}"></label>
-            <label>Details size <output>${numeric(fields, "stockDetailSize", 26, 14, 52)}px</output><input type="range" min="14" max="52" step="1" data-field="stockDetailSize" value="${numeric(fields, "stockDetailSize", 26, 14, 52)}"></label>
+            <label>Photo area height <output>${numeric(fields, "shopImageShare", 68, 35, 80)}%</output><input type="range" min="35" max="80" step="1" data-field="shopImageShare" value="${numeric(fields, "shopImageShare", 68, 35, 80)}"></label>
+            <label>Card spacing <output>${numeric(fields, "shopCardGap", 16, 4, 40)}px</output><input type="range" min="4" max="40" step="1" data-field="shopCardGap" value="${numeric(fields, "shopCardGap", 16, 4, 40)}"></label>
+            <label>Product name size <output>${numeric(fields, "shopNameSize", 22, 12, 48)}px</output><input type="range" min="12" max="48" step="1" data-field="shopNameSize" value="${numeric(fields, "shopNameSize", 22, 12, 48)}"></label>
+            <label>Price size <output>${numeric(fields, "shopPriceSize", 18, 10, 38)}px</output><input type="range" min="10" max="38" step="1" data-field="shopPriceSize" value="${numeric(fields, "shopPriceSize", 18, 10, 38)}"></label>
+            <label>Description size <output>${numeric(fields, "shopDescriptionSize", 16, 10, 32)}px</output><input type="range" min="10" max="32" step="1" data-field="shopDescriptionSize" value="${numeric(fields, "shopDescriptionSize", 16, 10, 32)}"></label>
+            <label>Photo crop<select data-field="shopImageFit"><option value="cover" ${fields.shopImageFit !== "contain" ? "selected" : ""}>Fill frame</option><option value="contain" ${fields.shopImageFit === "contain" ? "selected" : ""}>Show whole image</option></select></label>
             <label>Transition<select data-field="stockTransition">${carouselTransitions.map(([key, label]) => `<option value="${key}" ${fields.stockTransition === key ? "selected" : ""}>${label}</option>`).join("")}</label>
           ` : `
             <label>Grid columns <output>${numeric(fields, "shopColumns", 3, 1, 3)}</output><input type="range" min="1" max="3" step="1" data-field="shopColumns" value="${numeric(fields, "shopColumns", 3, 1, 3)}"></label>
@@ -195,7 +212,7 @@
             <label>Photo crop<select data-field="shopImageFit"><option value="cover" ${fields.shopImageFit !== "contain" ? "selected" : ""}>Fill frame</option><option value="contain" ${fields.shopImageFit === "contain" ? "selected" : ""}>Show whole image</option></select></label>
           `}
         </div>
-        ${carousel ? '<p class="shop-editor-note">For every item to appear, set Slide time above to at least the number of products shown multiplied by the carousel interval.</p>' : ""}
+        ${carousel ? '<p class="shop-editor-note">Each picture window cycles independently. Slide time adjusts so every photo in the fullest window can appear at least once.</p>' : ""}
       </details>
     `;
     return `
@@ -218,7 +235,7 @@
         <details class="shop-edit-section" open>
           <summary>${carousel ? "Stock items" : "Products"} <span>6 slots</span></summary>
           <div class="shop-edit-products">${products}</div>
-          <p class="shop-editor-note">Choose a photo in its row. It uploads to the shared library and is saved on this slide.</p>
+          <p class="shop-editor-note">${carousel ? "Add several photos to any slot; each slot cycles through its own pictures." : "Choose a photo in its row."} Uploads are saved to the shared library and this slide.</p>
         </details>
         ${sizingControls}
         <details class="shop-edit-section">
@@ -241,7 +258,7 @@
   editorForm = window.editorForm;
 
   const baseBindEditor = window.bindEditor || bindEditor;
-  async function uploadProductPhoto(file, target, slide) {
+  async function uploadOneProductPhoto(file) {
     const headers = {
       "content-type": file.type || "application/octet-stream",
       "x-file-name": file.name || "product-photo"
@@ -259,8 +276,42 @@
       const detail = await response.json().catch(() => ({}));
       throw new Error(detail.error || `Upload failed: ${response.status}`);
     }
-    const uploaded = await response.json();
-    slide.fields[target] = uploaded.url;
+    return (await response.json()).url;
+  }
+
+  function updateCarouselDuration(slide) {
+    if (!slide || slide.template !== "stock-carousel") return;
+    const fields = slide.fields || {};
+    const maxPhotos = Math.max(1, ...imageKeys.map((key, index) => productPhotos(fields, key, index + 1).length));
+    const interval = numeric(fields, "stockInterval", 6000, 2000, 30000);
+    slide.duration = Math.max(16000, maxPhotos * interval + 1000);
+  }
+
+  async function uploadProductPhotos(files, target, slide) {
+    const uploads = [];
+    try {
+      for (const file of files) uploads.push(await uploadOneProductPhoto(file));
+    } catch (error) {
+      if (uploads.length && slide.template === "stock-carousel") {
+        const number = imageKeys.indexOf(target) + 1;
+        const key = `product${number}Images`;
+        slide.fields[key] = [...productPhotos(slide.fields, target, number), ...uploads];
+        slide.fields[target] = "";
+        updateCarouselDuration(slide);
+        await saveBoard();
+        renderAdmin();
+      }
+      throw error;
+    }
+    if (slide.template === "stock-carousel") {
+      const number = imageKeys.indexOf(target) + 1;
+      const key = `product${number}Images`;
+      slide.fields[key] = [...productPhotos(slide.fields, target, number), ...uploads];
+      slide.fields[target] = "";
+      updateCarouselDuration(slide);
+    } else if (uploads[0]) {
+      slide.fields[target] = uploads[0];
+    }
     await saveBoard();
     renderAdmin();
   }
@@ -268,16 +319,14 @@
   window.bindEditor = function (slide) {
     baseBindEditor(slide);
     if (!slide || !["shop", "stock-carousel"].includes(slide.template)) return;
+    const isCarousel = slide.template === "stock-carousel";
     document.querySelectorAll('.shop-edit-form [data-field][type="range"]').forEach((input) => {
       const output = input.parentElement.querySelector("output");
       const updateCarouselDuration = () => {
-        if (!carousel || !["stockInterval", "productCount"].includes(input.dataset.field)) return;
-        const count = numeric(slide.fields, "productCount", 6, 1, 6);
-        const interval = numeric(slide.fields, "stockInterval", 6000, 2000, 30000);
-        const duration = Math.round(count * interval + 1000);
-        slide.duration = duration;
+        if (!isCarousel || !["stockInterval", "productCount"].includes(input.dataset.field)) return;
+        updateCarouselDuration(slide);
         const durationInput = document.querySelector('.shop-edit-form [data-key="duration"]');
-        if (durationInput) durationInput.value = String(duration);
+        if (durationInput) durationInput.value = String(slide.duration);
       };
       const updateOutput = () => {
         if (!output) return;
@@ -295,12 +344,30 @@
     });
     document.querySelectorAll("[data-shop-image]").forEach((input) => {
       input.addEventListener("change", async () => {
-        const file = input.files && input.files[0];
-        if (!file) return;
+        const files = Array.from(input.files || []);
+        if (!files.length) return;
         try {
-          await uploadProductPhoto(file, input.dataset.shopImage, slide);
+          await uploadProductPhotos(files, input.dataset.shopImage, slide);
         } catch (error) {
-          showStatus(error.message || "Could not upload this product photo.", true);
+          showStatus(error.message || "Could not upload these product photos.", true);
+        }
+      });
+    });
+    document.querySelectorAll("[data-remove-shop-photo]").forEach((button) => {
+      button.addEventListener("click", async () => {
+        const imageKey = button.dataset.removeShopPhoto;
+        const number = imageKeys.indexOf(imageKey) + 1;
+        const key = `product${number}Images`;
+        const photos = productPhotos(slide.fields, imageKey, number);
+        photos.splice(Number(button.dataset.photoIndex), 1);
+        slide.fields[key] = photos;
+        slide.fields[imageKey] = "";
+        updateCarouselDuration(slide);
+        try {
+          await saveBoard();
+          renderAdmin();
+        } catch (error) {
+          showStatus(error.message || "Could not save the photo change.", true);
         }
       });
     });
@@ -405,43 +472,45 @@
     });
   }
 
-  function startStockCarousel(slideElement) {
-    if (!slideElement.classList.contains("slide-stock-carousel") || slideElement.dataset.stockTimer) return;
-    const stage = slideElement.querySelector(".stock-carousel-stage");
-    const cards = Array.from(stage?.querySelectorAll("[data-stock-item]") || []);
-    if (cards.length < 2) return;
-    let current = 0;
-    const interval = numeric({ interval: stage.dataset.stockInterval }, "interval", 6000, 2000, 30000);
-    const counter = stage.querySelector(".stock-carousel-count");
-    if (counter) counter.textContent = `1 / ${cards.length}`;
-    const timer = window.setInterval(() => {
-      if (!slideElement.isConnected) {
-        window.clearInterval(timer);
-        delete slideElement.dataset.stockTimer;
-        return;
-      }
-      cards[current].classList.remove("is-active", "is-entering");
-      current = (current + 1) % cards.length;
-      const next = cards[current];
-      next.classList.add("is-active", "is-entering");
-      window.setTimeout(() => next.classList.remove("is-entering"), 900);
-      if (counter) counter.textContent = `${current + 1} / ${cards.length}`;
-    }, interval);
-    slideElement.dataset.stockTimer = String(timer);
+  function startShopPhotoCarousels(slideElement) {
+    if (!slideElement.classList.contains("slide-stock-carousel")) return;
+    slideElement.querySelectorAll("[data-shop-photo-carousel]").forEach((carousel) => {
+      if (carousel.dataset.photoTimer) return;
+      let photos = [];
+      try { photos = JSON.parse(carousel.dataset.photoSources || "[]"); } catch { return; }
+      if (photos.length < 2) return;
+      let index = 0;
+      const image = carousel.querySelector("img");
+      const count = carousel.querySelector(".shop-photo-count");
+      const interval = numeric({ interval: carousel.dataset.photoInterval }, "interval", 6000, 2000, 30000);
+      const timer = window.setInterval(() => {
+        if (!carousel.isConnected) {
+          window.clearInterval(timer);
+          delete carousel.dataset.photoTimer;
+          return;
+        }
+        index = (index + 1) % photos.length;
+        if (image) image.src = photos[index];
+        if (count) count.textContent = `${index + 1} / ${photos.length}`;
+        carousel.classList.add("is-photo-changing");
+        window.setTimeout(() => carousel.classList.remove("is-photo-changing"), 700);
+      }, interval);
+      carousel.dataset.photoTimer = String(timer);
+    });
   }
 
   const observer = new MutationObserver((records) => {
     records.forEach((record) => {
       record.addedNodes.forEach((node) => {
         if (!(node instanceof HTMLElement)) return;
-        if (node.matches(".slide")) { animateNewSlide(node); startStockCarousel(node); }
-        node.querySelectorAll?.(".slide").forEach((slide) => { animateNewSlide(slide); startStockCarousel(slide); });
+        if (node.matches(".slide")) { animateNewSlide(node); startShopPhotoCarousels(node); }
+        node.querySelectorAll?.(".slide").forEach((slide) => { animateNewSlide(slide); startShopPhotoCarousels(slide); });
       });
       record.removedNodes.forEach((node) => {
         if (!(node instanceof HTMLElement)) return;
-        const slides = [node, ...Array.from(node.querySelectorAll?.(".slide-stock-carousel") || [])];
-        slides.forEach((slide) => {
-          if (slide.dataset?.stockTimer) window.clearInterval(Number(slide.dataset.stockTimer));
+        const carousels = [...(node.matches?.("[data-shop-photo-carousel]") ? [node] : []), ...Array.from(node.querySelectorAll?.("[data-shop-photo-carousel]") || [])];
+        carousels.forEach((carousel) => {
+          if (carousel.dataset?.photoTimer) window.clearInterval(Number(carousel.dataset.photoTimer));
         });
       });
     });
