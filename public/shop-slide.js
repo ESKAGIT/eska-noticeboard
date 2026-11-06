@@ -195,7 +195,6 @@
           ${carousel ? "" : `<label>Products shown <output>${numeric(fields, "productCount", 6, 1, 6)}</output><input type="range" min="1" max="6" step="1" data-field="productCount" value="${numeric(fields, "productCount", 6, 1, 6)}"></label>`}
           ${carousel ? `
             <label>Carousel interval <output>${numeric(fields, "stockInterval", 6000, 2000, 30000) / 1000}s</output><input type="range" min="2000" max="30000" step="1000" data-field="stockInterval" value="${numeric(fields, "stockInterval", 6000, 2000, 30000)}"></label>
-            <label>Photo area height <output>${numeric(fields, "shopImageShare", 68, 35, 80)}%</output><input type="range" min="35" max="80" step="1" data-field="shopImageShare" value="${numeric(fields, "shopImageShare", 68, 35, 80)}"></label>
             <label>Card spacing <output>${numeric(fields, "shopCardGap", 16, 4, 40)}px</output><input type="range" min="4" max="40" step="1" data-field="shopCardGap" value="${numeric(fields, "shopCardGap", 16, 4, 40)}"></label>
             <label>Product name size <output>${numeric(fields, "shopNameSize", 22, 12, 48)}px</output><input type="range" min="12" max="48" step="1" data-field="shopNameSize" value="${numeric(fields, "shopNameSize", 22, 12, 48)}"></label>
             <label>Price size <output>${numeric(fields, "shopPriceSize", 18, 10, 38)}px</output><input type="range" min="10" max="38" step="1" data-field="shopPriceSize" value="${numeric(fields, "shopPriceSize", 18, 10, 38)}"></label>
@@ -213,7 +212,7 @@
             <label>Photo crop<select data-field="shopImageFit"><option value="cover" ${fields.shopImageFit !== "contain" ? "selected" : ""}>Fill frame</option><option value="contain" ${fields.shopImageFit === "contain" ? "selected" : ""}>Show whole image</option></select></label>
           `}
         </div>
-        ${carousel ? '<p class="shop-editor-note">Each picture window cycles independently. Slide time adjusts so every photo in the fullest window can appear at least once.</p>' : ""}
+        ${carousel ? '<p class="shop-editor-note">Each picture window cycles independently. Portrait photos use a 450 x 600 frame ratio and scale to fit. Slide time adjusts so every photo in the fullest window can appear at least once.</p>' : ""}
       </details>
     `;
     return `
