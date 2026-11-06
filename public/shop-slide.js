@@ -6,6 +6,13 @@
     description: "Six editable product photos, names and prices in the familiar ESKA slide layout."
   };
   if (!templates.some((item) => item.id === template.id)) templates.push(template);
+  const stockCarouselTemplate = {
+    id: "stock-carousel",
+    name: "Stock Carousel",
+    category: "Shop / promotions",
+    description: "A rotating product showcase with editable product photos, names, prices and details."
+  };
+  if (!templates.some((item) => item.id === stockCarouselTemplate.id)) templates.push(stockCarouselTemplate);
 
   const choices = [
     ["anime-fade", "Anime.js: Fade and rise"],
@@ -23,62 +30,109 @@
   });
 
   const baseRenderSlide = window.renderSlide || renderSlide;
-  function renderShopSlide(slide, preview = false) {
-    const animation = slide.animation || "anime-stagger";
+  const imageKeys = ["image", "imageLeft", "imageRight", "image4", "image5", "image6"];
+  const carouselTransitions = [["fade", "Soft fade"], ["slide", "Slide across"], ["zoom", "Gentle zoom"], ["none", "No transition"]];
+
+  function numeric(fields, key, fallback, min, max) {
+    const value = Number(fields[key]);
+    return Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : fallback;
+  }
+
+  function shopStyle(slide) {
     const fields = slide.fields || {};
-    const photos = ["image", "imageLeft", "imageRight", "image4", "image5", "image6"];
-    const productCards = photos.map((imageKey, index) => {
+    const vars = [
+      `--shop-columns:${numeric(fields, "shopColumns", 3, 1, 3)}`,
+      `--shop-photo-height:${numeric(fields, "shopImageShare", 68, 35, 80)}%`,
+      `--shop-card-gap:${numeric(fields, "shopCardGap", 16, 4, 40)}px`,
+      `--shop-grid-ratio:${numeric(fields, "shopGridRatio", 1.8, 1, 3)}fr`,
+      `--shop-name-size:${numeric(fields, "shopNameSize", 22, 12, 48)}px`,
+      `--shop-price-size:${numeric(fields, "shopPriceSize", 18, 10, 38)}px`,
+      `--shop-description-size:${numeric(fields, "shopDescriptionSize", 16, 10, 32)}px`,
+      `--shop-image-fit:${fields.shopImageFit === "contain" ? "contain" : "cover"}`,
+      `--stock-image-width:${numeric(fields, "stockImageWidth", 56, 30, 75)}%`,
+      `--stock-heading-size:${numeric(fields, "stockHeadingSize", 68, 28, 120)}px`,
+      `--stock-detail-size:${numeric(fields, "stockDetailSize", 26, 14, 52)}px`
+    ];
+    return ` style="${escapeHtml(vars.join(";"))}"`;
+  }
+
+  function productCards(slide, carousel) {
+    const fields = slide.fields || {};
+    const count = Math.round(numeric(fields, "productCount", 6, 1, 6));
+    return imageKeys.slice(0, count).map((imageKey, index) => {
       const number = index + 1;
       const source = fields[imageKey] || "";
       const name = fields[`product${number}Name`] || `Product ${number}`;
       const price = fields[`product${number}Price`] || "Ask at reception";
-      const photo = source
+      const description = fields[`product${number}Description`] || "";
+      const image = source
         ? `<div class="shop-product-image" data-image-key="${imageKey}">${mediaTag(source, name)}</div>`
         : `<div class="shop-product-image shop-image-empty" data-image-key="${imageKey}"><span>Add product photo</span></div>`;
-      return `
-        <article class="shop-product-card">
-          ${photo}
-          <div class="shop-product-copy">
-            <strong>${escapeHtml(name)}</strong>
-            <span>${escapeHtml(price)}</span>
-          </div>
-        </article>
-      `;
+      return `<article class="shop-product-card${carousel && index === 0 ? " is-active" : ""}" data-stock-item="${index}">
+        ${image}<div class="shop-product-copy"><strong>${escapeHtml(name)}</strong>
+        ${description ? `<span class="shop-product-description">${escapeHtml(description)}</span>` : ""}
+        <span class="shop-product-price">${escapeHtml(price)}</span></div></article>`;
     }).join("");
+  }
+
+  function headingMarkup(fields) {
+    return `<div class="shop-heading"><p class="eyebrow">${escapeHtml(fields.eyebrow || "ESKA Club Shop")}</p>
+      <h1>${escapeHtml(fields.heading || "Karate essentials")}</h1>
+      <h2>${escapeHtml(fields.subheading || "Gear for every stage of your journey")}</h2>
+      ${fields.body ? `<p class="body-copy">${escapeHtml(fields.body)}</p>` : ""}</div>`;
+  }
+
+  function renderShopSlide(slide, preview = false) {
+    const animation = slide.animation || "anime-stagger";
+    const fields = slide.fields || {};
+    const carousel = slide.template === "stock-carousel";
+    const cards = productCards(slide, carousel);
+    const stage = carousel
+      ? `<div class="stock-carousel-stage" data-stock-interval="${numeric(fields, "stockInterval", 6000, 2000, 30000)}" data-stock-transition="${carouselTransitions.some(([key]) => key === fields.stockTransition) ? fields.stockTransition : "fade"}">${cards}<div class="stock-carousel-count" aria-live="polite"></div></div>`
+      : `<div class="shop-products">${cards}</div>`;
     return `
-      <section class="slide slide-shop anim-${animation}${preview ? " preview-slide" : ""}" data-slide-id="${escapeHtml(slide.id)}"${slideStyle(slide)}>
+      <section class="slide slide-shop${carousel ? " slide-stock-carousel" : ""} anim-${animation}${preview ? " preview-slide" : ""}" data-slide-id="${escapeHtml(slide.id)}"${slideStyle(slide)}>
         ${brandHeader(slide)}
-        <div class="shop-layout">
-          <div class="shop-products">${productCards}</div>
-          <div class="shop-heading">
-            <p class="eyebrow">${escapeHtml(fields.eyebrow || "ESKA Club Shop")}</p>
-            <h1>${escapeHtml(fields.heading || "Karate essentials")}</h1>
-            <h2>${escapeHtml(fields.subheading || "Gear for every stage of your journey")}</h2>
-            ${fields.body ? `<p class="body-copy">${escapeHtml(fields.body)}</p>` : ""}
-          </div>
+        <div class="shop-layout"${shopStyle(slide)}>
+          ${stage}${headingMarkup(fields)}
         </div>
       </section>
     `;
   }
   window.renderSlide = function (slide, preview = false) {
-    return slide && slide.template === "shop" ? renderShopSlide(slide, preview) : baseRenderSlide(slide, preview);
+    return slide && ["shop", "stock-carousel"].includes(slide.template) ? renderShopSlide(slide, preview) : baseRenderSlide(slide, preview);
   };
   renderSlide = window.renderSlide;
 
   const baseCreate = window.createSlideFromTemplate || createSlideFromTemplate;
   window.createSlideFromTemplate = function (templateId) {
-    if (templateId !== "shop") return baseCreate(templateId);
+    if (templateId !== "shop" && templateId !== "stock-carousel") return baseCreate(templateId);
+    const carousel = templateId === "stock-carousel";
     return {
       id: uid(),
-      template: "shop",
+      template: templateId,
       animation: "anime-stagger",
-      duration: 16000,
+      duration: carousel ? 37000 : 16000,
       visible: false,
       fields: {
         eyebrow: "ESKA Club Shop",
         heading: "Karate essentials",
         subheading: "Gear for every stage of your journey",
         body: "",
+        productCount: 6,
+        shopColumns: 3,
+        shopImageShare: 68,
+        shopCardGap: 16,
+        shopGridRatio: 1.8,
+        shopNameSize: 22,
+        shopPriceSize: 18,
+        shopDescriptionSize: 16,
+        shopImageFit: "cover",
+        stockInterval: 6000,
+        stockTransition: "fade",
+        stockImageWidth: 56,
+        stockHeadingSize: 68,
+        stockDetailSize: 26,
         logo: board.brand.logo,
         image: "",
         imageLeft: "",
@@ -86,12 +140,14 @@
         image4: "",
         image5: "",
         image6: "",
-        product1Name: "KMA Master Gi", product1Price: "Add price",
-        product2Name: "Coloured Belts", product2Price: "Add price",
-        product3Name: "Tiny Tiger Trousers", product3Price: "Add price",
-        product4Name: "Gum Shield", product4Price: "Add price",
-        product5Name: "Blitz Mitts", product5Price: "Add price",
-        product6Name: "Hand Pads", product6Price: "Add price"
+        product1Name: "KMA Master Gi", product1Price: "Add price", product1Description: "",
+        product2Name: "Coloured Belts", product2Price: "Add price", product2Description: "",
+        product3Name: "Tiny Tiger Trousers", product3Price: "Add price", product3Description: "",
+        product4Name: "Gum Shield", product4Price: "Add price", product4Description: "",
+        product5Name: "Blitz Mitts", product5Price: "Add price", product5Description: "",
+        product6Name: "Hand Pads", product6Price: "Add price", product6Description: "",
+        heading: carousel ? "ESKA Club Shop" : "Karate essentials",
+        subheading: carousel ? "Featured stock" : "Gear for every stage of your journey"
       }
     };
   };
@@ -99,8 +155,9 @@
 
   const baseEditorForm = window.editorForm || editorForm;
   window.editorForm = function (slide) {
-    if (!slide || slide.template !== "shop") return baseEditorForm(slide);
+    if (!slide || !["shop", "stock-carousel"].includes(slide.template)) return baseEditorForm(slide);
     const fields = slide.fields || (slide.fields = {});
+    const carousel = slide.template === "stock-carousel";
     const templateOptions = templates.map((item) => `<option value="${item.id}" ${slide.template === item.id ? "selected" : ""}>${escapeHtml(item.name)}</option>`).join("");
     const animationOptions = animations.map(([id, label]) => `<option value="${id}" ${slide.animation === id ? "selected" : ""}>${escapeHtml(label)}</option>`).join("");
     const imageKeys = ["image", "imageLeft", "imageRight", "image4", "image5", "image6"];
@@ -112,9 +169,35 @@
           <label>Product name<input data-field="product${number}Name" value="${escapeHtml(fields[`product${number}Name`] || `Product ${number}`)}"></label>
           <label>Price<input data-field="product${number}Price" value="${escapeHtml(fields[`product${number}Price`] || "")}" placeholder="Add price"></label>
           <label class="shop-file-pick">Photo<input type="file" accept="image/*" data-shop-image="${imageKey}"></label>
+          <label class="shop-product-desc">Description<input data-field="product${number}Description" value="${escapeHtml(fields[`product${number}Description`] || "")}" placeholder="Optional details"></label>
         </div>
       `;
     }).join("");
+    const sizingControls = `
+      <details class="shop-edit-section">
+        <summary>Layout and sizes</summary>
+        <div class="shop-sizing-grid">
+          <label>Products shown <output>${numeric(fields, "productCount", 6, 1, 6)}</output><input type="range" min="1" max="6" step="1" data-field="productCount" value="${numeric(fields, "productCount", 6, 1, 6)}"></label>
+          ${carousel ? `
+            <label>Carousel interval <output>${numeric(fields, "stockInterval", 6000, 2000, 30000) / 1000}s</output><input type="range" min="2000" max="30000" step="1000" data-field="stockInterval" value="${numeric(fields, "stockInterval", 6000, 2000, 30000)}"></label>
+            <label>Product image width <output>${numeric(fields, "stockImageWidth", 56, 30, 75)}%</output><input type="range" min="30" max="75" step="1" data-field="stockImageWidth" value="${numeric(fields, "stockImageWidth", 56, 30, 75)}"></label>
+            <label>Product name size <output>${numeric(fields, "stockHeadingSize", 68, 28, 120)}px</output><input type="range" min="28" max="120" step="1" data-field="stockHeadingSize" value="${numeric(fields, "stockHeadingSize", 68, 28, 120)}"></label>
+            <label>Details size <output>${numeric(fields, "stockDetailSize", 26, 14, 52)}px</output><input type="range" min="14" max="52" step="1" data-field="stockDetailSize" value="${numeric(fields, "stockDetailSize", 26, 14, 52)}"></label>
+            <label>Transition<select data-field="stockTransition">${carouselTransitions.map(([key, label]) => `<option value="${key}" ${fields.stockTransition === key ? "selected" : ""}>${label}</option>`).join("")}</label>
+          ` : `
+            <label>Grid columns <output>${numeric(fields, "shopColumns", 3, 1, 3)}</output><input type="range" min="1" max="3" step="1" data-field="shopColumns" value="${numeric(fields, "shopColumns", 3, 1, 3)}"></label>
+            <label>Photo area height <output>${numeric(fields, "shopImageShare", 68, 35, 80)}%</output><input type="range" min="35" max="80" step="1" data-field="shopImageShare" value="${numeric(fields, "shopImageShare", 68, 35, 80)}"></label>
+            <label>Product area width <output>${numeric(fields, "shopGridRatio", 1.8, 1, 3).toFixed(1)}</output><input type="range" min="1" max="3" step="0.1" data-field="shopGridRatio" value="${numeric(fields, "shopGridRatio", 1.8, 1, 3)}"></label>
+            <label>Card spacing <output>${numeric(fields, "shopCardGap", 16, 4, 40)}px</output><input type="range" min="4" max="40" step="1" data-field="shopCardGap" value="${numeric(fields, "shopCardGap", 16, 4, 40)}"></label>
+            <label>Product name size <output>${numeric(fields, "shopNameSize", 22, 12, 48)}px</output><input type="range" min="12" max="48" step="1" data-field="shopNameSize" value="${numeric(fields, "shopNameSize", 22, 12, 48)}"></label>
+            <label>Price size <output>${numeric(fields, "shopPriceSize", 18, 10, 38)}px</output><input type="range" min="10" max="38" step="1" data-field="shopPriceSize" value="${numeric(fields, "shopPriceSize", 18, 10, 38)}"></label>
+            <label>Description size <output>${numeric(fields, "shopDescriptionSize", 16, 10, 32)}px</output><input type="range" min="10" max="32" step="1" data-field="shopDescriptionSize" value="${numeric(fields, "shopDescriptionSize", 16, 10, 32)}"></label>
+            <label>Photo crop<select data-field="shopImageFit"><option value="cover" ${fields.shopImageFit !== "contain" ? "selected" : ""}>Fill frame</option><option value="contain" ${fields.shopImageFit === "contain" ? "selected" : ""}>Show whole image</option></select></label>
+          `}
+        </div>
+        ${carousel ? '<p class="shop-editor-note">For every item to appear, set Slide time above to at least the number of products shown multiplied by the carousel interval.</p>' : ""}
+      </details>
+    `;
     return `
       <form class="edit-form shop-edit-form">
         <div class="form-grid">
@@ -133,10 +216,11 @@
           </div>
         </details>
         <details class="shop-edit-section" open>
-          <summary>Products <span>6 slots</span></summary>
+          <summary>${carousel ? "Stock items" : "Products"} <span>6 slots</span></summary>
           <div class="shop-edit-products">${products}</div>
           <p class="shop-editor-note">Choose a photo in its row. It uploads to the shared library and is saved on this slide.</p>
         </details>
+        ${sizingControls}
         <details class="shop-edit-section">
           <summary>Shared photo library</summary>
           ${typeof window.renderSharedEditorPanels === "function" ? window.renderSharedEditorPanels() : "<p>Upload product photos from each product row above.</p>"}
@@ -183,7 +267,32 @@
 
   window.bindEditor = function (slide) {
     baseBindEditor(slide);
-    if (!slide || slide.template !== "shop") return;
+    if (!slide || !["shop", "stock-carousel"].includes(slide.template)) return;
+    document.querySelectorAll('.shop-edit-form [data-field][type="range"]').forEach((input) => {
+      const output = input.parentElement.querySelector("output");
+      const updateCarouselDuration = () => {
+        if (!carousel || !["stockInterval", "productCount"].includes(input.dataset.field)) return;
+        const count = numeric(slide.fields, "productCount", 6, 1, 6);
+        const interval = numeric(slide.fields, "stockInterval", 6000, 2000, 30000);
+        const duration = Math.round(count * interval + 1000);
+        slide.duration = duration;
+        const durationInput = document.querySelector('.shop-edit-form [data-key="duration"]');
+        if (durationInput) durationInput.value = String(duration);
+      };
+      const updateOutput = () => {
+        if (!output) return;
+        const field = input.dataset.field;
+        output.textContent = field === "stockInterval" ? `${Number(input.value) / 1000}s`
+          : field === "shopImageShare" ? `${input.value}%`
+            : field === "stockImageWidth" ? `${input.value}%`
+              : field === "shopGridRatio" ? Number(input.value).toFixed(1)
+                : ["shopCardGap", "shopNameSize", "shopPriceSize", "shopDescriptionSize", "stockHeadingSize", "stockDetailSize"].includes(field) ? `${input.value}px` : input.value;
+      };
+      input.addEventListener("input", updateOutput);
+      input.addEventListener("input", updateCarouselDuration);
+      updateOutput();
+      updateCarouselDuration();
+    });
     document.querySelectorAll("[data-shop-image]").forEach((input) => {
       input.addEventListener("change", async () => {
         const file = input.files && input.files[0];
@@ -207,9 +316,11 @@
   window.templatesView = async function () {
     await baseSlideView();
     const button = document.querySelector('[data-template="shop"]');
-    if (!button) return;
-    const card = button.closest(".template-card");
+    const card = button && button.closest(".template-card");
     if (card) card.classList.add("shop-template-card");
+    const stockButton = document.querySelector('[data-template="stock-carousel"]');
+    const stockCard = stockButton && stockButton.closest(".template-card");
+    if (stockCard) stockCard.classList.add("shop-template-card");
   };
   templatesView = window.templatesView;
 
@@ -294,12 +405,46 @@
     });
   }
 
+  function startStockCarousel(slideElement) {
+    if (!slideElement.classList.contains("slide-stock-carousel") || slideElement.dataset.stockTimer) return;
+    const stage = slideElement.querySelector(".stock-carousel-stage");
+    const cards = Array.from(stage?.querySelectorAll("[data-stock-item]") || []);
+    if (cards.length < 2) return;
+    let current = 0;
+    const interval = numeric({ interval: stage.dataset.stockInterval }, "interval", 6000, 2000, 30000);
+    const counter = stage.querySelector(".stock-carousel-count");
+    if (counter) counter.textContent = `1 / ${cards.length}`;
+    const timer = window.setInterval(() => {
+      if (!slideElement.isConnected) {
+        window.clearInterval(timer);
+        delete slideElement.dataset.stockTimer;
+        return;
+      }
+      cards[current].classList.remove("is-active", "is-entering");
+      current = (current + 1) % cards.length;
+      const next = cards[current];
+      next.classList.add("is-active", "is-entering");
+      window.setTimeout(() => next.classList.remove("is-entering"), 900);
+      if (counter) counter.textContent = `${current + 1} / ${cards.length}`;
+    }, interval);
+    slideElement.dataset.stockTimer = String(timer);
+  }
+
   const observer = new MutationObserver((records) => {
-    records.forEach((record) => record.addedNodes.forEach((node) => {
-      if (!(node instanceof HTMLElement)) return;
-      if (node.matches(".slide")) animateNewSlide(node);
-      node.querySelectorAll?.(".slide").forEach(animateNewSlide);
-    }));
+    records.forEach((record) => {
+      record.addedNodes.forEach((node) => {
+        if (!(node instanceof HTMLElement)) return;
+        if (node.matches(".slide")) { animateNewSlide(node); startStockCarousel(node); }
+        node.querySelectorAll?.(".slide").forEach((slide) => { animateNewSlide(slide); startStockCarousel(slide); });
+      });
+      record.removedNodes.forEach((node) => {
+        if (!(node instanceof HTMLElement)) return;
+        const slides = [node, ...Array.from(node.querySelectorAll?.(".slide-stock-carousel") || [])];
+        slides.forEach((slide) => {
+          if (slide.dataset?.stockTimer) window.clearInterval(Number(slide.dataset.stockTimer));
+        });
+      });
+    });
   });
   observer.observe(document.body, { childList: true, subtree: true });
 
