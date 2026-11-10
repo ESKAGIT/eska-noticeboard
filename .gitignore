@@ -6,3 +6,5 @@ public/assets/*.jpeg
 public/assets/*.png
 public/assets/*.webp
 *.log
+.qa/
+!public/assets/eska-shop-qr.png

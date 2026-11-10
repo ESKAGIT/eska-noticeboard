@@ -52,3 +52,36 @@ Templates are defined at the top of `public/app.js` in the `templates` array. Ad
 - `description`
 
 Then add or reuse a matching layout in `renderSlide()`.
+
+## Stock Carousel
+
+Choose Stock Carousel from Templates. It starts hidden; enable Show on TV when ready.
+The six numbered products each accept multiple images, with independent playback.
+Use the arrow buttons under a thumbnail to reorder it, or the remove button to
+remove it from this slide without deleting the library file.
+
+Product photo frames preserve 450 x 600 portrait proportions and scale uniformly
+to fit the slide. Desktop uses three products across and two rows, with names,
+optional descriptions and prices beside the photos. Empty photo slots remain
+editable in admin but are not shown on the TV. Existing content is not migrated
+or replaced when this template code changes.
+
+One optional QR code is docked in a reserved footer area. Its bundled default
+links to https://members.eska.co.uk/shop/. The QR controls can hide it or replace
+the image and caption. The source PNG includes a four-module quiet border.
+
+Images are decoded before transitions; unreadable images do not blank the
+current product photo. The interval control adjusts the minimum slide duration
+without shortening an existing longer duration. Reduced motion removes photo
+transition effects while retaining the photo sequence.
+
+### Browser regression test
+
+`tests/stock-carousel.cjs` requires Playwright and an installed Chromium browser.
+Run `node tests/stock-carousel.cjs` with Playwright available through Node module
+resolution. It starts and closes its own loopback test server, uses in-memory
+test data, and writes screenshots under `.qa/`; it does not call production.
+Where the local working tree has unresolved legacy edits, the test deliberately
+uses committed versions of those base files plus the current stock/QR changes.
+It covers real editor uploads, reorder/removal, save/reload, QR visibility,
+desktop/mobile frame measurements and independent decoded photo playback.

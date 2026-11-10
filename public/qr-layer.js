@@ -17,10 +17,11 @@
   }
 
   function qrMarkup(slide) {
-    const visible = truthy(field(slide, "qrVisible"));
-    const src = field(slide, "qr", "");
+    const stock = slide.template === "stock-carousel";
+    const visible = truthy(slide.fields?.qrVisible ?? (stock ? "true" : "false"));
+    const src = field(slide, "qr", stock ? "/assets/eska-shop-qr.png" : "");
     if (!visible || !src) return "";
-    const text = field(slide, "qrText", "");
+    const text = field(slide, "qrText", slide.template === "stock-carousel" ? "Scan to shop" : "");
     return `
       <aside class="qr-layer${text ? "" : " no-text"}" aria-label="QR code">
         <div class="qr-code-frame"><img src="${escapeHtml(src)}" alt="QR code"></div>
@@ -42,9 +43,9 @@
       <section class="qr-admin-panel" aria-label="QR code controls">
         <h3>QR code</h3>
         <div class="form-grid two">
-          <label class="check-row"><input data-qr-visible type="checkbox" ${truthy(field(slide, "qrVisible")) ? "checked" : ""}> Show QR code</label>
-          <label>Text beside QR<input data-field="qrText" value="${escapeHtml(field(slide, "qrText"))}"></label>
-          <label class="span-two">QR image URL/path<input data-field="qr" value="${escapeHtml(field(slide, "qr"))}"></label>
+          <label class="check-row"><input data-qr-visible type="checkbox" ${truthy(slide.fields?.qrVisible ?? (slide.template === "stock-carousel" ? "true" : "false")) ? "checked" : ""}> Show QR code</label>
+          <label>Text beside QR<input data-field="qrText" value="${escapeHtml(field(slide, "qrText", slide.template === "stock-carousel" ? "Scan to shop" : ""))}"></label>
+          <label class="span-two">QR image URL/path<input data-field="qr" value="${escapeHtml(field(slide, "qr", slide.template === "stock-carousel" ? "/assets/eska-shop-qr.png" : ""))}"></label>
         </div>
         <div class="upload-row">
           <button class="secondary" id="applyToQr" data-upload-target="qr" type="button">Use upload as QR code</button>

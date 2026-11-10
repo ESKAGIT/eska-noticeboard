@@ -45,13 +45,10 @@
       `--shop-photo-height:${numeric(fields, "shopImageShare", 68, 35, 80)}%`,
       `--shop-card-gap:${numeric(fields, "shopCardGap", 16, 4, 40)}px`,
       `--shop-grid-ratio:${numeric(fields, "shopGridRatio", 1.8, 1, 3)}fr`,
-      `--shop-name-size:${numeric(fields, "shopNameSize", 22, 12, 48)}px`,
-      `--shop-price-size:${numeric(fields, "shopPriceSize", 18, 10, 38)}px`,
+      `--shop-name-size:${numeric(fields, "shopNameSize", slide.template === "stock-carousel" ? 30 : 22, 12, 48)}px`,
+      `--shop-price-size:${numeric(fields, "shopPriceSize", slide.template === "stock-carousel" ? 30 : 18, 10, 38)}px`,
       `--shop-description-size:${numeric(fields, "shopDescriptionSize", 16, 10, 32)}px`,
-      `--shop-image-fit:${slide.template === "stock-carousel" ? (fields.stockPhotoFit === "cover" ? "cover" : "contain") : (fields.shopImageFit === "contain" ? "contain" : "cover")}`,
-      `--stock-image-width:${numeric(fields, "stockImageWidth", 56, 30, 75)}%`,
-      `--stock-heading-size:${numeric(fields, "stockHeadingSize", 68, 28, 120)}px`,
-      `--stock-detail-size:${numeric(fields, "stockDetailSize", 26, 14, 52)}px`
+      `--shop-image-fit:${slide.template === "stock-carousel" ? (fields.stockPhotoFit === "cover" ? "cover" : "contain") : (fields.shopImageFit === "contain" ? "contain" : "cover")}`
     ];
     return ` style="${escapeHtml(vars.join(";"))}"`;
   }
@@ -64,7 +61,7 @@
     return photos.filter((source) => typeof source === "string" && source.trim());
   }
 
-  function productCards(slide, carousel) {
+  function productCards(slide, carousel, preview) {
     const fields = slide.fields || {};
     const count = carousel ? 6 : Math.round(numeric(fields, "productCount", 6, 1, 6));
     return imageKeys.slice(0, count).map((imageKey, index) => {
@@ -74,12 +71,14 @@
       const price = fields[`product${number}Price`] || "Ask at reception";
       const description = fields[`product${number}Description`] || "";
       const source = photos[0] || "";
+      if (carousel && !source && !preview) return "";
+      const dots = photos.length > 1 ? `<div class="shop-photo-dots" aria-hidden="true">${photos.map((_, photoIndex) => `<i${photoIndex === 0 ? ' class="is-current"' : ""}></i>`).join("")}</div>` : "";
       const image = carousel
-        ? `<div class="shop-product-image${source ? "" : " shop-image-empty"}" data-image-key="${imageKey}" data-shop-photo-carousel data-photo-sources="${escapeHtml(JSON.stringify(photos))}" data-photo-interval="${numeric(fields, "stockInterval", 6000, 2000, 30000)}" data-photo-transition="${carouselTransitions.some(([key]) => key === fields.stockTransition) ? fields.stockTransition : "fade"}">${source ? `${mediaTag(source, name)}<span class="shop-photo-count">1 / ${photos.length}</span>` : "<span>Add product photos</span>"}</div>`
+        ? `<div class="shop-product-image${source ? "" : " shop-image-empty"}" data-image-key="${imageKey}" data-shop-photo-carousel data-photo-slot="${index}" data-photo-sources="${escapeHtml(JSON.stringify(photos))}" data-photo-interval="${numeric(fields, "stockInterval", 6000, 2000, 30000)}" data-photo-transition="${carouselTransitions.some(([key]) => key === fields.stockTransition) ? fields.stockTransition : "fade"}">${source ? `<img src="${escapeHtml(source)}" alt="${escapeHtml(name)}" width="450" height="600" decoding="async">${dots}` : "<span>Add product photos</span>"}</div>`
         : source
           ? `<div class="shop-product-image" data-image-key="${imageKey}">${mediaTag(source, name)}</div>`
           : `<div class="shop-product-image shop-image-empty" data-image-key="${imageKey}"><span>Add product photo</span></div>`;
-      return `<article class="shop-product-card${carousel && index === 0 ? " is-active" : ""}" data-stock-item="${index}">
+      return `<article class="shop-product-card" data-stock-item="${index}">
         ${image}<div class="shop-product-copy"><strong>${escapeHtml(name)}</strong>
         ${description ? `<span class="shop-product-description">${escapeHtml(description)}</span>` : ""}
         <span class="shop-product-price">${escapeHtml(price)}</span></div></article>`;
@@ -97,13 +96,15 @@
     const animation = slide.animation || "anime-stagger";
     const fields = slide.fields || {};
     const carousel = slide.template === "stock-carousel";
-    const cards = productCards(slide, carousel);
-    const stage = `<div class="shop-products">${cards}</div>`;
+    const cards = productCards(slide, carousel, preview);
+    const hasQr = carousel && /^(true|1|yes|on)$/i.test(String(fields.qrVisible ?? "true"));
+    const stage = `<div class="shop-products">${cards || '<p class="shop-empty-message">No products to display</p>'}</div>`;
+    const footer = carousel ? `<footer class="shop-footer"><p>${escapeHtml(fields.body || "Ask at reception for sizes and availability.")}</p></footer>` : "";
     return `
-      <section class="slide slide-shop${carousel ? " slide-stock-carousel" : ""} anim-${animation}${preview ? " preview-slide" : ""}" data-slide-id="${escapeHtml(slide.id)}"${slideStyle(slide)}>
+      <section class="slide slide-shop${carousel ? " slide-stock-carousel" : ""}${hasQr ? " shop-has-qr" : ""} anim-${animation}${preview ? " preview-slide" : ""}" data-slide-id="${escapeHtml(slide.id)}"${slideStyle(slide)}>
         ${brandHeader(slide)}
         <div class="shop-layout"${shopStyle(slide)}>
-          ${carousel ? `${headingMarkup(fields)}${stage}` : `${stage}${headingMarkup(fields)}`}
+          ${carousel ? `${headingMarkup({ ...fields, body: "" })}${stage}${footer}` : `${stage}${headingMarkup(fields)}`}
         </div>
       </section>
     `;
@@ -124,25 +125,23 @@
       duration: 16000,
       visible: false,
       fields: {
-        eyebrow: "ESKA Club Shop",
-        heading: "Karate essentials",
-        subheading: "Gear for every stage of your journey",
+        eyebrow: carousel ? "Training essentials" : "ESKA Club Shop",
         body: "",
         productCount: 6,
         shopColumns: 3,
         shopImageShare: 68,
         shopCardGap: 16,
         shopGridRatio: 1.8,
-        shopNameSize: 22,
-        shopPriceSize: 18,
+        shopNameSize: carousel ? 30 : 22,
+        shopPriceSize: carousel ? 30 : 18,
         shopDescriptionSize: 16,
         shopImageFit: "cover",
         stockPhotoFit: "contain",
         stockInterval: 6000,
         stockTransition: "fade",
-        stockImageWidth: 56,
-        stockHeadingSize: 68,
-        stockDetailSize: 26,
+        qrText: "Scan to shop",
+        qrVisible: carousel ? "true" : "false",
+        qr: carousel ? "/assets/eska-shop-qr.png" : "",
         logo: board.brand.logo,
         image: "",
         imageLeft: "",
@@ -157,7 +156,7 @@
         product5Name: "Blitz Mitts", product5Price: "Add price", product5Description: "",
         product6Name: "Hand Pads", product6Price: "Add price", product6Description: "",
         heading: carousel ? "ESKA Club Shop" : "Karate essentials",
-        subheading: carousel ? "Featured stock" : "Gear for every stage of your journey"
+        subheading: carousel ? "Available at reception" : "Gear for every stage of your journey"
       }
     };
   };
@@ -176,7 +175,7 @@
       const photos = productPhotos(fields, imageKey, number);
       const photoEditor = carousel
         ? `<label class="shop-file-pick">Add photos (${photos.length})<input type="file" accept="image/*" multiple data-shop-image="${imageKey}"></label>
-          <div class="shop-carousel-photo-list">${photos.length ? photos.map((source, photoIndex) => `<button type="button" data-remove-shop-photo="${imageKey}" data-photo-index="${photoIndex}" aria-label="Remove photo ${photoIndex + 1} from product ${number}" title="Remove photo ${photoIndex + 1}"><img src="${escapeHtml(source)}" alt=""><span>x</span></button>`).join("") : "<span>No photos added yet</span>"}</div>`
+          <div class="shop-carousel-photo-list">${photos.length ? photos.map((source, photoIndex) => `<div class="shop-photo-edit"><img src="${escapeHtml(source)}" alt="Product ${number}, photo ${photoIndex + 1}"><div><button type="button" data-move-shop-photo="${imageKey}" data-photo-index="${photoIndex}" data-direction="-1" ${photoIndex === 0 ? "disabled" : ""} title="Move photo earlier" aria-label="Move photo earlier">&#8592;</button><button type="button" data-move-shop-photo="${imageKey}" data-photo-index="${photoIndex}" data-direction="1" ${photoIndex === photos.length - 1 ? "disabled" : ""} title="Move photo later" aria-label="Move photo later">&#8594;</button><button type="button" data-remove-shop-photo="${imageKey}" data-photo-index="${photoIndex}" aria-label="Remove photo ${photoIndex + 1} from product ${number}" title="Remove photo">&times;</button></div></div>`).join("") : "<span>No photos added yet</span>"}</div>`
         : `<label class="shop-file-pick">Photo<input type="file" accept="image/*" data-shop-image="${imageKey}"></label>`;
       return `
         <div class="shop-edit-row">
@@ -261,7 +260,7 @@
   async function uploadOneProductPhoto(file) {
     const headers = {
       "content-type": file.type || "application/octet-stream",
-      "x-file-name": file.name || "product-photo"
+      "x-file-name": (file.name || "product-photo").replace(/[^\x20-\x7E]/g, "-")
     };
     if (adminPin()) headers["x-admin-pin"] = adminPin();
     let response = await fetch("/api/upload", { method: "POST", headers, body: file });
@@ -284,7 +283,7 @@
     const fields = slide.fields || {};
     const maxPhotos = Math.max(1, ...imageKeys.map((key, index) => productPhotos(fields, key, index + 1).length));
     const interval = numeric(fields, "stockInterval", 6000, 2000, 30000);
-    slide.duration = Math.max(16000, maxPhotos * interval + 1000);
+    slide.duration = Math.max(Number(slide.duration) || 0, 16000, maxPhotos * interval + 2000);
   }
 
   async function uploadProductPhotos(files, target, slide) {
@@ -322,8 +321,9 @@
     const isCarousel = slide.template === "stock-carousel";
     document.querySelectorAll('.shop-edit-form [data-field][type="range"]').forEach((input) => {
       const output = input.parentElement.querySelector("output");
-      const updateCarouselDuration = () => {
+      const syncCarouselDuration = () => {
         if (!isCarousel || !["stockInterval", "productCount"].includes(input.dataset.field)) return;
+        slide.fields[input.dataset.field] = input.value;
         updateCarouselDuration(slide);
         const durationInput = document.querySelector('.shop-edit-form [data-key="duration"]');
         if (durationInput) durationInput.value = String(slide.duration);
@@ -333,14 +333,13 @@
         const field = input.dataset.field;
         output.textContent = field === "stockInterval" ? `${Number(input.value) / 1000}s`
           : field === "shopImageShare" ? `${input.value}%`
-            : field === "stockImageWidth" ? `${input.value}%`
-              : field === "shopGridRatio" ? Number(input.value).toFixed(1)
-                : ["shopCardGap", "shopNameSize", "shopPriceSize", "shopDescriptionSize", "stockHeadingSize", "stockDetailSize"].includes(field) ? `${input.value}px` : input.value;
+            : field === "shopGridRatio" ? Number(input.value).toFixed(1)
+              : ["shopCardGap", "shopNameSize", "shopPriceSize", "shopDescriptionSize"].includes(field) ? `${input.value}px` : input.value;
       };
       input.addEventListener("input", updateOutput);
-      input.addEventListener("input", updateCarouselDuration);
+      input.addEventListener("input", syncCarouselDuration);
       updateOutput();
-      updateCarouselDuration();
+      syncCarouselDuration();
     });
     document.querySelectorAll("[data-shop-image]").forEach((input) => {
       input.addEventListener("change", async () => {
@@ -369,6 +368,21 @@
         } catch (error) {
           showStatus(error.message || "Could not save the photo change.", true);
         }
+      });
+    });
+    document.querySelectorAll("[data-move-shop-photo]").forEach((button) => {
+      button.addEventListener("click", async () => {
+        const target = button.dataset.moveShopPhoto;
+        const number = imageKeys.indexOf(target) + 1;
+        const photos = productPhotos(slide.fields, target, number);
+        const from = Number(button.dataset.photoIndex);
+        const to = from + Number(button.dataset.direction);
+        if (to < 0 || to >= photos.length) return;
+        [photos[from], photos[to]] = [photos[to], photos[from]];
+        slide.fields[`product${number}Images`] = photos;
+        slide.fields[target] = "";
+        try { await saveBoard(); renderAdmin(); }
+        catch (error) { showStatus(error.message || "Could not reorder photos.", true); }
       });
     });
     const target = document.querySelector("#mediaLibraryTarget");
@@ -474,28 +488,67 @@
 
   function startShopPhotoCarousels(slideElement) {
     if (!slideElement.classList.contains("slide-stock-carousel")) return;
+    if (!slideElement._stockResize) {
+      const fitFrames = () => slideElement.querySelectorAll(".shop-product-card").forEach((card) => {
+        const frame = card.querySelector("[data-shop-photo-carousel]");
+        if (!frame) return;
+        const stacked = window.matchMedia("(max-width: 620px)").matches;
+        const availableHeight = Math.max(0, card.clientHeight - (stacked ? card.querySelector(".shop-product-copy").offsetHeight : 0));
+        const availableWidth = card.clientWidth * (stacked ? 1 : .46);
+        const width = Math.min(availableWidth, availableHeight * .75);
+        frame.style.width = `${width}px`;
+        frame.style.height = `${width / .75}px`;
+      });
+      if (typeof ResizeObserver === "function") {
+        slideElement._stockResize = new ResizeObserver(fitFrames);
+        slideElement.querySelectorAll(".shop-product-card").forEach((card) => slideElement._stockResize.observe(card));
+      }
+      requestAnimationFrame(fitFrames);
+    }
     slideElement.querySelectorAll("[data-shop-photo-carousel]").forEach((carousel) => {
       if (carousel.dataset.photoTimer) return;
       let photos = [];
       try { photos = JSON.parse(carousel.dataset.photoSources || "[]"); } catch { return; }
       if (photos.length < 2) return;
       let index = 0;
-      const image = carousel.querySelector("img");
-      const count = carousel.querySelector(".shop-photo-count");
+      let image = carousel.querySelector("img");
+      const dots = Array.from(carousel.querySelectorAll(".shop-photo-dots i"));
       const interval = numeric({ interval: carousel.dataset.photoInterval }, "interval", 6000, 2000, 30000);
-      const timer = window.setInterval(() => {
+      const advance = async () => {
         if (!carousel.isConnected) {
-          window.clearInterval(timer);
           delete carousel.dataset.photoTimer;
           return;
         }
-        index = (index + 1) % photos.length;
-        if (image) image.src = photos[index];
-        if (count) count.textContent = `${index + 1} / ${photos.length}`;
-        carousel.classList.add("is-photo-changing");
-        window.setTimeout(() => carousel.classList.remove("is-photo-changing"), 700);
-      }, interval);
-      carousel.dataset.photoTimer = String(timer);
+        const nextIndex = (index + 1) % photos.length;
+        const next = new Image(450, 600);
+        next.alt = image?.alt || "Product photo";
+        next.src = photos[nextIndex];
+        // Keep the current image visible until the next file is decoded.
+        let readyTimeout;
+        try {
+          await Promise.race([
+            next.decode(),
+            new Promise((_, reject) => { readyTimeout = window.setTimeout(() => reject(new Error("Photo load timeout")), 8000); })
+          ]);
+          if (!carousel.isConnected) return;
+          next.className = "stock-photo-incoming";
+          carousel.append(next);
+          void next.offsetWidth;
+          next.classList.add("is-ready");
+          const previous = image;
+          image = next;
+          index = nextIndex;
+          dots.forEach((dot, dotIndex) => dot.classList.toggle("is-current", dotIndex === index));
+          window.setTimeout(() => { previous?.remove(); next.className = ""; }, 650);
+        } catch (_) {
+          // Skip unreadable files without blanking the product window.
+          index = nextIndex;
+        } finally {
+          window.clearTimeout(readyTimeout);
+          if (carousel.isConnected) carousel.dataset.photoTimer = String(window.setTimeout(advance, interval));
+        }
+      };
+      carousel.dataset.photoTimer = String(window.setTimeout(advance, interval + Number(carousel.dataset.photoSlot || 0) * 180));
     });
   }
 
@@ -508,9 +561,13 @@
       });
       record.removedNodes.forEach((node) => {
         if (!(node instanceof HTMLElement)) return;
+        [node, ...node.querySelectorAll(".slide-stock-carousel")].forEach((slide) => slide._stockResize?.disconnect());
         const carousels = [...(node.matches?.("[data-shop-photo-carousel]") ? [node] : []), ...Array.from(node.querySelectorAll?.("[data-shop-photo-carousel]") || [])];
         carousels.forEach((carousel) => {
-          if (carousel.dataset?.photoTimer) window.clearInterval(Number(carousel.dataset.photoTimer));
+          if (carousel.dataset?.photoTimer) {
+            window.clearTimeout(Number(carousel.dataset.photoTimer));
+            delete carousel.dataset.photoTimer;
+          }
         });
       });
     });
