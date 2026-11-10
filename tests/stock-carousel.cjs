@@ -66,9 +66,18 @@ const server = http.createServer(async (req, res) => {
     await page.waitForTimeout(1800);
     assert.equal(board.slides[0].fields.product1Images.length, 4, "multi-upload appends instead of replacing");
     assert.equal(board.slides[0].fields.product2Images.length, 2, "uploads stay in selected slot");
+    for (const [index, value] of [[0, "Lightweight gi"], [1, "Heavyweight gi"]]) {
+      await page.locator(`[data-shop-photo-field="description"][data-product-number="1"][data-photo-index="${index}"]`).evaluate((input, text) => { input.value = text; input.dispatchEvent(new Event("input", { bubbles: true })); }, value);
+      for (const [key, text] of [["name", index === 0 ? "Training Gi" : "Competition Gi"], ["price", index === 0 ? "GBP 25" : "GBP 45"]]) {
+        await page.locator(`[data-shop-photo-field="${key}"][data-product-number="1"][data-photo-index="${index}"]`).evaluate((input, value) => { input.value = value; input.dispatchEvent(new Event("input", { bubbles: true })); }, text);
+      }
+    }
+    await page.waitForTimeout(1200);
+    assert.equal(board.slides[0].fields.product1PhotoDetails[1].description, "Heavyweight gi");
     await page.locator('[data-move-shop-photo="image"][data-photo-index="0"][data-direction="1"]').click();
     await page.waitForTimeout(500);
     assert.equal(board.slides[0].fields.product1Images[0], "/qa-b.svg");
+    assert.equal(board.slides[0].fields.product1PhotoDetails[0].description, "Heavyweight gi", "caption follows reordered photo");
     await page.locator('[data-remove-shop-photo="image"][data-photo-index="3"]').click();
     await page.waitForTimeout(500);
     assert.equal(board.slides[0].fields.product1Images.length, 3);
@@ -83,6 +92,9 @@ const server = http.createServer(async (req, res) => {
     assert.equal(await page.locator('[data-qr-visible]').isChecked(), false);
     await page.locator('[data-qr-visible]').check();
     await page.waitForTimeout(1200);
+    await page.locator('[data-field="stockQrSize"]').evaluate((input) => { input.value = "320"; input.dispatchEvent(new Event("input", { bubbles: true })); });
+    await page.waitForTimeout(1200);
+    assert.equal(board.slides[0].fields.stockQrSize, "320");
     console.log("PASS editor: interval, non-destructive duration, multi-upload, independent slots, reorder, remove, reload persistence");
     await page.goto(`${origin}/screen?usb-export=1`);
     await page.locator('.slide-stock-carousel [data-shop-photo-carousel]').first().waitFor();
@@ -97,12 +109,19 @@ const server = http.createServer(async (req, res) => {
     assert(geometry.cards[3].y > geometry.cards[0].y);
     assert(geometry.cards.every((card) => card.y + card.h <= geometry.qr.y), "QR must not cover a product");
     assert(geometry.images.every((values) => values[2] === 450));
+    assert.equal(Math.round(await page.locator('.qr-code-frame').evaluate((el) => el.getBoundingClientRect().width)), 320);
+    assert.equal(await page.locator('.shop-product-description').first().textContent(), "Heavyweight gi");
+    assert.equal(await page.locator('.shop-product-copy strong').first().textContent(), "Competition Gi");
+    assert.equal(await page.locator('.shop-product-price').first().textContent(), "GBP 45");
     fs.mkdirSync(path.join(root, ".qa"), { recursive: true });
     await page.screenshot({ path: path.join(root, ".qa", "stock-desktop.png") });
     await page.locator('.qr-code-frame').screenshot({ path: path.join(root, ".qa", "shop-qr-preview.png") });
     const original = await page.locator('[data-shop-photo-carousel]').first().locator('img').first().getAttribute("src");
     await page.waitForTimeout(4000);
     assert.notEqual(await page.locator('[data-shop-photo-carousel]').first().locator('img').first().getAttribute("src"), original);
+    assert.equal(await page.locator('.shop-product-description').first().textContent(), "Lightweight gi", "description changes with decoded photo");
+    assert.equal(await page.locator('.shop-product-copy strong').first().textContent(), "Training Gi");
+    assert.equal(await page.locator('.shop-product-price').first().textContent(), "GBP 25");
     assert.equal(await page.locator('.qr-layer').count(), 1);
     const defaults = await page.evaluate(() => {
       const slide = createSlideFromTemplate("stock-carousel");

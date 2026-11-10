@@ -60,6 +60,12 @@ The six numbered products each accept multiple images, with independent playback
 Use the arrow buttons under a thumbnail to reorder it, or the remove button to
 remove it from this slide without deleting the library file.
 
+Open Photo 1 text, Photo 2 text, etc. to override the name, price and description
+for that particular image. Use Preview photo to check it in the slide. Unedited
+fields inherit the box defaults; Use default restores inheritance. Photo-specific
+text changes only when its corresponding image is ready, and follows the image
+when reordered or removed. Existing slides need no data migration.
+
 Product photo frames preserve 450 x 600 portrait proportions and scale uniformly
 to fit the slide. Desktop uses three products across and two rows, with names,
 optional descriptions and prices beside the photos. Empty photo slots remain
@@ -69,6 +75,8 @@ or replaced when this template code changes.
 One optional QR code is docked in a reserved footer area. Its bundled default
 links to https://members.eska.co.uk/shop/. The QR controls can hide it or replace
 the image and caption. The source PNG includes a four-module quiet border.
+Stock QR size is adjustable from 160 to 320 pixels at full-HD, defaulting to 240.
+It scales with display resolution and its reserved footer grows with the code.
 
 Images are decoded before transitions; unreadable images do not blank the
 current product photo. The interval control adjusts the minimum slide duration

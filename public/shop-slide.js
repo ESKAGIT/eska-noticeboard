@@ -31,6 +31,8 @@
 
   const baseRenderSlide = window.renderSlide || renderSlide;
   const imageKeys = ["image", "imageLeft", "imageRight", "image4", "image5", "image6"];
+  const previewPhotos = new Map();
+  let captionSaveTimer;
   const carouselTransitions = [["fade", "Soft fade"], ["slide", "Slide across"], ["zoom", "Gentle zoom"], ["none", "No transition"]];
 
   function numeric(fields, key, fallback, min, max) {
@@ -48,6 +50,7 @@
       `--shop-name-size:${numeric(fields, "shopNameSize", slide.template === "stock-carousel" ? 30 : 22, 12, 48)}px`,
       `--shop-price-size:${numeric(fields, "shopPriceSize", slide.template === "stock-carousel" ? 30 : 18, 10, 38)}px`,
       `--shop-description-size:${numeric(fields, "shopDescriptionSize", 16, 10, 32)}px`,
+      `--stock-qr-size:${numeric(fields, "stockQrSize", 240, 160, 320)}px`,
       `--shop-image-fit:${slide.template === "stock-carousel" ? (fields.stockPhotoFit === "cover" ? "cover" : "contain") : (fields.shopImageFit === "contain" ? "contain" : "cover")}`
     ];
     return ` style="${escapeHtml(vars.join(";"))}"`;
@@ -61,26 +64,35 @@
     return photos.filter((source) => typeof source === "string" && source.trim());
   }
 
+  function photoDetails(fields, number, index) {
+    const detail = fields[`product${number}PhotoDetails`]?.[index] || {};
+    return {
+      name: detail.name ?? fields[`product${number}Name`] ?? `Product ${number}`,
+      price: detail.price ?? fields[`product${number}Price`] ?? "Ask at reception",
+      description: detail.description ?? fields[`product${number}Description`] ?? ""
+    };
+  }
+
   function productCards(slide, carousel, preview) {
     const fields = slide.fields || {};
     const count = carousel ? 6 : Math.round(numeric(fields, "productCount", 6, 1, 6));
     return imageKeys.slice(0, count).map((imageKey, index) => {
       const number = index + 1;
       const photos = carousel ? productPhotos(fields, imageKey, number) : [fields[imageKey] || ""].filter(Boolean);
-      const name = fields[`product${number}Name`] || `Product ${number}`;
-      const price = fields[`product${number}Price`] || "Ask at reception";
-      const description = fields[`product${number}Description`] || "";
-      const source = photos[0] || "";
+      const captions = photos.map((_, photoIndex) => photoDetails(fields, number, photoIndex));
+      const startIndex = preview ? Math.min(previewPhotos.get(`${slide.id}:${number}`) || 0, Math.max(0, photos.length - 1)) : 0;
+      const { name, price, description } = captions[startIndex] || photoDetails(fields, number, 0);
+      const source = photos[startIndex] || "";
       if (carousel && !source && !preview) return "";
-      const dots = photos.length > 1 ? `<div class="shop-photo-dots" aria-hidden="true">${photos.map((_, photoIndex) => `<i${photoIndex === 0 ? ' class="is-current"' : ""}></i>`).join("")}</div>` : "";
+      const dots = photos.length > 1 ? `<div class="shop-photo-dots" aria-hidden="true">${photos.map((_, photoIndex) => `<i${photoIndex === startIndex ? ' class="is-current"' : ""}></i>`).join("")}</div>` : "";
       const image = carousel
         ? `<div class="shop-product-image${source ? "" : " shop-image-empty"}" data-image-key="${imageKey}" data-shop-photo-carousel data-photo-slot="${index}" data-photo-sources="${escapeHtml(JSON.stringify(photos))}" data-photo-interval="${numeric(fields, "stockInterval", 6000, 2000, 30000)}" data-photo-transition="${carouselTransitions.some(([key]) => key === fields.stockTransition) ? fields.stockTransition : "fade"}">${source ? `<img src="${escapeHtml(source)}" alt="${escapeHtml(name)}" width="450" height="600" decoding="async">${dots}` : "<span>Add product photos</span>"}</div>`
         : source
           ? `<div class="shop-product-image" data-image-key="${imageKey}">${mediaTag(source, name)}</div>`
           : `<div class="shop-product-image shop-image-empty" data-image-key="${imageKey}"><span>Add product photo</span></div>`;
-      return `<article class="shop-product-card" data-stock-item="${index}">
+      return `<article class="shop-product-card" data-stock-item="${index}" data-photo-start="${startIndex}" data-photo-captions="${escapeHtml(JSON.stringify(captions))}">
         ${image}<div class="shop-product-copy"><strong>${escapeHtml(name)}</strong>
-        ${description ? `<span class="shop-product-description">${escapeHtml(description)}</span>` : ""}
+        ${carousel || description ? `<span class="shop-product-description"${description ? "" : " hidden"}>${escapeHtml(description)}</span>` : ""}
         <span class="shop-product-price">${escapeHtml(price)}</span></div></article>`;
     }).join("");
   }
@@ -101,7 +113,7 @@
     const stage = `<div class="shop-products">${cards || '<p class="shop-empty-message">No products to display</p>'}</div>`;
     const footer = carousel ? `<footer class="shop-footer"><p>${escapeHtml(fields.body || "Ask at reception for sizes and availability.")}</p></footer>` : "";
     return `
-      <section class="slide slide-shop${carousel ? " slide-stock-carousel" : ""}${hasQr ? " shop-has-qr" : ""} anim-${animation}${preview ? " preview-slide" : ""}" data-slide-id="${escapeHtml(slide.id)}"${slideStyle(slide)}>
+      <section class="slide slide-shop${carousel ? " slide-stock-carousel" : ""}${hasQr ? " shop-has-qr" : ""} anim-${animation}${preview ? " preview-slide" : ""}" data-slide-id="${escapeHtml(slide.id)}" data-qr-size="${numeric(fields, "stockQrSize", 240, 160, 320)}"${slideStyle(slide)}>
         ${brandHeader(slide)}
         <div class="shop-layout"${shopStyle(slide)}>
           ${carousel ? `${headingMarkup({ ...fields, body: "" })}${stage}${footer}` : `${stage}${headingMarkup(fields)}`}
@@ -138,6 +150,7 @@
         shopImageFit: "cover",
         stockPhotoFit: "contain",
         stockInterval: 6000,
+        stockQrSize: 240,
         stockTransition: "fade",
         qrText: "Scan to shop",
         qrVisible: carousel ? "true" : "false",
@@ -180,10 +193,14 @@
       return `
         <div class="shop-edit-row">
           <span class="shop-edit-number">${number}</span>
-          <label>Product name<input data-field="product${number}Name" value="${escapeHtml(fields[`product${number}Name`] || `Product ${number}`)}"></label>
+          <label>Default product name<input data-field="product${number}Name" value="${escapeHtml(fields[`product${number}Name`] || `Product ${number}`)}"></label>
           <label>Price<input data-field="product${number}Price" value="${escapeHtml(fields[`product${number}Price`] || "")}" placeholder="Add price"></label>
           ${photoEditor}
-          <label class="shop-product-desc">Description<input data-field="product${number}Description" value="${escapeHtml(fields[`product${number}Description`] || "")}" placeholder="Optional details"></label>
+          <label class="shop-product-desc">Default description<input data-field="product${number}Description" value="${escapeHtml(fields[`product${number}Description`] || "")}" placeholder="Optional details"></label>
+          ${carousel ? `<div class="shop-photo-caption-editors">${photos.map((_, photoIndex) => {
+            const details = fields[`product${number}PhotoDetails`]?.[photoIndex] || {};
+            return `<details><summary>Photo ${photoIndex + 1} text</summary><button type="button" data-preview-shop-photo="${number}" data-photo-index="${photoIndex}">Preview photo ${photoIndex + 1}</button>${["name", "price", "description"].map((key) => `<label>${key === "name" ? "Product name" : key === "price" ? "Price" : "Description"}<input data-shop-photo-field="${key}" data-product-number="${number}" data-photo-index="${photoIndex}" value="${escapeHtml(details[key] ?? "")}" placeholder="Use box default"><button type="button" data-reset-shop-caption="${key}" data-product-number="${number}" data-photo-index="${photoIndex}" title="Use box default">Use default</button></label>`).join("")}</details>`;
+          }).join("")}</div>` : ""}
         </div>
       `;
     }).join("");
@@ -194,6 +211,7 @@
           ${carousel ? "" : `<label>Products shown <output>${numeric(fields, "productCount", 6, 1, 6)}</output><input type="range" min="1" max="6" step="1" data-field="productCount" value="${numeric(fields, "productCount", 6, 1, 6)}"></label>`}
           ${carousel ? `
             <label>Carousel interval <output>${numeric(fields, "stockInterval", 6000, 2000, 30000) / 1000}s</output><input type="range" min="2000" max="30000" step="1000" data-field="stockInterval" value="${numeric(fields, "stockInterval", 6000, 2000, 30000)}"></label>
+            <label>Shop QR size <output>${numeric(fields, "stockQrSize", 240, 160, 320)}px</output><input type="range" min="160" max="320" step="20" data-field="stockQrSize" value="${numeric(fields, "stockQrSize", 240, 160, 320)}"></label>
             <label>Card spacing <output>${numeric(fields, "shopCardGap", 16, 4, 40)}px</output><input type="range" min="4" max="40" step="1" data-field="shopCardGap" value="${numeric(fields, "shopCardGap", 16, 4, 40)}"></label>
             <label>Product name size <output>${numeric(fields, "shopNameSize", 22, 12, 48)}px</output><input type="range" min="12" max="48" step="1" data-field="shopNameSize" value="${numeric(fields, "shopNameSize", 22, 12, 48)}"></label>
             <label>Price size <output>${numeric(fields, "shopPriceSize", 18, 10, 38)}px</output><input type="range" min="10" max="38" step="1" data-field="shopPriceSize" value="${numeric(fields, "shopPriceSize", 18, 10, 38)}"></label>
@@ -234,7 +252,7 @@
         <details class="shop-edit-section" open>
           <summary>${carousel ? "Stock items" : "Products"} <span>6 slots</span></summary>
           <div class="shop-edit-products">${products}</div>
-          <p class="shop-editor-note">${carousel ? "Add several photos to any slot; each slot cycles through its own pictures." : "Choose a photo in its row."} Uploads are saved to the shared library and this slide.</p>
+          <p class="shop-editor-note">${carousel ? "Each photo can override its box's name, description and price. Clearing an override hides that text; Use default restores the box text. Preview photo shows the selected image and text together." : "Choose a photo in its row."} Uploads are saved to the shared library and this slide.</p>
         </details>
         ${sizingControls}
         <details class="shop-edit-section">
@@ -334,7 +352,7 @@
         output.textContent = field === "stockInterval" ? `${Number(input.value) / 1000}s`
           : field === "shopImageShare" ? `${input.value}%`
             : field === "shopGridRatio" ? Number(input.value).toFixed(1)
-              : ["shopCardGap", "shopNameSize", "shopPriceSize", "shopDescriptionSize"].includes(field) ? `${input.value}px` : input.value;
+              : ["stockQrSize", "shopCardGap", "shopNameSize", "shopPriceSize", "shopDescriptionSize"].includes(field) ? `${input.value}px` : input.value;
       };
       input.addEventListener("input", updateOutput);
       input.addEventListener("input", syncCarouselDuration);
@@ -358,7 +376,10 @@
         const number = imageKeys.indexOf(imageKey) + 1;
         const key = `product${number}Images`;
         const photos = productPhotos(slide.fields, imageKey, number);
+        const details = photos.map((_, index) => slide.fields[`product${number}PhotoDetails`]?.[index] || {});
         photos.splice(Number(button.dataset.photoIndex), 1);
+        details.splice(Number(button.dataset.photoIndex), 1);
+        slide.fields[`product${number}PhotoDetails`] = details;
         slide.fields[key] = photos;
         slide.fields[imageKey] = "";
         updateCarouselDuration(slide);
@@ -379,12 +400,41 @@
         const to = from + Number(button.dataset.direction);
         if (to < 0 || to >= photos.length) return;
         [photos[from], photos[to]] = [photos[to], photos[from]];
+        const details = photos.map((_, index) => slide.fields[`product${number}PhotoDetails`]?.[index] || {});
+        [details[from], details[to]] = [details[to], details[from]];
+        slide.fields[`product${number}PhotoDetails`] = details;
         slide.fields[`product${number}Images`] = photos;
         slide.fields[target] = "";
         try { await saveBoard(); renderAdmin(); }
         catch (error) { showStatus(error.message || "Could not reorder photos.", true); }
       });
     });
+    const updatePhotoPreview = (number, index) => {
+      previewPhotos.set(`${slide.id}:${number}`, index);
+      const preview = document.querySelector(".preview-wrap");
+      if (preview) preview.innerHTML = renderSlide(slide, true);
+    };
+    const saveCaptions = () => {
+      clearTimeout(captionSaveTimer);
+      captionSaveTimer = setTimeout(() => saveBoard().catch((error) => showStatus(error.message, true)), 700);
+    };
+    document.querySelectorAll("[data-shop-photo-field]").forEach((input) => input.addEventListener("input", () => {
+      const number = Number(input.dataset.productNumber), index = Number(input.dataset.photoIndex);
+      const key = `product${number}PhotoDetails`;
+      const details = slide.fields[key] || (slide.fields[key] = []);
+      details[index] = { ...details[index], [input.dataset.shopPhotoField]: input.value };
+      updatePhotoPreview(number, index);
+      saveCaptions();
+    }));
+    document.querySelectorAll("[data-preview-shop-photo]").forEach((button) => button.addEventListener("click", () => updatePhotoPreview(Number(button.dataset.previewShopPhoto), Number(button.dataset.photoIndex))));
+    document.querySelectorAll("[data-reset-shop-caption]").forEach((button) => button.addEventListener("click", () => {
+      const number = Number(button.dataset.productNumber), index = Number(button.dataset.photoIndex);
+      const detail = slide.fields[`product${number}PhotoDetails`]?.[index];
+      if (detail) delete detail[button.dataset.resetShopCaption];
+      updatePhotoPreview(number, index);
+      saveCaptions();
+      renderAdmin();
+    }));
     const target = document.querySelector("#mediaLibraryTarget");
     if (target) Array.from(target.options).forEach((option, index) => {
       const labels = ["Product photo 1", "Product photo 2", "Product photo 3", "Product photo 4", "Product photo 5", "Product photo 6"];
@@ -489,7 +539,11 @@
   function startShopPhotoCarousels(slideElement) {
     if (!slideElement.classList.contains("slide-stock-carousel")) return;
     if (!slideElement._stockResize) {
-      const fitFrames = () => slideElement.querySelectorAll(".shop-product-card").forEach((card) => {
+      const fitFrames = () => {
+        const qrSize = window.matchMedia("(max-width: 620px)").matches ? 100 : numeric(slideElement.dataset, "qrSize", 240, 160, 320) * slideElement.clientHeight / 1080;
+        slideElement.style.setProperty("--stock-qr-display-size", `${qrSize}px`);
+        slideElement.style.setProperty("--stock-content-scale", String(Math.min(1, slideElement.clientHeight / 1080)));
+        slideElement.querySelectorAll(".shop-product-card").forEach((card) => {
         const frame = card.querySelector("[data-shop-photo-carousel]");
         if (!frame) return;
         const stacked = window.matchMedia("(max-width: 620px)").matches;
@@ -498,8 +552,10 @@
         const width = Math.min(availableWidth, availableHeight * .75);
         frame.style.width = `${width}px`;
         frame.style.height = `${width / .75}px`;
-      });
+        });
+      };
       if (typeof ResizeObserver === "function") {
+        slideElement._fitStockFrames = fitFrames;
         slideElement._stockResize = new ResizeObserver(fitFrames);
         slideElement.querySelectorAll(".shop-product-card").forEach((card) => slideElement._stockResize.observe(card));
       }
@@ -510,7 +566,9 @@
       let photos = [];
       try { photos = JSON.parse(carousel.dataset.photoSources || "[]"); } catch { return; }
       if (photos.length < 2) return;
-      let index = 0;
+      const card = carousel.closest(".shop-product-card");
+      const captions = JSON.parse(card.dataset.photoCaptions || "[]");
+      let index = Number(card.dataset.photoStart || 0);
       let image = carousel.querySelector("img");
       const dots = Array.from(carousel.querySelectorAll(".shop-photo-dots i"));
       const interval = numeric({ interval: carousel.dataset.photoInterval }, "interval", 6000, 2000, 30000);
@@ -521,7 +579,7 @@
         }
         const nextIndex = (index + 1) % photos.length;
         const next = new Image(450, 600);
-        next.alt = image?.alt || "Product photo";
+        next.alt = captions[nextIndex]?.name || "Product photo";
         next.src = photos[nextIndex];
         // Keep the current image visible until the next file is decoded.
         let readyTimeout;
@@ -538,6 +596,15 @@
           const previous = image;
           image = next;
           index = nextIndex;
+          const caption = captions[index];
+          if (caption) {
+            card.querySelector(".shop-product-copy strong").textContent = caption.name;
+            card.querySelector(".shop-product-price").textContent = caption.price;
+            const description = card.querySelector(".shop-product-description");
+            description.textContent = caption.description;
+            description.hidden = !caption.description;
+            requestAnimationFrame(() => slideElement._fitStockFrames?.());
+          }
           dots.forEach((dot, dotIndex) => dot.classList.toggle("is-current", dotIndex === index));
           window.setTimeout(() => { previous?.remove(); next.className = ""; }, 650);
         } catch (_) {
