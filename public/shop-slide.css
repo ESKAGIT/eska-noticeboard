@@ -324,7 +324,7 @@
 .slide-stock-carousel::after { display: none; }
 .slide-stock-carousel .corner-logo { top: 24px; right: 32px; width: 86px; height: 86px; object-fit: contain; }
 .shop-footer { display: flex; align-items: center; justify-content: center; min-height: 32px; }
-.shop-footer p { margin: 0; font-size: 22px; font-weight: 600; overflow-wrap: anywhere; }
+.shop-footer p { margin: 0; font-size: var(--shop-footer-size, 22px); font-weight: 600; overflow-wrap: anywhere; }
 .shop-has-qr .shop-footer { min-height: calc(var(--stock-qr-display-size, 240px) + 4px); padding-right: calc(var(--stock-qr-display-size, 240px) + 190px); justify-content: flex-start; }
 .slide-stock-carousel .qr-layer { right: 32px; bottom: 32px; width: calc(var(--stock-qr-display-size, 240px) + 170px); height: var(--stock-qr-display-size, 240px); translate: none; box-shadow: none; border: 0; padding: 0; }
 .slide-stock-carousel .qr-layer .qr-code-frame { aspect-ratio: 1; width: var(--stock-qr-display-size, 240px); height: var(--stock-qr-display-size, 240px); flex: 0 0 var(--stock-qr-display-size, 240px); }
@@ -405,7 +405,7 @@
   .slide-stock-carousel .shop-product-copy span { font-size: 11px; }
   .slide-stock-carousel .shop-product-copy .shop-product-price { font-size: 11px; }
   .slide-stock-carousel .shop-product-copy .shop-product-description { font-size: 11px; }
-  .shop-footer p { font-size: 12px; }
+  .shop-footer p { font-size: calc(var(--shop-footer-size, 22px) * .6); }
   .shop-has-qr .shop-footer { min-height: 104px; padding-right: 190px; }
   .slide-stock-carousel .qr-layer { right: 18px; bottom: 18px; width: 185px; height: 100px; gap: 6px; }
   .slide-stock-carousel .qr-layer .qr-code-frame { width: 100px; height: 100px; flex-basis: 100px; }

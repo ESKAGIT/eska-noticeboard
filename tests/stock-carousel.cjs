@@ -57,6 +57,17 @@ const server = http.createServer(async (req, res) => {
     page.on("pageerror", (error) => errors.push(error.message));
     await page.goto(`${origin}/admin`);
     await page.locator('.shop-edit-form [data-field="stockInterval"]').waitFor({ state: "attached" });
+    assert.equal(await page.locator('.preview-wrap .shop-footer p').count(), 0, "blank footer has no reception fallback");
+    await page.locator('.shop-edit-form [data-field="body"]').fill("Shop online");
+    await page.locator('.shop-edit-form [data-field="subheading"]').fill("");
+    for (const [key, value] of [["shopFooterSize", "36"], ["headingSize", "50"]]) {
+      await page.locator(`.shop-edit-form [data-field="${key}"]`).evaluate((input, size) => { input.value = size; input.dispatchEvent(new Event("input", { bubbles: true })); }, value);
+    }
+    await page.waitForTimeout(1300);
+    assert.equal(board.slides[0].fields.body, "Shop online");
+    assert.equal(board.slides[0].fields.shopFooterSize, "36");
+    assert.equal(await page.locator('.preview-wrap .shop-footer p').evaluate((el) => getComputedStyle(el).fontSize), "36px");
+    assert.equal(await page.locator('.preview-wrap .shop-heading h2').count(), 0, "cleared subheading stays hidden");
     await page.locator('[data-field="stockInterval"]').evaluate((input) => { input.value = "3000"; input.dispatchEvent(new Event("input", { bubbles: true })); });
     await page.waitForTimeout(1500);
     assert.equal(board.slides[0].fields.stockInterval, "3000");
@@ -84,6 +95,13 @@ const server = http.createServer(async (req, res) => {
     await page.reload();
     await page.locator('.shop-edit-form [data-field="stockInterval"]').waitFor({ state: "attached" });
     assert.equal(await page.locator('[data-field="stockInterval"]').inputValue(), "3000");
+    assert.equal(await page.locator('.shop-edit-form [data-field="body"]').inputValue(), "Shop online");
+    assert.equal(await page.locator('.shop-edit-form [data-field="shopFooterSize"]').inputValue(), "36");
+    await page.locator('.shop-edit-form [data-field="body"]').fill("");
+    await page.waitForTimeout(1000);
+    assert.equal(await page.locator('.preview-wrap .shop-footer p').count(), 0);
+    await page.locator('.shop-edit-form [data-field="body"]').fill("Shop online");
+    await page.waitForTimeout(1000);
     await page.locator('[data-qr-visible]').uncheck();
     await page.waitForTimeout(1200);
     assert.equal(board.slides[0].fields.qrVisible, "");
@@ -104,6 +122,8 @@ const server = http.createServer(async (req, res) => {
       return { frames: [...document.querySelectorAll('[data-shop-photo-carousel]')].map(rect), cards: [...document.querySelectorAll('.shop-product-card')].map(rect), qr: rect(document.querySelector('.qr-layer')), images: [...document.querySelectorAll('[data-shop-photo-carousel] img')].map((img) => [img.width, img.height, img.naturalWidth]) };
     });
     assert.equal(geometry.frames.length, 6);
+    assert.equal(await page.locator('.shop-footer p').textContent(), "Shop online");
+    assert.equal(await page.locator('.shop-footer p').evaluate((el) => getComputedStyle(el).fontSize), "36px");
     geometry.frames.forEach((r) => { assert(Math.abs(r.w / r.h - .75) < .01); assert(r.y >= 0 && r.y + r.h <= 1080); });
     assert(Math.abs(geometry.cards[0].y - geometry.cards[2].y) < 2);
     assert(geometry.cards[3].y > geometry.cards[0].y);

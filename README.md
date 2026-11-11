@@ -78,6 +78,11 @@ the image and caption. The source PNG includes a four-module quiet border.
 Stock QR size is adjustable from 160 to 320 pixels at full-HD, defaulting to 240.
 It scales with display resolution and its reserved footer grows with the code.
 
+The footer message and subheading are optional: clear either field to hide it.
+No reception message is inserted automatically. Layout and sizes includes
+heading, subheading and footer-message size sliders, alongside the product
+name, price and description size controls. Existing saved wording is preserved.
+
 Images are decoded before transitions; unreadable images do not blank the
 current product photo. The interval control adjusts the minimum slide duration
 without shortening an existing longer duration. Reduced motion removes photo

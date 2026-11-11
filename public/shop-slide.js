@@ -50,6 +50,7 @@
       `--shop-name-size:${numeric(fields, "shopNameSize", slide.template === "stock-carousel" ? 30 : 22, 12, 48)}px`,
       `--shop-price-size:${numeric(fields, "shopPriceSize", slide.template === "stock-carousel" ? 30 : 18, 10, 38)}px`,
       `--shop-description-size:${numeric(fields, "shopDescriptionSize", 16, 10, 32)}px`,
+      `--shop-footer-size:${numeric(fields, "shopFooterSize", 22, 12, 48)}px`,
       `--stock-qr-size:${numeric(fields, "stockQrSize", 240, 160, 320)}px`,
       `--shop-image-fit:${slide.template === "stock-carousel" ? (fields.stockPhotoFit === "cover" ? "cover" : "contain") : (fields.shopImageFit === "contain" ? "contain" : "cover")}`
     ];
@@ -68,7 +69,7 @@
     const detail = fields[`product${number}PhotoDetails`]?.[index] || {};
     return {
       name: detail.name ?? fields[`product${number}Name`] ?? `Product ${number}`,
-      price: detail.price ?? fields[`product${number}Price`] ?? "Ask at reception",
+      price: detail.price ?? fields[`product${number}Price`] ?? "",
       description: detail.description ?? fields[`product${number}Description`] ?? ""
     };
   }
@@ -97,10 +98,11 @@
     }).join("");
   }
 
-  function headingMarkup(fields) {
+  function headingMarkup(fields, carousel = false) {
+    const subheading = fields.subheading ?? (carousel ? "" : "Gear for every stage of your journey");
     return `<div class="shop-heading"><p class="eyebrow">${escapeHtml(fields.eyebrow || "ESKA Club Shop")}</p>
       <h1>${escapeHtml(fields.heading || "Karate essentials")}</h1>
-      <h2>${escapeHtml(fields.subheading || "Gear for every stage of your journey")}</h2>
+      ${subheading ? `<h2>${escapeHtml(subheading)}</h2>` : ""}
       ${fields.body ? `<p class="body-copy">${escapeHtml(fields.body)}</p>` : ""}</div>`;
   }
 
@@ -111,12 +113,12 @@
     const cards = productCards(slide, carousel, preview);
     const hasQr = carousel && /^(true|1|yes|on)$/i.test(String(fields.qrVisible ?? "true"));
     const stage = `<div class="shop-products">${cards || '<p class="shop-empty-message">No products to display</p>'}</div>`;
-    const footer = carousel ? `<footer class="shop-footer"><p>${escapeHtml(fields.body || "Ask at reception for sizes and availability.")}</p></footer>` : "";
+    const footer = carousel ? `<footer class="shop-footer">${fields.body ? `<p>${escapeHtml(fields.body)}</p>` : ""}</footer>` : "";
     return `
       <section class="slide slide-shop${carousel ? " slide-stock-carousel" : ""}${hasQr ? " shop-has-qr" : ""} anim-${animation}${preview ? " preview-slide" : ""}" data-slide-id="${escapeHtml(slide.id)}" data-qr-size="${numeric(fields, "stockQrSize", 240, 160, 320)}"${slideStyle(slide)}>
         ${brandHeader(slide)}
         <div class="shop-layout"${shopStyle(slide)}>
-          ${carousel ? `${headingMarkup({ ...fields, body: "" })}${stage}${footer}` : `${stage}${headingMarkup(fields)}`}
+          ${carousel ? `${headingMarkup({ ...fields, body: "" }, true)}${stage}${footer}` : `${stage}${headingMarkup(fields)}`}
         </div>
       </section>
     `;
@@ -147,6 +149,7 @@
         shopNameSize: carousel ? 30 : 22,
         shopPriceSize: carousel ? 30 : 18,
         shopDescriptionSize: 16,
+        shopFooterSize: 22,
         shopImageFit: "cover",
         stockPhotoFit: "contain",
         stockInterval: 6000,
@@ -169,7 +172,7 @@
         product5Name: "Blitz Mitts", product5Price: "Add price", product5Description: "",
         product6Name: "Hand Pads", product6Price: "Add price", product6Description: "",
         heading: carousel ? "ESKA Club Shop" : "Karate essentials",
-        subheading: carousel ? "Available at reception" : "Gear for every stage of your journey"
+        subheading: carousel ? "" : "Gear for every stage of your journey"
       }
     };
   };
@@ -210,6 +213,9 @@
         <div class="shop-sizing-grid">
           ${carousel ? "" : `<label>Products shown <output>${numeric(fields, "productCount", 6, 1, 6)}</output><input type="range" min="1" max="6" step="1" data-field="productCount" value="${numeric(fields, "productCount", 6, 1, 6)}"></label>`}
           ${carousel ? `
+            <label>Heading text size <output>${parseFloat(fields.headingSize) || 44}px</output><input type="range" min="20" max="80" step="1" data-field="headingSize" value="${parseFloat(fields.headingSize) || 44}"></label>
+            <label>Subheading text size <output>${parseFloat(fields.subheadingSize) || 24}px</output><input type="range" min="12" max="48" step="1" data-field="subheadingSize" value="${parseFloat(fields.subheadingSize) || 24}"></label>
+            <label>Footer message text size <output>${numeric(fields, "shopFooterSize", 22, 12, 48)}px</output><input type="range" min="12" max="48" step="1" data-field="shopFooterSize" value="${numeric(fields, "shopFooterSize", 22, 12, 48)}"></label>
             <label>Carousel interval <output>${numeric(fields, "stockInterval", 6000, 2000, 30000) / 1000}s</output><input type="range" min="2000" max="30000" step="1000" data-field="stockInterval" value="${numeric(fields, "stockInterval", 6000, 2000, 30000)}"></label>
             <label>Shop QR size <output>${numeric(fields, "stockQrSize", 240, 160, 320)}px</output><input type="range" min="160" max="320" step="20" data-field="stockQrSize" value="${numeric(fields, "stockQrSize", 240, 160, 320)}"></label>
             <label>Card spacing <output>${numeric(fields, "shopCardGap", 16, 4, 40)}px</output><input type="range" min="4" max="40" step="1" data-field="shopCardGap" value="${numeric(fields, "shopCardGap", 16, 4, 40)}"></label>
@@ -245,8 +251,8 @@
           <div class="shop-heading-fields">
             <label>Small label<input data-field="eyebrow" value="${escapeHtml(fields.eyebrow || "")}"></label>
             <label>Heading<input data-field="heading" value="${escapeHtml(fields.heading || "")}"></label>
-            <label>Subheading<input data-field="subheading" value="${escapeHtml(fields.subheading || "")}"></label>
-            <label>Optional message<input data-field="body" value="${escapeHtml(fields.body || "")}"></label>
+            <label>Subheading (optional)<input data-field="subheading" value="${escapeHtml(fields.subheading || "")}" placeholder="Leave blank to hide"></label>
+            <label>${carousel ? "Footer message (optional)" : "Optional message"}<input data-field="body" value="${escapeHtml(fields.body || "")}" placeholder="Leave blank to hide"></label>
           </div>
         </details>
         <details class="shop-edit-section" open>
@@ -352,7 +358,7 @@
         output.textContent = field === "stockInterval" ? `${Number(input.value) / 1000}s`
           : field === "shopImageShare" ? `${input.value}%`
             : field === "shopGridRatio" ? Number(input.value).toFixed(1)
-              : ["stockQrSize", "shopCardGap", "shopNameSize", "shopPriceSize", "shopDescriptionSize"].includes(field) ? `${input.value}px` : input.value;
+              : ["headingSize", "subheadingSize", "shopFooterSize", "stockQrSize", "shopCardGap", "shopNameSize", "shopPriceSize", "shopDescriptionSize"].includes(field) ? `${input.value}px` : input.value;
       };
       input.addEventListener("input", updateOutput);
       input.addEventListener("input", syncCarouselDuration);
