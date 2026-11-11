@@ -84,6 +84,9 @@
       const startIndex = preview ? Math.min(previewPhotos.get(`${slide.id}:${number}`) || 0, Math.max(0, photos.length - 1)) : 0;
       const { name, price, description } = captions[startIndex] || photoDetails(fields, number, 0);
       const source = photos[startIndex] || "";
+      const cardWidth = numeric(fields, `product${number}CardWidth`, numeric(fields, "shopCardWidth", 100, 60, 100), 60, 100);
+      const cardHeight = numeric(fields, `product${number}CardHeight`, numeric(fields, "shopCardHeight", 100, 60, 100), 60, 100);
+      const cardStyle = carousel ? ` style="--shop-card-w:${cardWidth}%;--shop-card-h:${cardHeight}%;--shop-card-content-scale:${Math.min(cardWidth, cardHeight) / 100}"` : "";
       if (carousel && !source && !preview) return "";
       const dots = photos.length > 1 ? `<div class="shop-photo-dots" aria-hidden="true">${photos.map((_, photoIndex) => `<i${photoIndex === startIndex ? ' class="is-current"' : ""}></i>`).join("")}</div>` : "";
       const image = carousel
@@ -91,7 +94,7 @@
         : source
           ? `<div class="shop-product-image" data-image-key="${imageKey}">${mediaTag(source, name)}</div>`
           : `<div class="shop-product-image shop-image-empty" data-image-key="${imageKey}"><span>Add product photo</span></div>`;
-      return `<article class="shop-product-card" data-stock-item="${index}" data-photo-start="${startIndex}" data-photo-captions="${escapeHtml(JSON.stringify(captions))}">
+      return `<article class="shop-product-card"${cardStyle} data-stock-item="${index}" data-photo-start="${startIndex}" data-photo-captions="${escapeHtml(JSON.stringify(captions))}">
         ${image}<div class="shop-product-copy"><strong>${escapeHtml(name)}</strong>
         ${carousel || description ? `<span class="shop-product-description"${description ? "" : " hidden"}>${escapeHtml(description)}</span>` : ""}
         <span class="shop-product-price">${escapeHtml(price)}</span></div></article>`;
@@ -145,6 +148,8 @@
         shopColumns: 3,
         shopImageShare: 68,
         shopCardGap: 16,
+        shopCardWidth: 100,
+        shopCardHeight: 100,
         shopGridRatio: 1.8,
         shopNameSize: carousel ? 30 : 22,
         shopPriceSize: carousel ? 30 : 18,
@@ -200,6 +205,7 @@
           <label>Price<input data-field="product${number}Price" value="${escapeHtml(fields[`product${number}Price`] || "")}" placeholder="Add price"></label>
           ${photoEditor}
           <label class="shop-product-desc">Default description<input data-field="product${number}Description" value="${escapeHtml(fields[`product${number}Description`] || "")}" placeholder="Optional details"></label>
+          ${carousel ? `<details class="shop-card-size-editor"><summary>Card ${number} size</summary><div class="shop-sizing-grid">${[["Width", "Width"], ["Height", "Height"]].map(([key, label]) => `<label>${label}<output>${numeric(fields, `product${number}Card${key}`, numeric(fields, `shopCard${key}`, 100, 60, 100), 60, 100)}%</output><input type="range" min="60" max="100" step="1" data-field="product${number}Card${key}" value="${numeric(fields, `product${number}Card${key}`, numeric(fields, `shopCard${key}`, 100, 60, 100), 60, 100)}"></label>`).join("")}</div><button type="button" data-reset-shop-card="${number}">Use shared card size</button></details>` : ""}
           ${carousel ? `<div class="shop-photo-caption-editors">${photos.map((_, photoIndex) => {
             const details = fields[`product${number}PhotoDetails`]?.[photoIndex] || {};
             return `<details><summary>Photo ${photoIndex + 1} text</summary><button type="button" data-preview-shop-photo="${number}" data-photo-index="${photoIndex}">Preview photo ${photoIndex + 1}</button>${["name", "price", "description"].map((key) => `<label>${key === "name" ? "Product name" : key === "price" ? "Price" : "Description"}<input data-shop-photo-field="${key}" data-product-number="${number}" data-photo-index="${photoIndex}" value="${escapeHtml(details[key] ?? "")}" placeholder="Use box default"><button type="button" data-reset-shop-caption="${key}" data-product-number="${number}" data-photo-index="${photoIndex}" title="Use box default">Use default</button></label>`).join("")}</details>`;
@@ -213,6 +219,8 @@
         <div class="shop-sizing-grid">
           ${carousel ? "" : `<label>Products shown <output>${numeric(fields, "productCount", 6, 1, 6)}</output><input type="range" min="1" max="6" step="1" data-field="productCount" value="${numeric(fields, "productCount", 6, 1, 6)}"></label>`}
           ${carousel ? `
+            <label>All cards width <output>${numeric(fields, "shopCardWidth", 100, 60, 100)}%</output><input type="range" min="60" max="100" step="1" data-field="shopCardWidth" value="${numeric(fields, "shopCardWidth", 100, 60, 100)}"></label>
+            <label>All cards height <output>${numeric(fields, "shopCardHeight", 100, 60, 100)}%</output><input type="range" min="60" max="100" step="1" data-field="shopCardHeight" value="${numeric(fields, "shopCardHeight", 100, 60, 100)}"></label>
             <label>Heading text size <output>${parseFloat(fields.headingSize) || 44}px</output><input type="range" min="20" max="80" step="1" data-field="headingSize" value="${parseFloat(fields.headingSize) || 44}"></label>
             <label>Subheading text size <output>${parseFloat(fields.subheadingSize) || 24}px</output><input type="range" min="12" max="48" step="1" data-field="subheadingSize" value="${parseFloat(fields.subheadingSize) || 24}"></label>
             <label>Footer message text size <output>${numeric(fields, "shopFooterSize", 22, 12, 48)}px</output><input type="range" min="12" max="48" step="1" data-field="shopFooterSize" value="${numeric(fields, "shopFooterSize", 22, 12, 48)}"></label>
@@ -235,7 +243,7 @@
             <label>Photo crop<select data-field="shopImageFit"><option value="cover" ${fields.shopImageFit !== "contain" ? "selected" : ""}>Fill frame</option><option value="contain" ${fields.shopImageFit === "contain" ? "selected" : ""}>Show whole image</option></select></label>
           `}
         </div>
-        ${carousel ? '<p class="shop-editor-note">Each picture window cycles independently. Portrait photos use a 450 x 600 frame ratio and scale to fit. Slide time adjusts so every photo in the fullest window can appear at least once.</p>' : ""}
+        ${carousel ? '<p class="shop-editor-note">Card sizes are percentages of their grid space; 100% fills the available space without overlap. Individual Card size settings override the shared sliders. Photos keep 450 x 600 proportions.</p>' : ""}
       </details>
     `;
     return `
@@ -355,7 +363,7 @@
       const updateOutput = () => {
         if (!output) return;
         const field = input.dataset.field;
-        output.textContent = field === "stockInterval" ? `${Number(input.value) / 1000}s`
+        output.textContent = /^(shopCard(Width|Height)|product\d+Card(Width|Height))$/.test(field) ? `${input.value}%` : field === "stockInterval" ? `${Number(input.value) / 1000}s`
           : field === "shopImageShare" ? `${input.value}%`
             : field === "shopGridRatio" ? Number(input.value).toFixed(1)
               : ["headingSize", "subheadingSize", "shopFooterSize", "stockQrSize", "shopCardGap", "shopNameSize", "shopPriceSize", "shopDescriptionSize"].includes(field) ? `${input.value}px` : input.value;
@@ -365,6 +373,13 @@
       updateOutput();
       syncCarouselDuration();
     });
+    document.querySelectorAll("[data-reset-shop-card]").forEach((button) => button.addEventListener("click", async () => {
+      const number = button.dataset.resetShopCard;
+      delete slide.fields[`product${number}CardWidth`];
+      delete slide.fields[`product${number}CardHeight`];
+      try { await saveBoard(); renderAdmin(); }
+      catch (error) { showStatus(error.message || "Could not reset card size.", true); }
+    }));
     document.querySelectorAll("[data-shop-image]").forEach((input) => {
       input.addEventListener("change", async () => {
         const files = Array.from(input.files || []);

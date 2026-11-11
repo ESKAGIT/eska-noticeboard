@@ -57,6 +57,34 @@ const server = http.createServer(async (req, res) => {
     page.on("pageerror", (error) => errors.push(error.message));
     await page.goto(`${origin}/admin`);
     await page.locator('.shop-edit-form [data-field="stockInterval"]').waitFor({ state: "attached" });
+    const originalCard = await page.locator('.preview-wrap .shop-product-card').first().boundingBox();
+    for (const [key, value] of [["shopCardWidth", "80"], ["shopCardHeight", "75"]]) {
+      await page.locator(`.shop-edit-form [data-field="${key}"]`).evaluate((input, size) => { input.value = size; input.dispatchEvent(new Event("input", { bubbles: true })); }, value);
+    }
+    await page.waitForTimeout(1300);
+    const resizedCard = await page.locator('.preview-wrap .shop-product-card').first().boundingBox();
+    assert(Math.abs(resizedCard.width / originalCard.width - .8) < .02, "shared card width changes preview");
+    assert(Math.abs(resizedCard.height / originalCard.height - .75) < .02, "shared card height changes preview");
+    assert.equal(board.slides[0].fields.shopCardWidth, "80");
+    for (const [key, value] of [["product1CardWidth", "95"], ["product1CardHeight", "90"]]) {
+      await page.locator(`.shop-edit-form [data-field="${key}"]`).evaluate((input, size) => { input.value = size; input.dispatchEvent(new Event("input", { bubbles: true })); }, value);
+    }
+    await page.waitForTimeout(1300);
+    const individualCard = await page.locator('.preview-wrap .shop-product-card').first().boundingBox();
+    assert(Math.abs(individualCard.width / originalCard.width - .95) < .02);
+    assert(Math.abs(individualCard.height / originalCard.height - .9) < .02);
+    await page.locator('[data-reset-shop-card="1"]').evaluate((button) => button.click());
+    await page.waitForTimeout(600);
+    assert.equal(board.slides[0].fields.product1CardWidth, undefined);
+    assert.equal(board.slides[0].fields.shopCardWidth, "80");
+    await page.reload();
+    await page.locator('.shop-edit-form [data-field="shopCardWidth"]').waitFor({ state: "attached" });
+    assert.equal(await page.locator('.shop-edit-form [data-field="shopCardWidth"]').inputValue(), "80");
+    for (const key of ["shopCardWidth", "shopCardHeight"]) {
+      await page.locator(`.shop-edit-form [data-field="${key}"]`).evaluate((input) => { input.value = "100"; input.dispatchEvent(new Event("input", { bubbles: true })); });
+    }
+    await page.waitForTimeout(1000);
+    console.log("PASS card sizing: independent width/height, per-card overrides, shared-size reset, save/reload");
     assert.equal(await page.locator('.preview-wrap .shop-footer p').count(), 0, "blank footer has no reception fallback");
     await page.locator('.shop-edit-form [data-field="body"]').fill("Shop online");
     await page.locator('.shop-edit-form [data-field="subheading"]').fill("");
@@ -160,6 +188,27 @@ const server = http.createServer(async (req, res) => {
       }));
       assert(fits, `product text and QR fit at ${width}x${height}`);
     }
+    board.slides[0].fields.shopCardWidth = "60";
+    board.slides[0].fields.shopCardHeight = "60";
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.reload();
+    await page.locator('.shop-product-card').first().waitFor();
+    await page.waitForTimeout(500);
+    const smallFits = await page.locator('.shop-product-card').evaluateAll((cards) => cards.every((card) => {
+      const r = card.getBoundingClientRect(), copy = card.querySelector('.shop-product-copy').getBoundingClientRect(), frame = card.querySelector('[data-shop-photo-carousel]').getBoundingClientRect();
+      return copy.top >= r.top && copy.bottom <= r.bottom && Math.abs(frame.width / frame.height - .75) < .01;
+    }));
+    assert(smallFits, "small cards preserve photo proportions and text bounds");
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.waitForTimeout(500);
+    const smallMobileFits = await page.locator('.shop-product-card').evaluateAll((cards) => cards.every((card) => {
+      const r = card.getBoundingClientRect(), copy = card.querySelector('.shop-product-copy').getBoundingClientRect(), frame = card.querySelector('[data-shop-photo-carousel]').getBoundingClientRect();
+      return copy.top >= r.top && copy.bottom <= r.bottom && frame.height > 0 && Math.abs(frame.width / frame.height - .75) < .01;
+    }));
+    assert(smallMobileFits, "small mobile cards retain visible photos and bounded text");
+    board.slides[0].fields.shopCardWidth = "100";
+    board.slides[0].fields.shopCardHeight = "100";
+    await page.reload();
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.setViewportSize({ width: 390, height: 844 });
     await page.waitForTimeout(800);

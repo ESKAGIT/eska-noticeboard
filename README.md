@@ -83,6 +83,12 @@ No reception message is inserted automatically. Layout and sizes includes
 heading, subheading and footer-message size sliders, alongside the product
 name, price and description size controls. Existing saved wording is preserved.
 
+All cards width and height sliders resize the stock cards within their grid slots
+(60 to 100 percent). For individual adjustments, open Card 1 size, Card 2 size,
+etc. in the relevant product row. Use shared card size clears only that card's
+size override. Text and photo fitting adapt to the smaller card; image aspect
+ratio stays 450:600. Cards remain centered in their slots and cannot cover the QR.
+
 Images are decoded before transitions; unreadable images do not blank the
 current product photo. The interval control adjusts the minimum slide duration
 without shortening an existing longer duration. Reduced motion removes photo
