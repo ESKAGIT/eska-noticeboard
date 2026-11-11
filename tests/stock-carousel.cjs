@@ -142,6 +142,17 @@ const server = http.createServer(async (req, res) => {
     await page.waitForTimeout(1200);
     assert.equal(board.slides[0].fields.stockQrSize, "320");
     console.log("PASS editor: interval, non-destructive duration, multi-upload, independent slots, reorder, remove, reload persistence");
+    const popupPromise = page.waitForEvent("popup");
+    await page.locator('a[href="/screen"]').first().click();
+    const popup = await popupPromise;
+    await popup.locator('.slide-stock-carousel').waitFor();
+    await popup.evaluate(() => { window.tvReuseMarker = true; });
+    await page.locator('a[href="/screen"]').first().click();
+    await page.waitForTimeout(400);
+    assert.equal(page.context().pages().length, 2, "TV Screen reuses one named tab");
+    assert.equal(await popup.evaluate(() => window.tvReuseMarker), true, "TV Screen must not reload the existing player");
+    await popup.close();
+    console.log("PASS TV Screen button: reuses its player tab without restarting playback");
     await page.goto(`${origin}/screen?usb-export=1`);
     await page.locator('.slide-stock-carousel [data-shop-photo-carousel]').first().waitFor();
     await page.waitForTimeout(1200);

@@ -3,7 +3,8 @@
   function init(root) {
     liveGalleries.forEach((gallery) => {
       if (!document.contains(gallery)) {
-        window.clearInterval(gallery._galleryTimer);
+        gallery._galleryStop?.();
+        window.clearTimeout(gallery._galleryTimer);
         liveGalleries.delete(gallery);
       }
     });
@@ -17,6 +18,14 @@
       const interval = Math.max(2000, Number(gallery.dataset.galleryInterval || 4000));
       let advanceTimer = null;
       let advancing = false;
+      let disposed = false;
+      let completed = false;
+      const pendingMedia = new Set();
+      const listeners = [];
+      const listen = (target, event, handler, options) => {
+        target.addEventListener(event, handler, options);
+        listeners.push([target, event, handler]);
+      };
       const activeMedia = () => items[index] && items[index].querySelector("img, video");
       const number = (value, fallback = 0) => {
         const parsed = Number(value);
@@ -38,6 +47,7 @@
       };
       const startVideo = (video, item, restartVideo) => {
         const play = () => {
+          if (disposed || items[index] !== item || !document.contains(gallery)) return;
           const trim = trimFor(item, video);
           video.playbackRate = trim.rate;
           if (restartVideo) {
@@ -50,7 +60,7 @@
           });
         };
         if (video.readyState >= 1) play();
-        else video.addEventListener("loadedmetadata", play, { once: true });
+        else listen(video, "loadedmetadata", play, { once: true });
       };
       const show = (next, restartVideo = false) => {
         items.forEach((item, itemIndex) => item.classList.toggle("is-active", itemIndex === next));
@@ -74,6 +84,7 @@
         }
         let fallback = null;
         const finish = () => {
+          pendingMedia.delete(finish);
           if (fallback) window.clearTimeout(fallback);
           media.removeEventListener("load", finish);
           media.removeEventListener("loadeddata", finish);
@@ -83,13 +94,16 @@
         media.addEventListener("load", finish, { once: true });
         media.addEventListener("loadeddata", finish, { once: true });
         media.addEventListener("error", finish, { once: true });
+        pendingMedia.add(finish);
         fallback = window.setTimeout(finish, 5000);
       });
       const complete = () => {
+        if (disposed || completed || !document.contains(gallery)) return;
+        completed = true;
         gallery.dispatchEvent(new CustomEvent("eska:carousel-complete", { bubbles: true }));
       };
       const scheduleAdvance = () => {
-        if (!document.contains(gallery)) return;
+        if (disposed || completed || !document.contains(gallery)) return;
         if (advanceTimer) window.clearTimeout(advanceTimer);
         const media = activeMedia();
         if (media && media.tagName === "VIDEO") return;
@@ -99,7 +113,7 @@
         gallery._galleryTimer = advanceTimer;
       };
       const advance = async () => {
-        if (!document.contains(gallery) || advancing) return;
+        if (disposed || completed || !document.contains(gallery) || advancing) return;
         advancing = true;
         if (index >= items.length - 1) {
           complete();
@@ -107,7 +121,7 @@
         }
         const next = index + 1;
         await waitForMedia(items[next]);
-        if (!document.contains(gallery)) return;
+        if (disposed || !document.contains(gallery)) return;
         index = next;
         show(index, true);
         scheduleAdvance();
@@ -117,21 +131,28 @@
         const video = item.querySelector("video");
         if (!video) return;
         video.loop = false;
-        video.addEventListener("ended", () => {
+        listen(video, "ended", () => {
           if (itemIndex === index) advance();
         });
-        video.addEventListener("timeupdate", () => {
+        listen(video, "timeupdate", () => {
           if (itemIndex !== index) return;
           const trim = trimFor(item, video);
           if (trim.end > trim.start && video.currentTime >= trim.end - 0.08) advance();
         });
-        video.addEventListener("error", () => {
+        listen(video, "error", () => {
           if (itemIndex === index) advance();
         });
       });
+      gallery._galleryStop = () => {
+        disposed = true;
+        window.clearTimeout(advanceTimer);
+        pendingMedia.forEach((finish) => finish());
+        listeners.forEach(([target, event, handler]) => target.removeEventListener(event, handler));
+        items.forEach((item) => item.querySelector("video")?.pause());
+        liveGalleries.delete(gallery);
+      };
       show(index, true);
       liveGalleries.add(gallery);
-      if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
       if (gallery.dataset.galleryEditing === "true") return;
       scheduleAdvance();
     });

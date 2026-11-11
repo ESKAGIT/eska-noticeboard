@@ -104,3 +104,25 @@ Where the local working tree has unresolved legacy edits, the test deliberately
 uses committed versions of those base files plus the current stock/QR changes.
 It covers real editor uploads, reorder/removal, save/reload, QR visibility,
 desktop/mobile frame measurements and independent decoded photo playback.
+
+## TV playback ordering
+
+The TV player has one active run and one advance decision for each slide visit.
+Normal TV Screen clicks reuse the named player tab without reloading it.
+Modifier-clicks can still deliberately open another tab.
+Repeated initialization or returning to the tab does not restart the current
+slide. Background requests queue updates without changing the playback index.
+Saved changes become visible at the start of the next full loop, keeping the
+current loop's order and content stable. USB recording keeps its loaded snapshot.
+
+Gallery slides wait for both their configured slide duration and media completion.
+Photo-specific durations and video trims are honored; a generous watchdog handles
+stalled media. Detached galleries are stopped and their callbacks cannot advance
+another slide. Reduced-motion preference removes effects, not timed photo cycling.
+The previous arbitrary error-triggered and six-hour full-page reloads are removed
+so they cannot restart the playlist halfway through a recording or TV session.
+
+Run `node tests/screen-playback.cjs` with Playwright/Chromium installed to exercise
+concurrent starts, delayed responses, ordered loops, pending live updates,
+focus changes, duplicate completion events, gallery durations and mixed media.
+These deterministic tests use an isolated browser fixture, not the live board.
