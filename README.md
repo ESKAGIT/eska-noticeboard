@@ -126,3 +126,39 @@ Run `node tests/screen-playback.cjs` with Playwright/Chromium installed to exerc
 concurrent starts, delayed responses, ordered loops, pending live updates,
 focus changes, duplicate completion events, gallery durations and mixed media.
 These deterministic tests use an isolated browser fixture, not the live board.
+
+## Calendar template
+
+Choose Calendar in the admin template selector or template library. New calendar
+instances start hidden and are not automatically inserted into the live board.
+Set Start month, Months shown (1-3), Heading, Dates list and the two footer fields.
+Put a middle dot before the month range in Heading to render that suffix in red.
+The normal animation, duration and Show on TV fields remain available.
+
+Dates list format, one event per line:
+
+```text
+2027-01-24 | competition | ESKA Kata & Kumite Competition | The Dojo
+2027-02-13–2027-02-14 | course | TSKUK International Course |
+2027-03-06 | grading | Tiny Tiger Grading | 11:30am
+```
+
+Ranges are inclusive; an en dash, em dash or plain hyphen between ISO dates is
+accepted. Dates use UTC arithmetic and Monday-first weeks. Invalid lines are
+flagged in the editor and excluded from the visual calendar, not silently changed
+into different dates. Events spanning months appear in each affected month;
+overlapping event types share the day cell with a split-colour fill.
+
+The 1920 x 1080 calendar canvas scales uniformly in preview and TV views. Crowded
+months keep all event-day highlights but show a count when their short event list
+cannot fit. Empty months show No dates published yet. Footer wording is editable
+and can be cleared. Entrance animation uses Anime.js when available, otherwise
+Web Animations, finishing in about three seconds (shortened for short slides).
+No animation and reduced-motion modes leave the full calendar static.
+
+Implementation is isolated in public/calendar-model.js, calendar-slide.js and
+calendar-slide.css; it does not migrate or modify existing slides. Calendar
+fields are persisted by the existing /api/noticeboard save path.
+Run node tests/calendar.cjs with Playwright available for model, API/editor and
+visual regression checks. ANIME_TEST_SCRIPT can point to a local copy of the
+existing Anime.js UMD bundle to exercise that engine explicitly.
